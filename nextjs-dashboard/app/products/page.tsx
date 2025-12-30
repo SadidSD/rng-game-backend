@@ -53,7 +53,7 @@ import {
 
 async function getProducts() {
     try {
-        const res = await fetch('http://localhost:3001/api/products', { cache: 'no-store' });
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, { cache: 'no-store' });
         if (!res.ok) return [];
         const data = await res.json();
         return Array.isArray(data) ? data : (data.data || []);
