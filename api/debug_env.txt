@@ -1,0 +1,4 @@
+D A T A B A S E _ U R L = " p o s t g r e s q l : / / p o s t g r e s . l a l c s g l a w e k q u k z v p y j d : i t s y o u r S D % 4 0 1 2 3 @ a w s - 1 - u s - e a s t - 1 . p o o l e r . s u p a b a s e . c o m : 6 5 4 3 / p o s t g r e s ? p g b o u n c e r = t r u e "  
+ J W T _ S E C R E T = " s u p e r - s e c r e t - k e y - c h a n g e - m e "  
+ 
+ D I R E C T _ U R L = " p o s t g r e s : / / p o s t g r e s . l a l c s g l a w e k q u k z v p y j d : [ P A S S W O R D ] @ a w s - 0 - u s - e a s t - 1 . p o o l e r . s u p a b a s e . c o m : 5 4 3 2 / p o s t g r e s "  

@@ -1,0 +1,4 @@
+DATABASE_URL="postgresql://postgres.lalcsglawekqukzvpyjd:itsyourSD%40123@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+JWT_SECRET="super-secret-key-change-me"
+
+DIRECT_URL="postgres://postgres.lalcsglawekqukzvpyjd:[PASSWORD]@aws-0-us-east-1.pooler.supabase.com:5432/postgres"

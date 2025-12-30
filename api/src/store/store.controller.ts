@@ -1,21 +1,24 @@
-import { Controller, Post, UseGuards, Request, Get } from '@nestjs/common';
+import { Controller, Get, Patch, Body, UseGuards, Request } from '@nestjs/common';
 import { StoreService } from './store.service';
-import { AuthGuard } from '@nestjs/passport';
+import { UpdateStoreDto } from './dto/store.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../auth/dto/auth.dto';
 
 @Controller('store')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.ADMIN, Role.OWNER)
 export class StoreController {
     constructor(private readonly storeService: StoreService) { }
 
-    @Post('api-key')
-    generateApiKey(@Request() req) {
-        // Only Admin should generate API key?
-        // For now, allow any authenticated user of the store
-        return this.storeService.generateApiKey(req.user.storeId);
+    @Get()
+    getSettings(@Request() req) {
+        return this.storeService.findOne(req.user.storeId);
     }
 
-    @Get()
-    getStore(@Request() req) {
-        return this.storeService.getStore(req.user.storeId);
+    @Patch()
+    updateSettings(@Request() req, @Body() dto: UpdateStoreDto) {
+        return this.storeService.update(req.user.storeId, dto);
     }
 }

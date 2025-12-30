@@ -7,5 +7,6 @@ import { PrismaModule } from '../prisma/prisma.module';
   imports: [PrismaModule],
   controllers: [StoreController],
   providers: [StoreService],
+  exports: [StoreService] // Export if Auth uses it
 })
 export class StoreModule { }

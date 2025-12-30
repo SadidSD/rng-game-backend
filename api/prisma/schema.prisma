@@ -1,27 +1,45 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["views"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-enum Role {
-  ADMIN
-  STAFF
-}
+// -----------------------------------------------------------------------------
+// Core / Multi-Tenancy
+// -----------------------------------------------------------------------------
 
 model Store {
-  id        String   @id @default(uuid())
-  name      String
-  apiKey    String   @unique @default(uuid())
-  users     User[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  name        String
+  apiKey      String   @unique // Internal API Key for storefront
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  apiKeys     ApiKey[]
+  products    Product[]
+  inventory   InventoryItem[]
+  orders      Order[]
+  customers   Customer[]
+  buylistRules BuylistRule[]
+  buylistOffers BuylistOffer[]
+  events      Event[]
+}
+
+model ApiKey {
+  id          String   @id @default(uuid())
+  keyHash     String   @unique
+  name        String?  // e.g. "Next.js Frontend", "Mobile App"
+  permissions String[] // JSON or simple array of scopes
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  lastUsedAt  DateTime?
 }
 
 model User {
@@ -30,7 +48,245 @@ model User {
   password  String
   role      Role     @default(STAFF)
   storeId   String
-  store     Store    @relation(fields: [storeId], references: [id])
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+// -----------------------------------------------------------------------------
+// Products & Inventory
+// -----------------------------------------------------------------------------
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  categoryId  String?
+  game        String   // e.g. "Pokemon", "MTG"
+  set         String?  // e.g. "Base Set", "Commander Legends"
+  slug        String   // URL friendly name
+  
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  variants    ProductVariant[]
+  tags        String[]
+  images      String[] // Array of URLs
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([storeId, slug])
+}
+
+model ProductVariant {
+  id          String   @id @default(uuid())
+  sku         String?  
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  // Attributes
+  condition   Condition
+  isFoil      Boolean  @default(false)
+  language    String   @default("English")
+  
+  // Pricing
+  price       Decimal  @db.Decimal(10, 2)
+  costPrice   Decimal? @db.Decimal(10, 2)
+  salePrice   Decimal? @db.Decimal(10, 2) // If on sale
+
+  inventory   InventoryItem?
+
+  storeId     String   // Denormalized for easier multi-tenant queries? (Optional, but good for filtering)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum Condition {
+  NM
+  LP
+  MP
+  HP
+  DAMAGED
+  SEALED
+}
+
+model InventoryItem {
+  id          String   @id @default(uuid())
+  variantId   String   @unique
+  variant     ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  
+  quantity    Int      @default(0)
+  lowStock    Int      @default(0) // Alert threshold
+  location    String?  // Shelf A1, Binder 3
+  
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  updatedAt   DateTime @updatedAt
+}
+
+// -----------------------------------------------------------------------------
+// Orders & Customers
+// -----------------------------------------------------------------------------
+
+model Customer {
+  id          String   @id @default(uuid())
+  email       String
+  firstName   String?
+  lastName    String?
+  phone       String?
+  notes       String?
+  
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  orders      Order[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([storeId, email])
+}
+
+model Order {
+  id          String   @id @default(uuid())
+  orderNumber Int      @default(autoincrement()) // Per store would be ideal, but global is simpler for v1
+  status      OrderStatus @default(PENDING)
+  total       Decimal  @db.Decimal(10, 2)
+  
+  customerId  String?
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  
+  // Shipping
+  shippingName    String?
+  shippingAddress String?
+  shippingCity    String?
+  shippingZip     String?
+  trackingNumber  String?
+
+  items       OrderItem[]
+  
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  productName String   // Snapshot in case product changes
+  variantSku  String?
+  quantity    Int
+  price       Decimal  @db.Decimal(10, 2) // Snapshot
+
+  // Link to actual product if it still exists
+  variantId   String?
+}
+
+// -----------------------------------------------------------------------------
+// Buylist
+// -----------------------------------------------------------------------------
+
+model BuylistRule {
+  id          String   @id @default(uuid())
+  game        String
+  rarity      String?
+  set         String?
+  
+  // e.g. percentage of market price
+  buyPercentage Decimal @db.Decimal(5, 2) 
+  
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model BuylistOffer {
+  id          String   @id @default(uuid())
+  status      OfferStatus @default(PENDING)
+  totalCash   Decimal  @db.Decimal(10, 2)
+  totalCredit Decimal  @db.Decimal(10, 2)
+  
+  customerName  String
+  customerEmail String
+  
+  items       BuylistItem[]
+  
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum OfferStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+model BuylistItem {
+  id          String   @id @default(uuid())
+  offerId     String
+  offer       BuylistOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  
+  cardName    String
+  condition   Condition
+  isFoil      Boolean
+  offerPrice  Decimal  @db.Decimal(10, 2)
+  quantity    Int
+}
+
+// -----------------------------------------------------------------------------
+// Events
+// -----------------------------------------------------------------------------
+
+model Event {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  date        DateTime
+  maxPlayers  Int?
+  
+  players     EventPlayer[]
+  
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model EventPlayer {
+  id          String   @id @default(uuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  playerName  String
+  playerEmail String?
+  paid        Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
 }

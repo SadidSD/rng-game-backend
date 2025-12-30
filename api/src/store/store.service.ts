@@ -1,23 +1,25 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { v4 as uuidv4 } from 'uuid';
+import { UpdateStoreDto } from './dto/store.dto';
 
 @Injectable()
 export class StoreService {
     constructor(private prisma: PrismaService) { }
 
-    async generateApiKey(storeId: string) {
-        const newApiKey = uuidv4();
-        return this.prisma.store.update({
-            where: { id: storeId },
-            data: { apiKey: newApiKey },
+    async findOne(id: string) {
+        const store = await this.prisma.store.findUnique({
+            where: { id },
         });
+        if (!store) throw new NotFoundException('Store not found');
+        return store;
     }
 
-    async getStore(storeId: string) {
-        return this.prisma.store.findUnique({
-            where: { id: storeId },
-            include: { users: true },
+    async update(id: string, dto: UpdateStoreDto) {
+        return this.prisma.store.update({
+            where: { id },
+            data: {
+                name: dto.name
+            }
         });
     }
 }

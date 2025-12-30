@@ -18,22 +18,32 @@ export class AuthService {
         });
         if (existingUser) throw new ConflictException('User already exists');
 
-        // Create Store
-        const store = await this.prisma.store.create({
-            data: {
-                name: dto.storeName,
-            },
-        });
+        const storeId = process.env.SINGLE_TENANT_STORE_ID || 'd02dbcba-81b5-4f9d-831c-54fe9a803081';
+        let store = await this.prisma.store.findUnique({ where: { id: storeId } });
+        let role: Role = Role.STAFF; // Default role
+
+        // If Store doesn't exist, Create it and make this user Admin
+        if (!store) {
+            console.log(`Creating Default Store: ${storeId}`);
+            store = await this.prisma.store.create({
+                data: {
+                    id: storeId,
+                    name: dto.storeName || 'TCG Store', // Fallback name
+                    apiKey: require('crypto').randomBytes(32).toString('hex'),
+                },
+            });
+            role = Role.ADMIN;
+        }
 
         // Hash password
         const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-        // Create Admin User
+        // Create User linked to Single Tenant Store
         const user = await this.prisma.user.create({
             data: {
                 email: dto.email,
                 password: hashedPassword,
-                role: Role.ADMIN,
+                role: role,
                 storeId: store.id,
             },
         });
