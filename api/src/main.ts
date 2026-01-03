@@ -16,7 +16,11 @@ async function bootstrap() {
   }));
 
   // Enable CORS for Frontend
-  app.enableCors();
+  app.enableCors({
+    origin: '*', // Allow all origins (Vercel, Localhost, etc.)
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Accept, Authorization, x-api-key',
+  });
 
   // Set Global Prefix to /api (e.g. localhost:3001/api/products)
   app.setGlobalPrefix('api');
