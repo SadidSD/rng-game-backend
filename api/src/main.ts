@@ -35,8 +35,18 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
+  // Add Health Check at Root (/) to satisfy Railway/LoadBalancers
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/', (req, res) => {
+    res.send({ status: 'ok', message: 'TCG Backend is running' });
+  });
+
   const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');
+
+  const server = app.getHttpServer();
+  const address = server.address();
   console.log(`Application is running on: ${await app.getUrl()}`);
+  console.log(`Server bound to:`, address);
 }
 bootstrap();
