@@ -37,7 +37,7 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
   // Add Health Check at Root (/) to satisfy Railway/LoadBalancers
   const httpAdapter = app.getHttpAdapter();
-  httpAdapter.get('/', (req, res) => {
+  httpAdapter.get('/', (req: any, res: any) => {
     res.send({ status: 'ok', message: 'TCG Backend is running' });
   });
 
