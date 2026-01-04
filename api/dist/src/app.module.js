@@ -25,12 +25,13 @@ const integrations_module_1 = require("./integrations/integrations.module");
 const uploads_module_1 = require("./uploads/uploads.module");
 const categories_module_1 = require("./categories/categories.module");
 const prisma_module_1 = require("./prisma/prisma.module");
+const manapool_module_1 = require("./integrations/manapool/manapool.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [auth_module_1.AuthModule, users_module_1.UsersModule, store_module_1.StoreModule, public_module_1.PublicModule, products_module_1.ProductsModule, inventory_module_1.InventoryModule, buylist_module_1.BuylistModule, orders_module_1.OrdersModule, customers_module_1.CustomersModule, events_module_1.EventsModule, analytics_module_1.AnalyticsModule, integrations_module_1.IntegrationsModule, uploads_module_1.UploadsModule, categories_module_1.CategoriesModule, prisma_module_1.PrismaModule],
+        imports: [auth_module_1.AuthModule, users_module_1.UsersModule, store_module_1.StoreModule, public_module_1.PublicModule, products_module_1.ProductsModule, inventory_module_1.InventoryModule, buylist_module_1.BuylistModule, orders_module_1.OrdersModule, customers_module_1.CustomersModule, events_module_1.EventsModule, analytics_module_1.AnalyticsModule, integrations_module_1.IntegrationsModule, uploads_module_1.UploadsModule, categories_module_1.CategoriesModule, prisma_module_1.PrismaModule, manapool_module_1.ManapoolModule],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
     })

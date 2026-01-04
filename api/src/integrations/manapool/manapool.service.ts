@@ -1,14 +1,17 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 
 @Injectable()
 export class ManapoolService {
     private readonly baseUrl = 'https://api.manapool.com';
-    // Ideally use ConfigService, but process.env works for now
-    private readonly accessToken = process.env.MANAPOOL_ACCESS_TOKEN;
+
+    constructor(private configService: ConfigService) { }
 
     async searchCards(query: string, game: string = 'Pokemon') {
-        if (!this.accessToken) {
+        const accessToken = this.configService.get<string>('MANAPOOL_ACCESS_TOKEN');
+
+        if (!accessToken) {
             throw new HttpException('Manapool Access Token not configured', HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
@@ -19,7 +22,7 @@ export class ManapoolService {
             // For now, mapping query to a 'q' param.
             const response = await axios.get(`${this.baseUrl}/cards`, {
                 headers: {
-                    'Authorization': `Bearer ${this.accessToken}`
+                    'Authorization': `Bearer ${accessToken}`
                 },
                 params: {
                     q: query,
