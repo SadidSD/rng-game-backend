@@ -59,11 +59,6 @@ export default function ImportPage() {
             setResults(Array.isArray(data) ? data : (data.data || []));
         } catch (error) {
             console.error("Search failed", error);
-            toast({
-                title: "Error",
-                description: "Failed to fetch from Manapool",
-                variant: "destructive",
-            });
         } finally {
             setLoading(false);
         }
