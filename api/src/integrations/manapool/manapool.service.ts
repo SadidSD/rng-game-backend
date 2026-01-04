@@ -32,8 +32,11 @@ export class ManapoolService {
             return response.data;
         } catch (error) {
             console.error('Manapool API Error:', error.response?.data || error.message);
-            // Fallback / Error handling
-            throw new HttpException('Failed to fetch from Manapool', HttpStatus.BAD_GATEWAY);
+            // Re-throw with actual details for debugging
+            throw new HttpException(
+                error.response?.data || 'Failed to fetch from Manapool',
+                error.response?.status || HttpStatus.BAD_GATEWAY
+            );
         }
     }
 }
