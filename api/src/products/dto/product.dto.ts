@@ -48,6 +48,10 @@ export class CreateProductDto {
 
     @IsString()
     @IsOptional()
+    categoryId?: string;
+
+    @IsString()
+    @IsOptional()
     set?: string;
 
     @IsArray()

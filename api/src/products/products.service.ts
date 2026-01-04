@@ -15,6 +15,7 @@ export class ProductsService {
                 name: dto.name,
                 description: dto.description,
                 game: dto.game,
+                categoryId: dto.categoryId,
                 set: dto.set,
                 slug: slug,
                 images: dto.images || [],
@@ -55,7 +56,10 @@ export class ProductsService {
 
         return this.prisma.product.findMany({
             where,
-            include: { variants: true },
+            include: {
+                variants: true,
+                category: true
+            },
             orderBy: { createdAt: 'desc' },
         });
     }

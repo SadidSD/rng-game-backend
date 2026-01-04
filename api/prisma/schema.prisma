@@ -23,6 +23,7 @@ model Store {
   users       User[]
   apiKeys     ApiKey[]
   products    Product[]
+  categories  Category[]
   inventory   InventoryItem[]
   orders      Order[]
   customers   Customer[]
@@ -68,7 +69,8 @@ model Product {
   name        String
   description String?
   categoryId  String?
-  game        String   // e.g. "Pokemon", "MTG"
+  category    Category? @relation(fields: [categoryId], references: [id])
+  game        String?   // Keep for legacy/fallback, but ideally replace with category
   set         String?  // e.g. "Base Set", "Commander Legends"
   slug        String   // URL friendly name
   
@@ -79,6 +81,24 @@ model Product {
   tags        String[]
   images      String[] // Array of URLs
 
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([storeId, slug])
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String
+  description String?
+  image       String?
+  
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  products    Product[]
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

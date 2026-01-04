@@ -8,7 +8,7 @@ export class UploadsController {
     constructor(private readonly uploadsService: UploadsService) { }
 
     @Post()
-    @UseGuards(JwtAuthGuard)
+    // @UseGuards(JwtAuthGuard)
     @UseInterceptors(FileInterceptor('file'))
     uploadFile(@UploadedFile() file: any) {
         return this.uploadsService.uploadFile(file);
