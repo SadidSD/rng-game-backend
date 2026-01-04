@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import {
     Card,
     CardContent,
@@ -29,9 +30,11 @@ export default async function CategoriesPage() {
                 <h1 className="text-2xl font-bold">Categories</h1>
                 {/* Simple Add Form - For now we can use a separate component or a simple form action if we had server actions, 
             but for this MVP let's just list them and maybe link to a create page or use client component */}
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Category
-                </Button>
+                <Link href="/categories/new">
+                    <Button>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Category
+                    </Button>
+                </Link>
             </div>
 
             <Card>
