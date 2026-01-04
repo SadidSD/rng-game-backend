@@ -129,7 +129,7 @@ export default async function ProductsPage() {
                                     Export
                                 </span>
                             </Button>
-                            <Link href="/products/new">
+                            <Link href="/products/create-choice">
                                 <Button size="sm" className="h-7 gap-1">
                                     <PlusCircle className="h-3.5 w-3.5" />
                                     <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">

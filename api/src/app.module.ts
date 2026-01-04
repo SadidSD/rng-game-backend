@@ -16,9 +16,10 @@ import { IntegrationsModule } from './integrations/integrations.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { CategoriesModule } from './categories/categories.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ManapoolModule } from './integrations/manapool/manapool.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, StoreModule, PublicModule, ProductsModule, InventoryModule, BuylistModule, OrdersModule, CustomersModule, EventsModule, AnalyticsModule, IntegrationsModule, UploadsModule, CategoriesModule, PrismaModule],
+  imports: [AuthModule, UsersModule, StoreModule, PublicModule, ProductsModule, InventoryModule, BuylistModule, OrdersModule, CustomersModule, EventsModule, AnalyticsModule, IntegrationsModule, UploadsModule, CategoriesModule, PrismaModule, ManapoolModule],
   controllers: [AppController],
   providers: [AppService],
 })
