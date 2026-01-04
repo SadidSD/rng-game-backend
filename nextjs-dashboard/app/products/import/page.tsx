@@ -6,13 +6,11 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Search, Loader2, Plus } from "lucide-react"
 import Image from 'next/image';
-import { useToast } from "@/components/ui/use-toast"
 
 export default function ImportPage() {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
-    const { toast } = useToast();
 
     const handleImport = async (card: any) => {
         try {
@@ -44,16 +42,10 @@ export default function ImportPage() {
 
             if (!res.ok) throw new Error('Failed to import');
 
-            toast({
-                title: "Success",
-                description: `Imported ${card.name}`,
-            });
+            alert(`Success: Imported ${card.name}`);
         } catch (error) {
-            toast({
-                title: "Error",
-                description: "Failed to create product",
-                variant: "destructive",
-            });
+            console.error(error);
+            alert("Error: Failed to create product");
         }
     };
 
