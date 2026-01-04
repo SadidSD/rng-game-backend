@@ -4,7 +4,7 @@ import axios from 'axios';
 
 @Injectable()
 export class ManapoolService {
-    private readonly baseUrl = 'https://api.manapool.com';
+    private readonly baseUrl = 'https://manapool.com/api/v1';
 
     constructor(private configService: ConfigService) { }
 
@@ -16,25 +16,30 @@ export class ManapoolService {
         }
 
         try {
-            // Note: I am guessing the endpoint structure based on standard REST APIs.
-            // Will likely need adjustment once documentation is fully clear.
-            // Documentation search suggested public API, lets try /cards/search or similar.
-            // For now, mapping query to a 'q' param.
-            const response = await axios.get(`${this.baseUrl}/cards`, {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`
-                },
-                params: {
-                    q: query,
+            // Using POST /card_info as per documentation findings
+            const response = await axios.post(`${this.baseUrl}/card_info`,
+                {
+                    // Attempting to filter by name/query. Schema is not fully known so using 'name' and 'query'.
+                    name: query,
                     game: game
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
                 }
-            });
+            );
             return response.data;
         } catch (error) {
-            console.error('Manapool API Error:', error.response?.data || error.message);
-            // Re-throw with actual details for debugging
+            console.error(`Manapool API Error [${error.config?.method?.toUpperCase()} ${error.config?.url}]:`, error.response?.data || error.message);
+
             throw new HttpException(
-                error.response?.data || 'Failed to fetch from Manapool',
+                {
+                    message: 'Failed to fetch from Manapool',
+                    details: error.response?.data || error.message,
+                    url: error.config?.url
+                },
                 error.response?.status || HttpStatus.BAD_GATEWAY
             );
         }
