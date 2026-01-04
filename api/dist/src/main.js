@@ -10,7 +10,11 @@ async function bootstrap() {
         whitelist: true,
         transform: true,
     }));
-    app.enableCors();
+    app.enableCors({
+        origin: '*',
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+        allowedHeaders: 'Content-Type, Accept, Authorization, x-api-key',
+    });
     app.setGlobalPrefix('api');
     const config = new swagger_1.DocumentBuilder()
         .setTitle('TCG SaaS API')
@@ -21,7 +25,16 @@ async function bootstrap() {
         .build();
     const document = swagger_1.SwaggerModule.createDocument(app, config);
     swagger_1.SwaggerModule.setup('api', app, document);
-    await app.listen(3001);
+    const httpAdapter = app.getHttpAdapter();
+    httpAdapter.get('/', (req, res) => {
+        res.send({ status: 'ok', message: 'TCG Backend is running' });
+    });
+    const port = process.env.PORT || 3001;
+    await app.listen(port, '0.0.0.0');
+    const server = app.getHttpServer();
+    const address = server.address();
+    console.log(`Application is running on: ${await app.getUrl()}`);
+    console.log(`Server bound to:`, address);
 }
 bootstrap();
 //# sourceMappingURL=main.js.map

@@ -16,7 +16,6 @@ exports.UploadsController = void 0;
 const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
 const uploads_service_1 = require("./uploads.service");
-const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 let UploadsController = class UploadsController {
     uploadsService;
     constructor(uploadsService) {
@@ -29,7 +28,6 @@ let UploadsController = class UploadsController {
 exports.UploadsController = UploadsController;
 __decorate([
     (0, common_1.Post)(),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
     __param(0, (0, common_1.UploadedFile)()),
     __metadata("design:type", Function),

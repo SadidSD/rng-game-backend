@@ -10,6 +10,7 @@ export declare class CreateProductDto {
     name: string;
     description?: string;
     game: string;
+    categoryId?: string;
     set?: string;
     images?: string[];
     variants?: CreateProductVariantDto[];

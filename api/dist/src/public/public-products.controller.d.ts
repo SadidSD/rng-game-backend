@@ -11,14 +11,14 @@ export declare class PublicProductsController {
                 createdAt: Date;
                 updatedAt: Date;
                 storeId: string;
+                sku: string | null;
+                productId: string;
                 condition: import(".prisma/client").$Enums.Condition;
                 isFoil: boolean;
                 language: string;
                 price: import("@prisma/client/runtime/library").Decimal;
-                sku: string | null;
                 costPrice: import("@prisma/client/runtime/library").Decimal | null;
                 salePrice: import("@prisma/client/runtime/library").Decimal | null;
-                productId: string;
             }[];
         } & {
             id: string;
@@ -28,7 +28,7 @@ export declare class PublicProductsController {
             storeId: string;
             description: string | null;
             categoryId: string | null;
-            game: string;
+            game: string | null;
             set: string | null;
             slug: string;
             tags: string[];

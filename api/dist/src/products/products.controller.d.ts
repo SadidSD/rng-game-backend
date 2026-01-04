@@ -19,14 +19,14 @@ export declare class ProductsController {
             createdAt: Date;
             updatedAt: Date;
             storeId: string;
+            sku: string | null;
+            productId: string;
             condition: import(".prisma/client").$Enums.Condition;
             isFoil: boolean;
             language: string;
             price: import("@prisma/client/runtime/library").Decimal;
-            sku: string | null;
             costPrice: import("@prisma/client/runtime/library").Decimal | null;
             salePrice: import("@prisma/client/runtime/library").Decimal | null;
-            productId: string;
         })[];
     } & {
         id: string;
@@ -36,7 +36,7 @@ export declare class ProductsController {
         storeId: string;
         description: string | null;
         categoryId: string | null;
-        game: string;
+        game: string | null;
         set: string | null;
         slug: string;
         tags: string[];
@@ -46,19 +46,29 @@ export declare class ProductsController {
         game?: string;
         search?: string;
     }): Promise<({
+        category: {
+            id: string;
+            name: string;
+            createdAt: Date;
+            updatedAt: Date;
+            storeId: string;
+            description: string | null;
+            slug: string;
+            image: string | null;
+        } | null;
         variants: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
             storeId: string;
+            sku: string | null;
+            productId: string;
             condition: import(".prisma/client").$Enums.Condition;
             isFoil: boolean;
             language: string;
             price: import("@prisma/client/runtime/library").Decimal;
-            sku: string | null;
             costPrice: import("@prisma/client/runtime/library").Decimal | null;
             salePrice: import("@prisma/client/runtime/library").Decimal | null;
-            productId: string;
         }[];
     } & {
         id: string;
@@ -68,7 +78,7 @@ export declare class ProductsController {
         storeId: string;
         description: string | null;
         categoryId: string | null;
-        game: string;
+        game: string | null;
         set: string | null;
         slug: string;
         tags: string[];
@@ -90,14 +100,14 @@ export declare class ProductsController {
             createdAt: Date;
             updatedAt: Date;
             storeId: string;
+            sku: string | null;
+            productId: string;
             condition: import(".prisma/client").$Enums.Condition;
             isFoil: boolean;
             language: string;
             price: import("@prisma/client/runtime/library").Decimal;
-            sku: string | null;
             costPrice: import("@prisma/client/runtime/library").Decimal | null;
             salePrice: import("@prisma/client/runtime/library").Decimal | null;
-            productId: string;
         })[];
     } & {
         id: string;
@@ -107,7 +117,7 @@ export declare class ProductsController {
         storeId: string;
         description: string | null;
         categoryId: string | null;
-        game: string;
+        game: string | null;
         set: string | null;
         slug: string;
         tags: string[];
