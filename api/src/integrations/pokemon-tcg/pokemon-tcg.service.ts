@@ -27,13 +27,17 @@ export class PokemonTcgService {
                 ? `name:"${sanitizedQuery}"`
                 : `name:${sanitizedQuery}*`;
 
-            console.log(`PokemonTCG Search: ${luceneQuery} | Key: ${apiKey ? 'Present' : 'Missing'}`);
+            const headers: any = {
+                'Content-Type': 'application/json'
+            };
+            if (apiKey) {
+                headers['X-Api-Key'] = apiKey;
+            }
+
+            console.log(`PokemonTCG Request: ${this.baseUrl}/cards?q=${luceneQuery}`);
 
             const response = await axios.get(`${this.baseUrl}/cards`, {
-                headers: {
-                    'X-Api-Key': apiKey || '',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                },
+                headers,
                 params: {
                     q: luceneQuery,
                     pageSize: 20
