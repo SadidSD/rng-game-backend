@@ -38,13 +38,17 @@ export default function ImportPage() {
         e.preventDefault()
         setLoading(true)
         try {
-            // Direct Client-Side Search to bypass Railway/Cloudflare blocks
-            // Note: We are not using the API key here to keep it safe (public endpoint allows it)
-            const queryString = `name:${query}*`
+            // Smart Query Construction:
+            // 1. If spaces exist, use quotes for exact phrase match (faster)
+            // 2. If single word, use wildcard for prefix match
+            const hasSpaces = query.includes(' ')
+            const queryString = hasSpaces ? `name:"${query}"` : `name:${query}*`
+
             const res = await axios.get(`https://api.pokemontcg.io/v2/cards`, {
                 params: {
                     q: queryString,
-                    pageSize: 20,
+                    pageSize: 12, // Reduced to speed up response
+                    orderBy: '-set.releaseDate', // Show newest cards first
                     select: 'id,name,set,rarity,images,cardmarket,tcgplayer'
                 }
             })
