@@ -1,6 +1,6 @@
-
 import { NextResponse } from 'next/server';
 import axios from 'axios';
+import * as https from 'https';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,13 +13,15 @@ export async function GET(request: Request) {
     }
 
     try {
-        // Smart Query Logic (Same as before)
         const hasSpaces = query.includes(' ');
         const queryString = hasSpaces ? `name:"${query}"` : `name:${query}*`;
 
         const apiUrl = `https://api.pokemontcg.io/v2/cards`;
 
         console.log(`Proxying to PokemonTCG: ${queryString}`);
+
+        // Force IPv4 to avoid timeouts on Vercel/AWS Lambda
+        const httpsAgent = new https.Agent({ family: 4 });
 
         const res = await axios.get(apiUrl, {
             params: {
@@ -33,15 +35,20 @@ export async function GET(request: Request) {
                 'Accept': 'application/json',
                 'User-Agent': 'TCG-SaaS-Proxy/1.0'
             },
-            timeout: 10000
+            timeout: 20000,
+            httpsAgent
         });
 
         return NextResponse.json(res.data);
     } catch (error: any) {
         console.error('PokemonTCG Proxy Error:', error.response?.data || error.message);
         return NextResponse.json(
-            { error: 'Failed to fetch from PokemonTCG' },
-            { status: error.response?.status || 500 }
+            {
+                error: 'Failed to fetch from PokemonTCG',
+                details: error.message,
+                upstreamStatus: error.response?.status
+            },
+            { status: 500 }
         );
     }
 }
