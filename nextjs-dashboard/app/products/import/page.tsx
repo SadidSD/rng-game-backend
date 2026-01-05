@@ -1,30 +1,49 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Search, Loader2, Plus } from "lucide-react"
-import Image from 'next/image';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Search, Loader2, DownloadCloud } from "lucide-react"
+import axios from 'axios';
 
 export default function ImportPage() {
-    const [query, setQuery] = useState('');
-    const [results, setResults] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [query, setQuery] = useState('')
+    const [cards, setCards] = useState<any[]>([])
+    const [loading, setLoading] = useState(false)
+    const [importing, setImporting] = useState<string | null>(null)
+
+    const router = useRouter()
+
+    const handleSearch = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setLoading(true)
+        try {
+            // Using PokemonTCG endpoint
+            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/integrations/pokemon-tcg/search`, {
+                params: { query }
+            })
+            setCards(res.data.data)
+        } catch (error) {
+            console.error('Search failed', error)
+            alert('Search failed. See console for details.')
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const handleImport = async (card: any) => {
+        setImporting(card.id)
         try {
-            // Map Manapool card query to our Product Schema
-            // Note: Adjust fields based on actual Manapool API response structure
+            // Map PokemonTCG data to local Product schema
             const productData = {
                 name: card.name,
-                description: `Imported from Manapool. Set: ${card.set}`,
-                // If Manapool gives 'game' or 'category', map it here. Defaulting to 'Pokemon' for now based on context.
-                description: `Set: ${card.set} | Rarity: ${card.rarity}`,
-                price: card.price || 0, // Use average sell price or 0
+                description: `Set: ${card.set} | Rarity: ${card.rarity || 'Unknown'}`,
+                price: card.price || 0,
                 stock: 0,
-                categoryId: 'pokemon-singles', // You might want this dynamic or selectable
-                images: [card.imageLarge || card.image] // Use high-res image
+                categoryId: 'pokemon-singles', // Ensure this category exists or is handled
+                images: [card.imageLarge || card.image]
             }
 
             await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/products`, productData)
@@ -59,20 +78,19 @@ export default function ImportPage() {
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {cards.map((card) => (
-                    <Card key={card.id} className="overflow-hidden">
+                    <Card key={card.id} className="overflow-hidden flex flex-col">
                         <div className="aspect-[3/4] relative bg-muted">
-                            {/* Use normalized 'image' field from backend */}
                             <img
                                 src={card.image}
                                 alt={card.name}
                                 className="object-contain w-full h-full"
                             />
                         </div>
-                        <CardHeader className="p-4">
-                            <CardTitle className="text-lg truncate">{card.name}</CardTitle>
+                        <CardHeader className="p-4 flex-1">
+                            <CardTitle className="text-lg truncate" title={card.name}>{card.name}</CardTitle>
                             <CardDescription>{card.set} - {card.rarity}</CardDescription>
                         </CardHeader>
-                        <CardFooter className="p-4 pt-0">
+                        <CardFooter className="p-4 pt-0 mt-auto">
                             <Button
                                 className="w-full"
                                 variant="secondary"
@@ -90,6 +108,10 @@ export default function ImportPage() {
                     </Card>
                 ))}
             </div>
+
+            {!loading && cards.length === 0 && query && (
+                <div className="text-center text-muted-foreground py-12">No results found.</div>
+            )}
         </div>
     )
 }
