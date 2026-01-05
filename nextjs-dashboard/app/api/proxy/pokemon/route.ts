@@ -1,8 +1,8 @@
+
 import { NextResponse } from 'next/server';
-import axios from 'axios';
-import * as https from 'https';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs'; // Ensure this runs in Node.js environment
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -16,15 +16,14 @@ export async function GET(request: Request) {
         const hasSpaces = query.includes(' ');
         const queryString = hasSpaces ? `name:"${query}"` : `name:${query}*`;
 
-        const apiUrl = `https://api.pokemontcg.io/v2/cards`;
+        // Encode the query properly for the URL
+        const encodedQuery = encodeURIComponent(queryString);
+        const apiUrl = `https://api.pokemontcg.io/v2/cards?q=${encodedQuery}&pageSize=12&orderBy=-set.releaseDate&select=id,name,set,rarity,images,cardmarket,tcgplayer`;
 
         console.log(`Proxying to PokemonTCG: ${queryString}`);
 
-        // Force IPv4 to avoid timeouts on Vercel/AWS Lambda
-        const httpsAgent = new https.Agent({ family: 4 });
-
         const apiKey = process.env.POKEMON_TCG_API_KEY;
-        const headers: any = {
+        const headers: HeadersInit = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'User-Agent': 'TCG-SaaS-Proxy/1.0'
@@ -32,32 +31,28 @@ export async function GET(request: Request) {
 
         if (apiKey) {
             headers['X-Api-Key'] = apiKey;
-            console.log('Using API Key for authentication');
-        } else {
-            console.warn('No API Key found - Request might be rate limited or blocked');
         }
 
-        const res = await axios.get(apiUrl, {
-            params: {
-                q: queryString,
-                pageSize: 12,
-                orderBy: '-set.releaseDate',
-                select: 'id,name,set,rarity,images,cardmarket,tcgplayer'
-            },
+        const res = await fetch(apiUrl, {
+            method: 'GET',
             headers,
-            timeout: 5000, // 5s timeout to catch error before Vercel kills function
-            httpsAgent
+            next: { revalidate: 0 } // Disable cache for search
         });
 
-        return NextResponse.json(res.data);
-    } catch (error: any) {
-        console.error('PokemonTCG Proxy Error:', error.response?.data || error.message);
+        if (!res.ok) {
+            const errorBody = await res.text();
+            throw new Error(`Upstream Error ${res.status}: ${errorBody}`);
+        }
 
+        const data = await res.json();
+        return NextResponse.json(data);
+
+    } catch (error: any) {
+        console.error('PokemonTCG Proxy Error:', error.message);
         return NextResponse.json(
             {
                 error: 'Failed to fetch from PokemonTCG',
                 details: error.message,
-                upstreamStatus: error.response?.status,
                 debug: {
                     apiKeyPresent: !!process.env.POKEMON_TCG_API_KEY,
                     query: query
