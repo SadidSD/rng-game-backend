@@ -17,14 +17,23 @@ export class PokemonTcgService {
 
         try {
             // Documented syntax: q=name:charizard*
-            // We use quotes to handle names with spaces and * for prefix matching
-            const luceneQuery = `name:"${query}"*`;
+            // We use quotes only if necessary. Wildcard * outside quotes for prefix matching.
+
+            // Simple heuristic: if query has spaces, quote it and don't use wildcard (strict match).
+            // If single word, optional quote + wildcard.
+            const hasSpaces = query.includes(' ');
+            const sanitizedQuery = query.replace(/[":]/g, ''); // Basic sanitization
+            const luceneQuery = hasSpaces
+                ? `name:"${sanitizedQuery}"`
+                : `name:${sanitizedQuery}*`;
+
+            console.log(`PokemonTCG Search: ${luceneQuery} | Key: ${apiKey ? 'Present' : 'Missing'}`);
 
             const response = await axios.get(`${this.baseUrl}/cards`, {
                 headers: apiKey ? { 'X-Api-Key': apiKey } : {},
                 params: {
                     q: luceneQuery,
-                    pageSize: 20 // Limit results for performance
+                    pageSize: 20
                 }
             });
 
