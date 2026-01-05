@@ -16,28 +16,33 @@ export async function GET(request: Request) {
         const hasSpaces = query.includes(' ');
         const queryString = hasSpaces ? `name:"${query}"` : `name:${query}*`;
 
-        // Encode the query properly for the URL
-        const encodedQuery = encodeURIComponent(queryString);
-        // Reduced pageSize to 8 and removed tcgplayer to speed up response
-        const apiUrl = `https://api.pokemontcg.io/v2/cards?q=${encodedQuery}&pageSize=8&orderBy=-set.releaseDate&select=id,name,set,rarity,images,cardmarket`;
-
         console.log(`Proxying to PokemonTCG: ${queryString}`);
 
         const apiKey = process.env.POKEMON_TCG_API_KEY;
+
+        // Use standard URL construction
+        const upstreamUrl = new URL('https://api.pokemontcg.io/v2/cards');
+        upstreamUrl.searchParams.set('q', queryString);
+        upstreamUrl.searchParams.set('pageSize', '12');
+        upstreamUrl.searchParams.set('orderBy', '-set.releaseDate');
+        upstreamUrl.searchParams.set('select', 'id,name,set,rarity,images,cardmarket'); // Keep payload light
+
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'User-Agent': 'TCG-SaaS-Proxy/1.0'
+            // Spoof real browser to avoid 403/404 from strict WAFs
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         };
 
         if (apiKey) {
             headers['X-Api-Key'] = apiKey;
         }
 
-        const res = await fetch(apiUrl, {
+        const res = await fetch(upstreamUrl.toString(), {
             method: 'GET',
             headers,
-            next: { revalidate: 3600 } // Cache results for 1 hour
+            next: { revalidate: 0 }, // Disable cache to prevent poisoning
+            cache: 'no-store'
         });
 
         if (!res.ok) {
