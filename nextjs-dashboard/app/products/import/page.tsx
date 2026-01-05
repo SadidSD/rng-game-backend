@@ -38,22 +38,13 @@ export default function ImportPage() {
         e.preventDefault()
         setLoading(true)
         try {
-            // Smart Query Construction:
-            // 1. If spaces exist, use quotes for exact phrase match (faster)
-            // 2. If single word, use wildcard for prefix match
-            const hasSpaces = query.includes(' ')
-            const queryString = hasSpaces ? `name:"${query}"` : `name:${query}*`
-
-            const res = await axios.get(`https://api.pokemontcg.io/v2/cards`, {
-                params: {
-                    q: queryString,
-                    pageSize: 12, // Reduced to speed up response
-                    orderBy: '-set.releaseDate', // Show newest cards first
-                    select: 'id,name,set,rarity,images,cardmarket,tcgplayer'
-                }
+            // Use local Vercel Proxy to avoid CORS and IP blocks
+            const res = await axios.get(`/api/proxy/pokemon`, {
+                params: { query }
             })
 
-            // Map raw response to our app schema
+            // Mapper is slightly simpler now as we receive the forwarded format
+            // but the structure from proxy is `res.data.data` (same as direct API)
             const mappedCards = res.data.data.map((card: any) => ({
                 id: card.id,
                 name: card.name,
