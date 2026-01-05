@@ -30,7 +30,10 @@ export class PokemonTcgService {
             console.log(`PokemonTCG Search: ${luceneQuery} | Key: ${apiKey ? 'Present' : 'Missing'}`);
 
             const response = await axios.get(`${this.baseUrl}/cards`, {
-                headers: apiKey ? { 'X-Api-Key': apiKey } : {},
+                headers: {
+                    'X-Api-Key': apiKey || '',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                },
                 params: {
                     q: luceneQuery,
                     pageSize: 20
