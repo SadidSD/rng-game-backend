@@ -23,6 +23,20 @@ export async function GET(request: Request) {
         // Force IPv4 to avoid timeouts on Vercel/AWS Lambda
         const httpsAgent = new https.Agent({ family: 4 });
 
+        const apiKey = process.env.POKEMON_TCG_API_KEY;
+        const headers: any = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'TCG-SaaS-Proxy/1.0'
+        };
+
+        if (apiKey) {
+            headers['X-Api-Key'] = apiKey;
+            console.log('Using API Key for authentication');
+        } else {
+            console.warn('No API Key found - Request might be rate limited or blocked');
+        }
+
         const res = await axios.get(apiUrl, {
             params: {
                 q: queryString,
@@ -30,11 +44,7 @@ export async function GET(request: Request) {
                 orderBy: '-set.releaseDate',
                 select: 'id,name,set,rarity,images,cardmarket,tcgplayer'
             },
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'User-Agent': 'TCG-SaaS-Proxy/1.0'
-            },
+            headers,
             timeout: 20000,
             httpsAgent
         });
