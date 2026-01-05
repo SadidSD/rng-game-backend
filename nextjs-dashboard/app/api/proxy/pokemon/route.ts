@@ -45,34 +45,25 @@ export async function GET(request: Request) {
                 select: 'id,name,set,rarity,images,cardmarket,tcgplayer'
             },
             headers,
-            const res = await axios.get(apiUrl, {
-                params: {
-                    q: queryString,
-                    pageSize: 12,
-                    orderBy: '-set.releaseDate',
-                    select: 'id,name,set,rarity,images,cardmarket,tcgplayer'
-                },
-                headers,
-                timeout: 5000, // Reduced to 5s to fail faster than Vercel's 10s limit
-                httpsAgent
-            });
+            timeout: 5000, // 5s timeout to catch error before Vercel kills function
+            httpsAgent
+        });
 
-            return NextResponse.json(res.data);
-        } catch (error: any) {
-            console.error('PokemonTCG Proxy Error:', error.response?.data || error.message);
+        return NextResponse.json(res.data);
+    } catch (error: any) {
+        console.error('PokemonTCG Proxy Error:', error.response?.data || error.message);
 
-            // Return debug info to help user diagnose
-            return NextResponse.json(
-                {
-                    error: 'Failed to fetch from PokemonTCG',
-                    details: error.message,
-                    upstreamStatus: error.response?.status,
-                    debug: {
-                        apiKeyPresent: !!process.env.POKEMON_TCG_API_KEY,
-                        query: query
-                    }
-                },
-                { status: 500 }
-            );
-        }
+        return NextResponse.json(
+            {
+                error: 'Failed to fetch from PokemonTCG',
+                details: error.message,
+                upstreamStatus: error.response?.status,
+                debug: {
+                    apiKeyPresent: !!process.env.POKEMON_TCG_API_KEY,
+                    query: query
+                }
+            },
+            { status: 500 }
+        );
     }
+}
