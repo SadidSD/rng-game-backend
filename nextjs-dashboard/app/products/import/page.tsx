@@ -38,11 +38,31 @@ export default function ImportPage() {
         e.preventDefault()
         setLoading(true)
         try {
-            // Using PokemonTCG endpoint
-            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/integrations/pokemon-tcg/search`, {
-                params: { query }
+            // Direct Client-Side Search to bypass Railway/Cloudflare blocks
+            // Note: We are not using the API key here to keep it safe (public endpoint allows it)
+            const queryString = `name:${query}*`
+            const res = await axios.get(`https://api.pokemontcg.io/v2/cards`, {
+                params: {
+                    q: queryString,
+                    pageSize: 20,
+                    select: 'id,name,set,rarity,images,cardmarket,tcgplayer'
+                }
             })
-            setCards(res.data.data)
+
+            // Map raw response to our app schema
+            const mappedCards = res.data.data.map((card: any) => ({
+                id: card.id,
+                name: card.name,
+                set: card.set.name,
+                setId: card.set.id,
+                rarity: card.rarity,
+                image: card.images.small,
+                imageLarge: card.images.large,
+                price: card.cardmarket?.prices?.averageSellPrice,
+                tcgplayerUrl: card.tcgplayer?.url
+            }))
+
+            setCards(mappedCards)
         } catch (error) {
             console.error('Search failed', error)
             alert('Search failed. See console for details.')
