@@ -18,7 +18,8 @@ export async function GET(request: Request) {
 
         // Encode the query properly for the URL
         const encodedQuery = encodeURIComponent(queryString);
-        const apiUrl = `https://api.pokemontcg.io/v2/cards?q=${encodedQuery}&pageSize=12&orderBy=-set.releaseDate&select=id,name,set,rarity,images,cardmarket,tcgplayer`;
+        // Reduced pageSize to 8 and removed tcgplayer to speed up response
+        const apiUrl = `https://api.pokemontcg.io/v2/cards?q=${encodedQuery}&pageSize=8&orderBy=-set.releaseDate&select=id,name,set,rarity,images,cardmarket`;
 
         console.log(`Proxying to PokemonTCG: ${queryString}`);
 
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
         const res = await fetch(apiUrl, {
             method: 'GET',
             headers,
-            next: { revalidate: 0 } // Disable cache for search
+            next: { revalidate: 3600 } // Cache results for 1 hour
         });
 
         if (!res.ok) {
