@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,8 +13,26 @@ export default function ImportPage() {
     const [cards, setCards] = useState<any[]>([])
     const [loading, setLoading] = useState(false)
     const [importing, setImporting] = useState<string | null>(null)
+    const [categories, setCategories] = useState<any[]>([])
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
 
     const router = useRouter()
+
+    // Fetch categories on mount
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/categories`)
+                if (res.data && res.data.length > 0) {
+                    setCategories(res.data)
+                    setSelectedCategoryId(res.data[0].id)
+                }
+            } catch (error) {
+                console.error('Failed to fetch categories', error)
+            }
+        }
+        fetchCategories()
+    }, [])
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -34,6 +52,10 @@ export default function ImportPage() {
     }
 
     const handleImport = async (card: any) => {
+        if (!selectedCategoryId) {
+            alert('Please select a category first.')
+            return
+        }
         setImporting(card.id)
         try {
             // Map PokemonTCG data to local Product schema
@@ -42,7 +64,7 @@ export default function ImportPage() {
                 description: `Set: ${card.set} | Rarity: ${card.rarity || 'Unknown'}`,
                 price: card.price || 0,
                 stock: 0,
-                categoryId: 'pokemon-singles', // Ensure this category exists or is handled
+                categoryId: selectedCategoryId,
                 images: [card.imageLarge || card.image]
             }
 
@@ -63,18 +85,32 @@ export default function ImportPage() {
                 <p className="text-muted-foreground">Search and import cards from PokemonTCG API.</p>
             </div>
 
-            <form onSubmit={handleSearch} className="flex gap-4">
-                <Input
-                    placeholder="Search for cards (e.g. Charizard)..."
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    className="max-w-md"
-                />
-                <Button type="submit" disabled={loading}>
-                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-                    Search
-                </Button>
-            </form>
+            <div className="flex flex-col md:flex-row gap-4">
+                <div className="w-full md:w-1/3">
+                    <label className="text-sm font-medium mb-1 block">Target Category</label>
+                    <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={selectedCategoryId}
+                        onChange={(e) => setSelectedCategoryId(e.target.value)}
+                    >
+                        {categories.map(cat => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <form onSubmit={handleSearch} className="flex gap-4 w-full md:w-2/3 items-end">
+                    <Input
+                        placeholder="Search for cards (e.g. Charizard)..."
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        className="flex-1"
+                    />
+                    <Button type="submit" disabled={loading}>
+                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                        Search
+                    </Button>
+                </form>
+            </div>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {cards.map((card) => (
