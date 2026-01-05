@@ -4,9 +4,11 @@ import axios from 'axios';
 
 @Injectable()
 export class ManapoolService {
-    private readonly baseUrl = 'https://manapool.com/api/v1';
+    private readonly baseUrl: string;
 
-    constructor(private configService: ConfigService) { }
+    constructor(private configService: ConfigService) {
+        this.baseUrl = this.configService.get<string>('MANAPOOL_BASE_URL') || 'https://api.manapool.io/v1';
+    }
 
     async searchCards(query: string, game: string = 'Pokemon') {
         const accessToken = this.configService.get<string>('MANAPOOL_ACCESS_TOKEN');
