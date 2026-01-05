@@ -20,96 +20,76 @@ export default function ImportPage() {
                 name: card.name,
                 description: `Imported from Manapool. Set: ${card.set}`,
                 // If Manapool gives 'game' or 'category', map it here. Defaulting to 'Pokemon' for now based on context.
-                game: 'Pokemon',
-                categoryId: undefined, // Or try to match category by name if possible
-                set: card.set,
-                images: card.image ? [card.image] : [],
-                storeId: 'store-123', // TODO: Dynamic Store ID
-                variants: [
-                    {
-                        condition: 'NM',
-                        price: 0, // Default price, user updates later
-                        quantity: 0
-                    }
-                ]
-            };
+                description: `Set: ${card.set} | Rarity: ${card.rarity}`,
+                price: card.price || 0, // Use average sell price or 0
+                stock: 0,
+                categoryId: 'pokemon-singles', // You might want this dynamic or selectable
+                images: [card.imageLarge || card.image] // Use high-res image
+            }
 
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(productData)
-            });
-
-            if (!res.ok) throw new Error('Failed to import');
-
-            alert(`Success: Imported ${card.name}`);
+            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/products`, productData)
+            alert('Product imported successfully!')
         } catch (error) {
-            console.error(error);
-            alert("Error: Failed to create product");
-        }
-    };
-
-    const handleSearch = async () => {
-        if (!query) return;
-        setLoading(true);
-        try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/integrations/manapool/search?query=${query}`);
-            const data = await res.json();
-            // Assuming data is an array of cards. Adjust based on actual API response.
-            setResults(Array.isArray(data) ? data : (data.data || []));
-        } catch (error) {
-            console.error("Search failed", error);
+            console.error('Import failed', error)
+            alert('Import failed. See console for details.')
         } finally {
-            setLoading(false);
+            setImporting(null)
         }
-    };
+    }
 
     return (
-        <div className="container mx-auto py-8">
-            <h1 className="text-2xl font-bold mb-6">Import from Manapool</h1>
+        <div className="flex flex-col gap-6 p-6">
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">Import Products</h1>
+                <p className="text-muted-foreground">Search and import cards from PokemonTCG API.</p>
+            </div>
 
-            <div className="flex gap-4 mb-8">
+            <form onSubmit={handleSearch} className="flex gap-4">
                 <Input
                     placeholder="Search for cards (e.g. Charizard)..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                     className="max-w-md"
                 />
-                <Button onClick={handleSearch} disabled={loading}>
+                <Button type="submit" disabled={loading}>
                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
                     Search
                 </Button>
-            </div>
+            </form>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {results.map((card: any) => (
-                    <Card key={card.id || Math.random()} className="overflow-hidden">
-                        <div className="relative aspect-[3/4] w-full">
-                            {/* Use a placeholder if no image, or optimize image loading */}
-                            <Image
-                                src={card.image || card.imageUrl || "/placeholder.svg"}
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {cards.map((card) => (
+                    <Card key={card.id} className="overflow-hidden">
+                        <div className="aspect-[3/4] relative bg-muted">
+                            {/* Use normalized 'image' field from backend */}
+                            <img
+                                src={card.image}
                                 alt={card.name}
-                                fill
-                                className="object-cover transition-transform hover:scale-105"
+                                className="object-contain w-full h-full"
                             />
                         </div>
-                        <CardContent className="p-3">
-                            <h3 className="font-bold truncate" title={card.name}>{card.name}</h3>
-                            <p className="text-sm text-gray-500 truncate">{card.set}</p>
-                        </CardContent>
-                        <CardFooter className="p-3 pt-0">
-                            <Button size="sm" className="w-full" variant="secondary" onClick={() => handleImport(card)}>
-                                <Plus className="mr-2 h-4 w-4" /> Import
+                        <CardHeader className="p-4">
+                            <CardTitle className="text-lg truncate">{card.name}</CardTitle>
+                            <CardDescription>{card.set} - {card.rarity}</CardDescription>
+                        </CardHeader>
+                        <CardFooter className="p-4 pt-0">
+                            <Button
+                                className="w-full"
+                                variant="secondary"
+                                onClick={() => handleImport(card)}
+                                disabled={importing === card.id}
+                            >
+                                {importing === card.id ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <DownloadCloud className="mr-2 h-4 w-4" />
+                                )}
+                                Import Product
                             </Button>
                         </CardFooter>
                     </Card>
                 ))}
             </div>
-
-            {!loading && results.length === 0 && query && (
-                <div className="text-center text-gray-500 py-12">No results found.</div>
-            )}
         </div>
-    );
+    )
 }

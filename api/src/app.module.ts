@@ -16,10 +16,10 @@ import { IntegrationsModule } from './integrations/integrations.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { CategoriesModule } from './categories/categories.module';
 import { PrismaModule } from './prisma/prisma.module';
-import { ManapoolModule } from './integrations/manapool/manapool.module';
+import { PokemonTcgModule } from './integrations/pokemon-tcg/pokemon-tcg.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, StoreModule, PublicModule, ProductsModule, InventoryModule, BuylistModule, OrdersModule, CustomersModule, EventsModule, AnalyticsModule, IntegrationsModule, UploadsModule, CategoriesModule, PrismaModule, ManapoolModule],
+  imports: [AuthModule, UsersModule, StoreModule, PublicModule, ProductsModule, InventoryModule, BuylistModule, OrdersModule, CustomersModule, EventsModule, AnalyticsModule, IntegrationsModule, UploadsModule, CategoriesModule, PrismaModule, PokemonTcgModule],
   controllers: [AppController],
   providers: [AppService],
 })
