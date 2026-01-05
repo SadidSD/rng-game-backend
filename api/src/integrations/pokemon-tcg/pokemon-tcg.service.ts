@@ -1,47 +1,41 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
+import * as https from 'https';
 
 @Injectable()
 export class PokemonTcgService {
     private readonly baseUrl = 'https://api.pokemontcg.io/v2';
+    private readonly httpsAgent = new https.Agent({ family: 4 }); // Force IPv4 to avoid timeouts
 
     constructor(private configService: ConfigService) { }
 
     async searchCards(query: string) {
         const apiKey = this.configService.get<string>('POKEMON_TCG_API_KEY');
-        // API Key is optional but recommended. We log a warning if missing but proceed.
-        if (!apiKey) {
-            console.warn('POKEMON_TCG_API_KEY is not set. Rate limits will be restricted.');
-        }
+        // ... (check log)
 
         try {
-            // Documented syntax: q=name:charizard*
-            // We use quotes only if necessary. Wildcard * outside quotes for prefix matching.
-
-            // Simple heuristic: if query has spaces, quote it and don't use wildcard (strict match).
-            // If single word, optional quote + wildcard.
+            // ... (query construction)
             const hasSpaces = query.includes(' ');
-            const sanitizedQuery = query.replace(/[":]/g, ''); // Basic sanitization
+            const sanitizedQuery = query.replace(/[":]/g, '');
             const luceneQuery = hasSpaces
                 ? `name:"${sanitizedQuery}"`
                 : `name:${sanitizedQuery}*`;
 
             const headers: any = {
                 'Content-Type': 'application/json',
-                'User-Agent': 'TCG-SaaS-Backend/1.0', // Honest User-Agent is often better than fake Chrome
                 'Accept': 'application/json'
             };
             if (apiKey) {
                 headers['X-Api-Key'] = apiKey;
             }
 
-            // Manually construct URL to ensure exact control over encoding
-            // Using select to minimize data transfer (might help with timeouts)
+            // Using select to minimize data transfer
             const url = `${this.baseUrl}/cards?q=${encodeURIComponent(luceneQuery)}&pageSize=15&select=id,name,images,set,rarity,tcgplayer,cardmarket`;
             console.log(`PokemonTCG Request: ${url}`);
 
-            const response = await axios.get(url, { headers, timeout: 10000 }); // 10s timeout
+            const response = await axios.get(url, {
+                headers,
+                timeout: 30000,
+                httpsAgent: this.httpsAgent
+            });
 
             // Map the response to a cleaner internal format
             return {
