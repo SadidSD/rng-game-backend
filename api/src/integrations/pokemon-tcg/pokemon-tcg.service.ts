@@ -28,21 +28,19 @@ export class PokemonTcgService {
                 : `name:${sanitizedQuery}*`;
 
             const headers: any = {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'application/json'
             };
             if (apiKey) {
                 headers['X-Api-Key'] = apiKey;
             }
 
-            console.log(`PokemonTCG Request: ${this.baseUrl}/cards?q=${luceneQuery}`);
+            // Manually construct URL to ensure exact control over encoding, matching curl behavior
+            const url = `${this.baseUrl}/cards?q=${encodeURIComponent(luceneQuery)}&pageSize=20`;
+            console.log(`PokemonTCG Request: ${url}`);
 
-            const response = await axios.get(`${this.baseUrl}/cards`, {
-                headers,
-                params: {
-                    q: luceneQuery,
-                    pageSize: 20
-                }
-            });
+            const response = await axios.get(url, { headers });
 
             // Map the response to a cleaner internal format
             return {
