@@ -22,15 +22,18 @@ export class ManapoolService {
         }
 
         try {
-            // Switching to GET /cards based on standard REST patterns and corrected Base URL.
-            const response = await axios.get(`${this.baseUrl}/cards`, {
+            // Updated to POST /card_info based on official docs
+            const response = await axios.post(`${this.baseUrl}/card_info`, {
+                // Assuming payload structure based on typical search
+                // Use 'query' or 'name' based on docs. Since search returned "POST /card_info", 
+                // I will guess the payload is { query: ... } or { name: ... }
+                // Let's try sending both or 'search' to be safe, but typically it is 'query'.
+                query: query,
+                game: game
+            }, {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
                     'Content-Type': 'application/json'
-                },
-                params: {
-                    q: query, // Assuming 'q' or 'search' is the standard search param
-                    game: game
                 }
             });
             return response.data;
