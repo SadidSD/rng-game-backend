@@ -1,72 +1,63 @@
-
 import { NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
-    const query = searchParams.get('query');
+    const query = searchParams.get('query')?.trim();
 
     if (!query) {
         return NextResponse.json({ error: 'Query required' }, { status: 400 });
     }
 
-    // Capture final URL for debug
     let debugUrl = '';
 
     try {
-        const hasSpaces = query.includes(' ');
-        // Construct the Lucene query
-        // We use MANUAL construction to ensure NO ENCODING on the colon or asterisk
-        const luceneQuery = hasSpaces ? `name:"${query}"` : `name:${query}*`;
+        const apiKey = process.env.POKEMON_TCG_API_KEY;
+
+        // SAFE Lucene query logic recommended by user
+        // 1. No wildcards on analyzed fields (prevents 404s)
+        // 2. Tokenized AND search for multi-word queries
+        const luceneQuery = query.includes(' ')
+            ? query.split(' ').map(w => `name:${w}`).join(' AND ')
+            : `name:${query}`;
+
+        const upstreamUrl = new URL('https://api.pokemontcg.io/v2/cards');
+        upstreamUrl.searchParams.set('q', luceneQuery);
+        upstreamUrl.searchParams.set('pageSize', '12');
+        upstreamUrl.searchParams.set('orderBy', '-set.releaseDate');
+        // Select specific fields to keep payload light
+        upstreamUrl.searchParams.set('select', 'id,name,set,rarity,images,cardmarket');
+
+        debugUrl = upstreamUrl.toString();
 
         console.log(`Proxying to PokemonTCG: ${luceneQuery}`);
 
-        const apiKey = process.env.POKEMON_TCG_API_KEY;
-        const baseUrl = 'https://api.pokemontcg.io/v2/cards';
-
-        // Manual Param Construction
-        // We do NOT use URLSearchParams for 'q' to avoid encoding characters like ':' into '%3A'
-        const qParam = `q=${luceneQuery}`;
-        const otherParams = 'pageSize=12&orderBy=-set.releaseDate&select=id,name,set,rarity,images,cardmarket';
-
-        debugUrl = `${baseUrl}?${qParam}&${otherParams}`;
-
-        const headers: HeadersInit = {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        };
-
-        if (apiKey) {
-            headers['X-Api-Key'] = apiKey;
-        }
-
         const res = await fetch(debugUrl, {
-            method: 'GET',
-            headers,
-            next: { revalidate: 0 },
-            cache: 'no-store'
+            headers: {
+                'X-Api-Key': apiKey || '',
+                'Accept': 'application/json'
+            },
+            // Re-enable caching as this query structure is stable
+            next: { revalidate: 3600 }
         });
 
         if (!res.ok) {
-            const errorBody = await res.text();
-            throw new Error(`Upstream Error ${res.status}: ${errorBody}`);
+            const body = await res.text();
+            throw new Error(`Upstream ${res.status}: ${body}`);
         }
 
         const data = await res.json();
         return NextResponse.json(data);
 
     } catch (error: any) {
-        console.error('PokemonTCG Proxy Error:', error.message);
+        console.error('PokemonTCG Error:', error.message);
         return NextResponse.json(
             {
                 error: 'Failed to fetch from PokemonTCG',
                 details: error.message,
                 debug: {
-                    apiKeyPresent: !!process.env.POKEMON_TCG_API_KEY,
-                    query: query,
+                    query,
                     url: debugUrl
                 }
             },
