@@ -8,9 +8,9 @@ export class ManapoolService {
     private readonly baseUrl: string;
 
     constructor(private configService: ConfigService) {
-        // [FORCE FIX] Ignoring MANAPOOL_BASE_URL env var because it likely contains the broken 'api.manapool.io' domain.
-        // We are forcing the working domain: manapool.com
-        this.baseUrl = 'https://manapool.com/api/v1';
+        // [FORCE FIX] Ignoring MANAPOOL_BASE_URL env var.
+        // Attempting api.manapool.com (common alternative to .io)
+        this.baseUrl = 'https://api.manapool.com/v1';
         // this.configService.get<string>('MANAPOOL_BASE_URL') || 'https://manapool.com/api/v1';
     }
 
