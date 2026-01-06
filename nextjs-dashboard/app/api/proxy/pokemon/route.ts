@@ -30,15 +30,17 @@ export async function GET(req: Request) {
         const baseUrl = 'https://api.pokemontcg.io/v2/cards';
         const params = new URLSearchParams({
             pageSize: '12',
-            orderBy: '-set.releaseDate',
-            select: 'id,name,set,rarity,images,tcgplayer,cardmarket'
+            orderBy: '-set.releaseDate'
+            // REMOVED 'select' to avoid encoding issues (%2C) and ensure stability.
+            // We will fetch the full object.
         });
 
         // Manually concat 'q' to ensure it remains raw (name:Charizard)
         debugUrl = `${baseUrl}?q=${lucene}&${params.toString()}`;
 
         const controller = new AbortController();
-        setTimeout(() => controller.abort(), 8000);
+        // Increased timeout to 15s to handle slow cold starts
+        setTimeout(() => controller.abort(), 15000);
 
         const res = await fetch(debugUrl, {
             headers: {
