@@ -1,4 +1,8 @@
 import { NextResponse } from 'next/server';
+import dns from 'node:dns';
+
+// FORCE IPv4: Fixes timeouts with Node 18+ on Vercel/AWS
+dns.setDefaultResultOrder('ipv4first');
 
 export const runtime = 'nodejs';
 
