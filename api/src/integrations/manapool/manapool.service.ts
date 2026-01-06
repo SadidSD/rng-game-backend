@@ -14,40 +14,53 @@ export class ManapoolService {
         // this.configService.get<string>('MANAPOOL_BASE_URL') || 'https://manapool.com/api/v1';
     }
 
-    async searchCards(query: string, game: string = 'Pokemon') {
-        const accessToken = this.configService.get<string>('MANAPOOL_ACCESS_TOKEN');
+    private priceCache: { data: any[], timestamp: number } | null = null;
+    private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-        if (!accessToken) {
-            throw new HttpException('Manapool Access Token not configured', HttpStatus.INTERNAL_SERVER_ERROR);
+    async searchCards(query: string, game: string = 'Pokemon') {
+        const prices = await this.getAllPrices();
+
+        // Filter locally since the API provides a bulk dump
+        const lowerQuery = query.toLowerCase();
+        return {
+            data: prices.filter(card =>
+                card.name.toLowerCase().includes(lowerQuery) ||
+                (card.scryfall_id && card.scryfall_id === query) // Support ID lookup
+            ).map(card => ({
+                ...card,
+                // Normalize fields for frontend consistency
+                price: card.price_cents / 100,
+                marketPrice: card.price_cents / 100, // Assuming price_cents is the selling price
+                currency: 'USD'
+            }))
+        };
+    }
+
+    private async getAllPrices() {
+        if (this.priceCache && (Date.now() - this.priceCache.timestamp < this.CACHE_TTL)) {
+            return this.priceCache.data;
         }
 
+        const accessToken = this.configService.get<string>('MANAPOOL_ACCESS_TOKEN');
+        if (!accessToken) throw new HttpException('Manapool Token Missing', HttpStatus.INTERNAL_SERVER_ERROR);
+
         try {
-            // Updated to POST /card_info based on official docs
-            const response = await axios.post(`${this.baseUrl}/card_info`, {
-                // Assuming payload structure based on typical search
-                // Use 'query' or 'name' based on docs. Since search returned "POST /card_info", 
-                // I will guess the payload is { query: ... } or { name: ... }
-                // Let's try sending both or 'search' to be safe, but typically it is 'query'.
-                query: query,
-                game: game
-            }, {
+            // GET /prices/singles returns all in-stock singles
+            const response = await axios.get(`${this.baseUrl}/prices/singles`, {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
                     'Content-Type': 'application/json'
                 }
             });
-            return response.data;
-        } catch (error: any) {
-            console.error(`Manapool API Error [${error.config?.method?.toUpperCase()} ${error.config?.url}]:`, error.response?.data || error.message);
 
-            throw new HttpException(
-                {
-                    message: 'Failed to fetch from Manapool',
-                    details: error.response?.data || error.message,
-                    url: error.config?.url
-                },
-                error.response?.status || HttpStatus.BAD_GATEWAY
-            );
+            this.priceCache = {
+                data: response.data.data || [],
+                timestamp: Date.now()
+            };
+            return this.priceCache.data;
+        } catch (error: any) {
+            console.error('Manapool Price Fetch Error:', error.message);
+            throw new HttpException('Failed to fetch Manapool prices', HttpStatus.BAD_GATEWAY);
         }
     }
 }
