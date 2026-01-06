@@ -1,3 +1,4 @@
+
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
@@ -20,7 +21,6 @@ export class ManapoolService {
 
         try {
             // Switching to GET /cards based on standard REST patterns and corrected Base URL.
-            // Previous POST /card_info was a guess that returned 401 (likely method not allowed or wrong endpoint).
             const response = await axios.get(`${this.baseUrl}/cards`, {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
@@ -32,7 +32,7 @@ export class ManapoolService {
                 }
             });
             return response.data;
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Manapool API Error [${error.config?.method?.toUpperCase()} ${error.config?.url}]:`, error.response?.data || error.message);
 
             throw new HttpException(
