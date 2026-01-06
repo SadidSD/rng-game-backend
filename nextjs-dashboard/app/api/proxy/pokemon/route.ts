@@ -18,26 +18,25 @@ export async function GET(request: Request) {
     try {
         const hasSpaces = query.includes(' ');
         // Construct the Lucene query
+        // We use MANUAL construction to ensure NO ENCODING on the colon or asterisk
         const luceneQuery = hasSpaces ? `name:"${query}"` : `name:${query}*`;
 
         console.log(`Proxying to PokemonTCG: ${luceneQuery}`);
 
         const apiKey = process.env.POKEMON_TCG_API_KEY;
-        const upstreamUrl = new URL('https://api.pokemontcg.io/v2/cards');
+        const baseUrl = 'https://api.pokemontcg.io/v2/cards';
 
-        // Use standard URLSearchParams for correct encoding
-        upstreamUrl.searchParams.set('q', luceneQuery);
-        upstreamUrl.searchParams.set('pageSize', '12');
-        upstreamUrl.searchParams.set('orderBy', '-set.releaseDate');
+        // Manual Param Construction
+        // We do NOT use URLSearchParams for 'q' to avoid encoding characters like ':' into '%3A'
+        const qParam = `q=${luceneQuery}`;
+        const otherParams = 'pageSize=12&orderBy=-set.releaseDate&select=id,name,set,rarity,images,cardmarket';
 
-        // REMOVED 'select' param to rule out projection errors
-        // REMOVED User-Agent spoofing to rule out WAF blocking specific browser strings
-
-        debugUrl = upstreamUrl.toString();
+        debugUrl = `${baseUrl}?${qParam}&${otherParams}`;
 
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         };
 
         if (apiKey) {
@@ -60,7 +59,7 @@ export async function GET(request: Request) {
         return NextResponse.json(data);
 
     } catch (error: any) {
-        console.error('PokemonTCG Proxy Error messages:', error.message);
+        console.error('PokemonTCG Proxy Error:', error.message);
         return NextResponse.json(
             {
                 error: 'Failed to fetch from PokemonTCG',
