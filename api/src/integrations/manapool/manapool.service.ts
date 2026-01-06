@@ -9,8 +9,8 @@ export class ManapoolService {
 
     constructor(private configService: ConfigService) {
         // [FORCE FIX] Ignoring MANAPOOL_BASE_URL env var.
-        // Attempting api.manapool.com (common alternative to .io)
-        this.baseUrl = 'https://api.manapool.com/v1';
+        // Using manapool.com (Confirmed working domain)
+        this.baseUrl = 'https://manapool.com/api/v1';
         // this.configService.get<string>('MANAPOOL_BASE_URL') || 'https://manapool.com/api/v1';
     }
 
