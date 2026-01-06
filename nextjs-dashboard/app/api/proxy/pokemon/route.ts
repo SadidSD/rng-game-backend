@@ -24,16 +24,18 @@ export async function GET(req: Request) {
             lucene += ` AND set.name:"${setName}"`;
         }
 
-        const url = new URL('https://api.pokemontcg.io/v2/cards');
-        url.searchParams.set('q', lucene);
-        url.searchParams.set('pageSize', '12');
-        url.searchParams.set('orderBy', '-set.releaseDate');
-        url.searchParams.set(
-            'select',
-            'id,name,set,rarity,images,tcgplayer,cardmarket'
-        );
+        // PERMANENT FIX: Do NOT use URLSearchParams for 'q' because it encodes ':' to '%3A'
+        // which causes Upstream 404s. We must construct the URL string manually.
 
-        debugUrl = url.toString();
+        const baseUrl = 'https://api.pokemontcg.io/v2/cards';
+        const params = new URLSearchParams({
+            pageSize: '12',
+            orderBy: '-set.releaseDate',
+            select: 'id,name,set,rarity,images,tcgplayer,cardmarket'
+        });
+
+        // Manually concat 'q' to ensure it remains raw (name:Charizard)
+        debugUrl = `${baseUrl}?q=${lucene}&${params.toString()}`;
 
         const controller = new AbortController();
         setTimeout(() => controller.abort(), 8000);
