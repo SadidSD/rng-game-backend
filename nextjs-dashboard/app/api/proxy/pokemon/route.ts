@@ -12,41 +12,39 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Query required' }, { status: 400 });
     }
 
-    // Declare finalUrl outside try block for error reporting
-    let finalUrl = '';
+    // Capture final URL for debug
+    let debugUrl = '';
 
     try {
-        // Simplify: Always use quotes and wildcard for safety
-        // const luceneQuery = `name:"${query}*"`; // Strict
-        // Use simpler loose match to start
-        const luceneQuery = `name:${query}*`;
+        const hasSpaces = query.includes(' ');
+        // Construct the Lucene query
+        const luceneQuery = hasSpaces ? `name:"${query}"` : `name:${query}*`;
 
         console.log(`Proxying to PokemonTCG: ${luceneQuery}`);
 
         const apiKey = process.env.POKEMON_TCG_API_KEY;
+        const upstreamUrl = new URL('https://api.pokemontcg.io/v2/cards');
 
-        // Manual URL construction to avoid over-encoding of Lucene characters
-        const baseUrl = 'https://api.pokemontcg.io/v2/cards';
-        const params = new URLSearchParams({
-            pageSize: '12',
-            orderBy: '-set.releaseDate',
-            select: 'id,name,set,rarity,images,cardmarket'
-        });
+        // Use standard URLSearchParams for correct encoding
+        upstreamUrl.searchParams.set('q', luceneQuery);
+        upstreamUrl.searchParams.set('pageSize', '12');
+        upstreamUrl.searchParams.set('orderBy', '-set.releaseDate');
 
-        // Append q parameter manually to preserve structure (avoid encoding : and *)
-        finalUrl = `${baseUrl}?q=${luceneQuery}&${params.toString()}`;
+        // REMOVED 'select' param to rule out projection errors
+        // REMOVED User-Agent spoofing to rule out WAF blocking specific browser strings
+
+        debugUrl = upstreamUrl.toString();
 
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            'Accept': 'application/json'
         };
 
         if (apiKey) {
             headers['X-Api-Key'] = apiKey;
         }
 
-        const res = await fetch(finalUrl, {
+        const res = await fetch(debugUrl, {
             method: 'GET',
             headers,
             next: { revalidate: 0 },
@@ -62,7 +60,7 @@ export async function GET(request: Request) {
         return NextResponse.json(data);
 
     } catch (error: any) {
-        console.error('PokemonTCG Proxy Error:', error.message);
+        console.error('PokemonTCG Proxy Error messages:', error.message);
         return NextResponse.json(
             {
                 error: 'Failed to fetch from PokemonTCG',
@@ -70,7 +68,7 @@ export async function GET(request: Request) {
                 debug: {
                     apiKeyPresent: !!process.env.POKEMON_TCG_API_KEY,
                     query: query,
-                    url: finalUrl
+                    url: debugUrl
                 }
             },
             { status: 500 }
