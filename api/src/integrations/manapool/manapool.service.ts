@@ -7,7 +7,8 @@ export class ManapoolService {
     private readonly baseUrl: string;
 
     constructor(private configService: ConfigService) {
-        this.baseUrl = this.configService.get<string>('MANAPOOL_BASE_URL') || 'https://api.manapool.io/v1';
+        // Updated to manapool.com as api.manapool.io has DNS issues
+        this.baseUrl = this.configService.get<string>('MANAPOOL_BASE_URL') || 'https://manapool.com/api/v1';
     }
 
     async searchCards(query: string, game: string = 'Pokemon') {
