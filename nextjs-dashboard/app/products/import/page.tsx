@@ -58,6 +58,37 @@ export default function ImportPage() {
         fetchCategories();
     }, []);
 
+    const [manapoolPrices, setManapoolPrices] = useState<any[]>([]);
+
+    const fetchManapoolPrices = async (query: string) => {
+        try {
+            // Fetch relevant prices from our Manapool Proxy
+            const res = await axios.get('/api/proxy/manapool', {
+                params: { query }
+            });
+            setManapoolPrices(res.data.data || []);
+        } catch (error) {
+            console.error('Failed to fetch Manapool prices', error);
+        }
+    };
+
+    const getManapoolPrice = (card: CardData) => {
+        if (!manapoolPrices.length) return null;
+
+        let match;
+        if (selectedGame === 'mtg') {
+            // Best match: Scryfall ID
+            match = manapoolPrices.find(p => p.scryfall_id === card.id);
+        } else {
+            // Pokemon match by name (Fuzzy match handled by backend query, here we pick exact or first)
+            // Improving this: Match by Name AND Set if possible, but Set names differ.
+            // We'll stick to Name matching for now.
+            match = manapoolPrices.find(p => p.name.toLowerCase() === card.name.toLowerCase());
+        }
+
+        return match ? match.price : null;
+    };
+
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!query) return;
@@ -65,6 +96,10 @@ export default function ImportPage() {
         setLoading(true);
         setCards([]); // Clear previous results
         setAvailableSets([]); // Clear sets
+        setManapoolPrices([]); // Clear old prices
+
+        // Trigger Manapool Fetch in parallel
+        fetchManapoolPrices(query);
 
         try {
             let mappedCards: CardData[] = [];
@@ -145,7 +180,7 @@ export default function ImportPage() {
             const productData = {
                 name: card.name,
                 description: `Game: ${selectedGame.toUpperCase()} | Set: ${card.set} | Rarity: ${card.rarity || 'Unknown'}`,
-                price: card.price || 0,
+                price: getManapoolPrice(card) ?? card.price ?? 0, // Prefer Manapool Price
                 stock: 0,
                 categoryId: selectedCategoryId,
                 images: [card.imageLarge || card.image],
@@ -162,11 +197,13 @@ export default function ImportPage() {
         }
     };
 
+    // ... UI Rendering ...
+
     return (
         <div className="flex flex-col gap-6 p-6">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Import Products</h1>
-                <p className="text-muted-foreground">Search and import cards from PokemonTCG or Scryfall (MTG).</p>
+                <p className="text-muted-foreground">Search and import cards from PokemonTCG or Scryfall (MTG) with Manapool Pricing.</p>
             </div>
 
             {/* Game Selector */}
@@ -210,9 +247,6 @@ export default function ImportPage() {
                                 value={selectedSet}
                                 onChange={(e) => {
                                     setSelectedSet(e.target.value);
-                                    // TODO: Implement client-side filtering if needed, 
-                                    // currently this state acts as a 'preference' and doesn't filter the grid automatically 
-                                    // unless we add a filter line below.
                                 }}
                             >
                                 {availableSets.map(setName => (
@@ -226,7 +260,7 @@ export default function ImportPage() {
                 {/* Search */}
                 <form onSubmit={handleSearch} className="flex gap-4 w-full md:w-3/4 items-end">
                     <Input
-                        placeholder={`Search ${selectedGame === 'pokemon' ? 'Pokemon' : 'Magic'} cards (e.g. ${selectedGame === 'pokemon' ? 'Charizard' : 'Black Lotus'})...`}
+                        placeholder={`Search ${selectedGame === 'pokemon' ? 'Pokemon' : 'Magic'} cards...`}
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         className="flex-1"
@@ -243,46 +277,55 @@ export default function ImportPage() {
                 {cards
                     // Simple client-side set filtering if a set is selected
                     .filter(card => !selectedSet || card.set === selectedSet)
-                    .map((card) => (
-                        <Card key={card.id} className="overflow-hidden flex flex-col">
-                            <div className="aspect-[3/4] relative bg-muted">
-                                <img
-                                    src={card.image}
-                                    alt={card.name}
-                                    className="object-contain w-full h-full"
-                                    loading="lazy"
-                                />
-                            </div>
-                            <CardHeader className="p-4 flex-1">
-                                <CardTitle className="text-lg truncate" title={card.name}>{card.name}</CardTitle>
-                                <CardDescription className="flex flex-col gap-1">
-                                    <span>{card.set}</span>
-                                    <span className="text-xs px-2 py-0.5 rounded-full bg-secondary w-fit">
-                                        {card.rarity}
-                                    </span>
-                                </CardDescription>
-                            </CardHeader>
-                            <CardFooter className="p-4 pt-0 mt-auto flex flex-col gap-2">
-                                <div className="flex w-full justify-between items-center text-sm font-semibold">
-                                    <span>Price:</span>
-                                    <span>${card.price?.toFixed(2) || 'N/A'}</span>
+                    .map((card) => {
+                        const mpPrice = getManapoolPrice(card);
+                        return (
+                            <Card key={card.id} className="overflow-hidden flex flex-col">
+                                <div className="aspect-[3/4] relative bg-muted">
+                                    <img
+                                        src={card.image}
+                                        alt={card.name}
+                                        className="object-contain w-full h-full"
+                                        loading="lazy"
+                                    />
                                 </div>
-                                <Button
-                                    className="w-full"
-                                    variant="secondary"
-                                    onClick={() => handleImport(card)}
-                                    disabled={importing === card.id}
-                                >
-                                    {importing === card.id ? (
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <DownloadCloud className="mr-2 h-4 w-4" />
-                                    )}
-                                    Import
-                                </Button>
-                            </CardFooter>
-                        </Card>
-                    ))}
+                                <CardHeader className="p-4 flex-1">
+                                    <CardTitle className="text-lg truncate" title={card.name}>{card.name}</CardTitle>
+                                    <CardDescription className="flex flex-col gap-1">
+                                        <span>{card.set}</span>
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-secondary w-fit">
+                                            {card.rarity}
+                                        </span>
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardFooter className="p-4 pt-0 mt-auto flex flex-col gap-2">
+                                    <div className="flex w-full flex-col gap-1 text-sm font-semibold">
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">TCG/Market:</span>
+                                            <span>${card.price?.toFixed(2) || 'N/A'}</span>
+                                        </div>
+                                        <div className="flex justify-between text-blue-600">
+                                            <span>Manapool:</span>
+                                            <span>{mpPrice ? `$${mpPrice.toFixed(2)}` : 'N/A'}</span>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        className="w-full"
+                                        variant="secondary"
+                                        onClick={() => handleImport(card)}
+                                        disabled={importing === card.id}
+                                    >
+                                        {importing === card.id ? (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <DownloadCloud className="mr-2 h-4 w-4" />
+                                        )}
+                                        Import
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+                        )
+                    })}
             </div>
 
             {!loading && cards.length === 0 && query && (
