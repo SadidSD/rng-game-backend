@@ -16,13 +16,8 @@ const url = 'https://rng-game-backend-production.up.railway.app/api';
 async function testProxy() {
     console.log(`Testing Public Endpoint: ${url}`);
 
-    // Test Case: Empty query to get EVERYTHING? 
-    // The backend `manapool.service` fetches everything then filters.
-    // If I pass query=' ', it filters by ' '.
-    // Wait, the backend filters: `card.name.toLowerCase().includes(lowerQuery)`.
-    // So I can't check the *total* cache size from the proxy easily without a backdoor or wide query.
-    // I'll search for "e" (very common) to see if I get a lot of results.
-    const query = 'e';
+    // Test Case: Sol Ring to check Set Codes
+    const query = 'Sol Ring';
     const game = 'mtg';
 
     try {
@@ -35,11 +30,13 @@ async function testProxy() {
         const data = await res.json();
 
         if (data.data && Array.isArray(data.data)) {
-            console.log(`Response Found: ${data.data.length} items with 'e'`);
-            if (data.data.length > 0) {
-                // Log ALL fields of the first item to check for images
-                console.log('First Item Structure:', JSON.stringify(data.data[0], null, 2));
-            }
+            console.log(`Response Found: ${data.data.length} items for 'Sol Ring'`);
+
+            // Log concise list
+            data.data.forEach(item => {
+                console.log(`- ${item.name} | Set: ${item.set_code} (${item.set_name}) | Price: $${item.price}`);
+            });
+
         } else {
             console.log('Response (Structure mismatch):', JSON.stringify(data, null, 2));
         }
