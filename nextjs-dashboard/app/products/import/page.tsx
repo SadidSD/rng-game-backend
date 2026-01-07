@@ -81,8 +81,17 @@ export default function ImportPage() {
     const getManapoolPrice = (card: CardData) => {
         if (!manapoolPrices.length || selectedGame !== 'mtg') return null;
 
-        // Best match: Scryfall ID
-        const match = manapoolPrices.find(p => p.scryfall_id === card.id);
+        // Strategy 1: Exact Scryfall ID Match (Most Accurate)
+        let match = manapoolPrices.find(p => p.scryfall_id === card.id);
+
+        // Strategy 2: Name + Set Code Match (Fallback)
+        // Scryfall 'set' is usually lowercase code (e.g. 'lea'). Manapool 'set_code' is usually uppercase ('LEA').
+        if (!match) {
+            match = manapoolPrices.find(p =>
+                p.name === card.name &&
+                p.set_code?.toLowerCase() === card.set?.toLowerCase()
+            );
+        }
 
         return match ? match.price : null;
     };
