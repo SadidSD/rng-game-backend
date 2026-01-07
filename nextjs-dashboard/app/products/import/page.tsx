@@ -263,85 +263,161 @@ export default function ImportPage() {
         }
     };
 
-    // ...
+    return (
+        <div className="flex flex-col gap-6 p-6">
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">Import Products</h1>
+                <p className="text-muted-foreground">Search and import cards from PokemonTCG or Scryfall (MTG) with Manapool Pricing.</p>
+            </div>
 
-                    .map((card) => {
-        const mpPrice = getManapoolPrice(card);
-        const selectedFinish = getSelectedFinish(card.id);
-        const currentPrice = getPriceForFinish(card, selectedFinish);
+            {/* Game Selector */}
+            <div className="flex gap-2">
+                <Button
+                    variant={selectedGame === 'pokemon' ? 'default' : 'outline'}
+                    onClick={() => setSelectedGame('pokemon')}
+                >
+                    Pokemon TCG
+                </Button>
+                <Button
+                    variant={selectedGame === 'mtg' ? 'default' : 'outline'}
+                    onClick={() => setSelectedGame('mtg')}
+                >
+                    Magic: The Gathering
+                </Button>
+            </div>
 
-        // Check availability for dropdown
-        const hasNonFoil = card.prices?.usd !== undefined;
-        const hasFoil = card.prices?.usd_foil !== undefined;
-        const hasEtched = card.prices?.usd_etched !== undefined;
-
-        return (
-            <Card key={card.id} className="overflow-hidden flex flex-col">
-                <div className="aspect-[3/4] relative bg-muted">
-                    <img
-                        src={card.image}
-                        alt={card.name}
-                        className="object-contain w-full h-full"
-                        loading="lazy"
-                    />
-                </div>
-                <CardHeader className="p-4 flex-1">
-                    <CardTitle className="text-lg truncate" title={card.name}>{card.name}</CardTitle>
-                    <CardDescription className="flex flex-col gap-1">
-                        <span>{card.set}</span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-secondary w-fit">
-                            {card.rarity}
-                        </span>
-                    </CardDescription>
-                </CardHeader>
-                <CardFooter className="p-4 pt-0 mt-auto flex flex-col gap-2">
-
-                    {/* Finish Selector */}
-                    <select
-                        className="w-full text-sm border rounded p-1 mb-2"
-                        value={selectedFinish}
-                        onChange={(e) => handleFinishChange(card.id, e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {hasNonFoil && <option value="usd">Non-Foil</option>}
-                        {hasFoil && <option value="usd_foil">Foil</option>}
-                        {hasEtched && <option value="usd_etched">Etched</option>}
-                        {!hasNonFoil && !hasFoil && !hasEtched && <option value="usd">Unknown</option>}
-                    </select>
-
-                    <div className="flex w-full flex-col gap-1 text-sm font-semibold">
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">TCG/Market:</span>
-                            <span>${currentPrice?.toFixed(2) || 'N/A'}</span>
-                        </div>
-                        <div className="flex justify-between text-blue-600">
-                            <span>Manapool:</span>
-                            <span>{mpPrice ? `$${mpPrice.toFixed(2)}` : 'N/A'}</span>
-                        </div>
+            <div className="flex flex-col md:flex-row gap-4">
+                <div className="w-full md:w-1/4 flex flex-col gap-4">
+                    {/* Category Selection */}
+                    <div>
+                        <label className="text-sm font-medium mb-1 block">Target Category</label>
+                        <select
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            value={selectedCategoryId}
+                            onChange={(e) => setSelectedCategoryId(e.target.value)}
+                        >
+                            {categories.map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                        </select>
                     </div>
-                    <Button
-                        className="w-full"
-                        variant="secondary"
-                        onClick={() => handleImport(card)}
-                        disabled={importing === card.id}
-                    >
-                        {importing === card.id ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <DownloadCloud className="mr-2 h-4 w-4" />
-                        )}
-                        Import
+
+                    {/* Set Selection */}
+                    {availableSets.length > 0 && (
+                        <div>
+                            <label className="text-sm font-medium mb-1 block">Filter by Set</label>
+                            <select
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                value={selectedSet}
+                                onChange={(e) => {
+                                    setSelectedSet(e.target.value);
+                                }}
+                            >
+                                {availableSets.map(setName => (
+                                    <option key={setName} value={setName}>{setName}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                </div>
+
+                {/* Search */}
+                <form onSubmit={handleSearch} className="flex gap-4 w-full md:w-3/4 items-end">
+                    <Input
+                        placeholder={`Search ${selectedGame === 'pokemon' ? 'Pokemon' : 'Magic'} cards...`}
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        className="flex-1"
+                    />
+                    <Button type="submit" disabled={loading}>
+                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                        Search
                     </Button>
-                </CardFooter>
-            </Card>
-        )
-    })
-}
+                </form>
+            </div>
+
+            {/* Cards Grid */}
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {cards
+                    // Simple client-side set filtering if a set is selected
+                    .filter(card => !selectedSet || card.set === selectedSet)
+                    .map((card) => {
+                        const mpPrice = getManapoolPrice(card);
+                        const selectedFinish = getSelectedFinish(card.id);
+                        const currentPrice = getPriceForFinish(card, selectedFinish);
+
+                        // Check availability for dropdown
+                        const hasNonFoil = card.prices?.usd !== undefined;
+                        const hasFoil = card.prices?.usd_foil !== undefined;
+                        const hasEtched = card.prices?.usd_etched !== undefined;
+
+                        return (
+                            <Card key={card.id} className="overflow-hidden flex flex-col">
+                                <div className="aspect-[3/4] relative bg-muted">
+                                    <img
+                                        src={card.image}
+                                        alt={card.name}
+                                        className="object-contain w-full h-full"
+                                        loading="lazy"
+                                    />
+                                </div>
+                                <CardHeader className="p-4 flex-1">
+                                    <CardTitle className="text-lg truncate" title={card.name}>{card.name}</CardTitle>
+                                    <CardDescription className="flex flex-col gap-1">
+                                        <span>{card.set}</span>
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-secondary w-fit">
+                                            {card.rarity}
+                                        </span>
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardFooter className="p-4 pt-0 mt-auto flex flex-col gap-2">
+
+                                    {/* Finish Selector */}
+                                    <select
+                                        className="w-full text-sm border rounded p-1 mb-2"
+                                        value={selectedFinish}
+                                        onChange={(e) => handleFinishChange(card.id, e.target.value)}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        {hasNonFoil && <option value="usd">Non-Foil</option>}
+                                        {hasFoil && <option value="usd_foil">Foil</option>}
+                                        {hasEtched && <option value="usd_etched">Etched</option>}
+                                        {!hasNonFoil && !hasFoil && !hasEtched && <option value="usd">Unknown</option>}
+                                    </select>
+
+                                    <div className="flex w-full flex-col gap-1 text-sm font-semibold">
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">TCG/Market:</span>
+                                            <span>${currentPrice?.toFixed(2) || 'N/A'}</span>
+                                        </div>
+                                        <div className="flex justify-between text-blue-600">
+                                            <span>Manapool:</span>
+                                            <span>{mpPrice ? `$${mpPrice.toFixed(2)}` : 'N/A'}</span>
+                                        </div>
+                                    </div>
+                                    <Button
+                                        className="w-full"
+                                        variant="secondary"
+                                        onClick={() => handleImport(card)}
+                                        disabled={importing === card.id}
+                                    >
+                                        {importing === card.id ? (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <DownloadCloud className="mr-2 h-4 w-4" />
+                                        )}
+                                        Import
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+                        )
+                    })
+                }
             </div >
 
-    {!loading && cards.length === 0 && query && (
-        <div className="text-center text-muted-foreground py-12">No results found.</div>
-    )}
+            {!loading && cards.length === 0 && query && (
+                <div className="text-center text-muted-foreground py-12">No results found.</div>
+            )}
         </div >
     );
 }
