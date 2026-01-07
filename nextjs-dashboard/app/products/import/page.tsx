@@ -22,7 +22,13 @@ interface CardData {
     rarity: string;
     image: string;
     imageLarge: string;
-    price?: number;
+    // Expanded prices object
+    prices?: {
+        usd?: number;
+        usd_foil?: number;
+        usd_etched?: number;
+    };
+    price?: number; // Keep for backward compat / initial sort
     tcgplayerUrl?: string;
 }
 
@@ -154,6 +160,11 @@ export default function ImportPage() {
                         rarity: card.rarity,
                         image: image || '/placeholder.png', // Fallback
                         imageLarge: imageLarge || image || '/placeholder.png',
+                        prices: {
+                            usd: card.prices?.usd ? parseFloat(card.prices.usd) : undefined,
+                            usd_foil: card.prices?.usd_foil ? parseFloat(card.prices.usd_foil) : undefined,
+                            usd_etched: card.prices?.usd_etched ? parseFloat(card.prices.usd_etched) : undefined,
+                        },
                         price: card.prices?.usd ? parseFloat(card.prices.usd) :
                             (card.prices?.usd_foil ? parseFloat(card.prices.usd_foil) :
                                 (card.prices?.usd_etched ? parseFloat(card.prices.usd_etched) : undefined)),
