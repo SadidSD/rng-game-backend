@@ -167,7 +167,8 @@ export default function ImportPage() {
                 new Set(mappedCards.map(c => c.set).filter(Boolean))
             );
             setAvailableSets(sets);
-            if (sets.length > 0) setSelectedSet(sets[0]);
+            // Fix: Do NOT auto-select the first set. Default to showing all.
+            setSelectedSet('');
         } catch (error) {
             console.error('Search failed', error);
             alert('Search failed. See console for details.');
