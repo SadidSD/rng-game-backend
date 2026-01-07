@@ -61,6 +61,12 @@ export default function ImportPage() {
     const [manapoolPrices, setManapoolPrices] = useState<any[]>([]);
 
     const fetchManapoolPrices = async (query: string) => {
+        // [REFINE] Manapool is MTG Only. Do not fetch for Pokemon.
+        if (selectedGame !== 'mtg') {
+            setManapoolPrices([]);
+            return;
+        }
+
         try {
             // Fetch relevant prices from our Manapool Proxy
             const res = await axios.get('/api/proxy/manapool', {
@@ -73,18 +79,10 @@ export default function ImportPage() {
     };
 
     const getManapoolPrice = (card: CardData) => {
-        if (!manapoolPrices.length) return null;
+        if (!manapoolPrices.length || selectedGame !== 'mtg') return null;
 
-        let match;
-        if (selectedGame === 'mtg') {
-            // Best match: Scryfall ID
-            match = manapoolPrices.find(p => p.scryfall_id === card.id);
-        } else {
-            // Pokemon match by name (Fuzzy match handled by backend query, here we pick exact or first)
-            // Improving this: Match by Name AND Set if possible, but Set names differ.
-            // We'll stick to Name matching for now.
-            match = manapoolPrices.find(p => p.name.toLowerCase() === card.name.toLowerCase());
-        }
+        // Best match: Scryfall ID
+        const match = manapoolPrices.find(p => p.scryfall_id === card.id);
 
         return match ? match.price : null;
     };

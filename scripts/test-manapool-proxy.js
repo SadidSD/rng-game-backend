@@ -11,29 +11,39 @@ const params = new URLSearchParams({
     game: 'Pokemon'
 });
 
-const url = `${baseUrl}${endpoint}?${params.toString()}`;
+const url = 'https://rng-game-backend-production.up.railway.app/api';
 
-console.log(`Testing Public Endpoint: ${url}`);
+async function testProxy() {
+    console.log(`Testing Public Endpoint: ${url}`);
 
-https.get(url, (res) => {
-    let data = '';
-    res.on('data', chunk => data += chunk);
-    res.on('end', () => {
-        console.log(`Status: ${res.statusCode}`);
-        try {
-            const json = JSON.parse(data);
-            // Log structure to identify price fields
-            if (Array.isArray(json)) {
-                console.log('Response (Array):', JSON.stringify(json.slice(0, 1), null, 2));
-            } else if (json.data) {
-                console.log('Response (Paged):', JSON.stringify(json.data.slice(0, 1), null, 2));
+    // Test Case: Sol Ring (MTG)
+    // Manapool is MTG Only now.
+    const query = 'Sol Ring';
+    const game = 'mtg'; // Or 'Magic', backend usually ignored game param but filters by name
+
+    try {
+        const fullUrl = `${url}/integrations/manapool/search?query=${encodeURIComponent(query)}&game=${game}`;
+        console.log(`Fetching: ${fullUrl}`);
+
+        const res = await fetch(fullUrl);
+        console.log(`Status: ${res.status}`);
+
+        const data = await res.json();
+
+        if (data.data && Array.isArray(data.data)) {
+            console.log(`Response Found: ${data.data.length} items`);
+            if (data.data.length > 0) {
+                console.log('First Item:', JSON.stringify(data.data[0], null, 2));
             } else {
-                console.log('Response:', JSON.stringify(json, null, 2));
+                console.log('Response (Empty):', JSON.stringify(data, null, 2));
             }
-        } catch (e) {
-            console.log('Raw Body:', data);
+        } else {
+            console.log('Response (Structure mismatch):', JSON.stringify(data, null, 2));
         }
-    });
-}).on('error', (err) => {
-    console.error('Error:', err.message);
-});
+
+    } catch (error) {
+        console.error('Fetch failed:', error.message);
+    }
+}
+
+testProxy();
