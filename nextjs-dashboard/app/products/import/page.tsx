@@ -95,7 +95,7 @@ export default function ImportPage() {
         if (!match) {
             match = manapoolPrices.find(p =>
                 p.name === card.name &&
-                p.set_code?.toLowerCase() === card.set?.toLowerCase()
+                p.set_code?.toLowerCase() === card.setId?.toLowerCase()
             );
         }
 
