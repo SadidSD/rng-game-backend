@@ -14,7 +14,10 @@ export class PublicProductsController {
         // Fetch products strictly for this store
         const products = await this.prisma.product.findMany({
             where: { storeId },
-            include: { variants: true }, // Include variants (prices/conditions)
+            include: {
+                variants: true,
+                category: true // Include category for frontend filtering
+            },
         });
 
         return {
