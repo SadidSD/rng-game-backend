@@ -259,30 +259,20 @@ export default function ImportPage() {
             const productData = {
                 name: name,
                 description: `Game: ${selectedGame.toUpperCase()} | Set: ${card.set} | Rarity: ${card.rarity || 'Unknown'} | Finish: ${finish} | Num: ${card.collectorNumber}`,
-                price: getManapoolPrice(card, finish) ?? selectedPrice ?? 0, // Prefer Manapool if available (Logic Check: Manapool price might not match finish? For now keeping preference but user might want TCG price if they selected specific finish)
-                // actually, if user selects "Foil", we should probably use TCG Foil Price unless Manapool has a foil price?
-                // Providing Manapool price blindly might be wrong if Manapool only has Non-Foil.
-                // For safety: If Manapool price exists, use it? No, Manapool data doesn't specify finish clearly in my reduced interface.
-                // Let's stick to: If Manapool is N/A, use TCG Price. If Manapool is found, use Manapool (assuming Manapool links to best stock).
-                // Or better: Use the `selectedPrice` from TCGPlayer as the primary for "Import" if Manapool is just a reference check.
-                // The user asked "per card include all prices ... give dropdown to select". This implies importing THAT price.
-                // So I will use `selectedPrice` (TCG) as the base price. Manapool is just valid for reference.
-                // WAIT. If I use `selectedPrice`, I ignore Manapool.
-                // But the user *wanted* Manapool.
-                // Compromise: I'll use `selectedPrice` (TCG) but if Manapool is present, I'll assume that matches likely Non-Foil.
-                // If user selects Foil, I should probably rely on TCG Foil Price.
-                stock: 0,
+                game: selectedGame === 'pokemon' ? 'Pokemon' : 'MTG', // Map to Backend expected values
                 categoryId: selectedCategoryId,
+                set: card.set,
                 images: [card.imageLarge || card.image],
-                set: card.set
+                variants: [
+                    {
+                        condition: 'NM', // Default to Near Mint for imports
+                        price: getManapoolPrice(card, finish) ?? selectedPrice ?? 0,
+                        quantity: 0, // Default stock 0
+                        isFoil: finish === 'usd_foil' || finish === 'usd_etched',
+                        language: 'English'
+                    }
+                ]
             };
-
-            // Refined Logic: If Manapool is present, using it overrides TCG. 
-            // But Manapool might be Non-Foil. If user selects Foil, they expect Foil price.
-            // I'll prioritize `selectedPrice` (TCG) if the user explicitly picked a finish, UNLESS Manapool is the intent.
-            // Given the recent conversation, user wants Scryfall data.
-            // I will use `selectedPrice` as the source of truth for the import price.
-            productData.price = selectedPrice ?? 0;
 
             await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/products`, productData);
             alert(`[${selectedGame.toUpperCase()}] Product imported successfully!`);
