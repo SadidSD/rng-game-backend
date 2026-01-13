@@ -29,9 +29,13 @@ export class ManapoolService {
             ).map(card => ({
                 ...card,
                 // Normalize fields for frontend consistency
-                price: card.price_cents / 100,
-                marketPrice: card.price_cents / 100, // Assuming price_cents is the selling price
-                currency: 'USD'
+                price: card.price_cents / 100, // Non-Foil
+                price_foil: card.price_cents_foil ? card.price_cents_foil / 100 : null,
+                price_etched: card.price_cents_etch ? card.price_cents_etch / 100 : null,
+                marketPrice: card.price_cents / 100,
+                currency: 'USD',
+                // Raw data pass-through if needed
+                raw_data: card
             }))
         };
     }
