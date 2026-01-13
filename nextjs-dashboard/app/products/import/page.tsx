@@ -22,6 +22,7 @@ interface CardData {
     rarity: string;
     image: string;
     imageLarge: string;
+    collectorNumber?: string;
     // Expanded prices object
     prices?: {
         usd?: number;
@@ -85,42 +86,30 @@ export default function ImportPage() {
         }
     };
 
-    const getManapoolPrice = (card: CardData) => {
+    const getManapoolPrice = (card: CardData, finish: string = 'usd') => {
         if (selectedGame !== 'mtg') return null;
-        if (manapoolPrices.length === 0) {
-            console.warn("[Manapool] Price list is empty.");
-            return null;
-        }
+        if (manapoolPrices.length === 0) return null;
 
-        // Strategy 1: Exact Scryfall ID Match (Most Accurate)
+        // Strategy 1: Exact Scryfall ID Match
         let match = manapoolPrices.find(p => p.scryfall_id === card.id);
 
-        if (match) {
-            console.log(`[Manapool Match ID] ${card.name}: $${match.price}`);
-            return match.price;
-        }
-
-        // Strategy 2: Name + Set Code Match (Fallback)
+        // Strategy 2: Fallback Name + Set Code
         if (!match) {
             match = manapoolPrices.find(p => {
                 const nameMatch = p.name.toLowerCase() === card.name.toLowerCase();
                 const setMatch = p.set_code?.toLowerCase() === card.setId?.toLowerCase();
-
-                // Debugging partial matches
-                if (nameMatch && !setMatch) {
-                    console.log(`[Manapool Mismatch Set] ${card.name}: Got '${p.set_code}', Expected '${card.setId}'`);
-                }
-
                 return nameMatch && setMatch;
             });
         }
 
         if (match) {
-            console.log(`[Manapool Match Fallback] ${card.name}: $${match.price}`);
+            // Select price based on finish
+            if (finish === 'usd_foil' && match.price_foil) return match.price_foil;
+            if (finish === 'usd_etched' && match.price_etched) return match.price_etched;
+            // Default to non-foil (price)
             return match.price;
         }
 
-        console.log(`[Manapool No Match] ${card.name} (ID: ${card.id}, Set: ${card.setId})`);
         return null;
     };
 
@@ -181,6 +170,7 @@ export default function ImportPage() {
                         set: card.set_name,
                         setId: card.set,
                         rarity: card.rarity,
+                        collectorNumber: card.collector_number,
                         image: image || '/placeholder.png', // Fallback
                         imageLarge: imageLarge || image || '/placeholder.png',
                         prices: {
@@ -250,8 +240,8 @@ export default function ImportPage() {
         try {
             const productData = {
                 name: name,
-                description: `Game: ${selectedGame.toUpperCase()} | Set: ${card.set} | Rarity: ${card.rarity || 'Unknown'} | Finish: ${finish}`,
-                price: getManapoolPrice(card) ?? selectedPrice ?? 0, // Prefer Manapool if available (Logic Check: Manapool price might not match finish? For now keeping preference but user might want TCG price if they selected specific finish)
+                description: `Game: ${selectedGame.toUpperCase()} | Set: ${card.set} | Rarity: ${card.rarity || 'Unknown'} | Finish: ${finish} | Num: ${card.collectorNumber}`,
+                price: getManapoolPrice(card, finish) ?? selectedPrice ?? 0, // Prefer Manapool if available (Logic Check: Manapool price might not match finish? For now keeping preference but user might want TCG price if they selected specific finish)
                 // actually, if user selects "Foil", we should probably use TCG Foil Price unless Manapool has a foil price?
                 // Providing Manapool price blindly might be wrong if Manapool only has Non-Foil.
                 // For safety: If Manapool price exists, use it? No, Manapool data doesn't specify finish clearly in my reduced interface.
@@ -365,8 +355,8 @@ export default function ImportPage() {
                     // Simple client-side set filtering if a set is selected
                     .filter(card => !selectedSet || card.set === selectedSet)
                     .map((card) => {
-                        const mpPrice = getManapoolPrice(card);
                         const selectedFinish = getSelectedFinish(card.id);
+                        const mpPrice = getManapoolPrice(card, selectedFinish);
                         const currentPrice = getPriceForFinish(card, selectedFinish);
 
                         // Check availability for dropdown
@@ -387,7 +377,12 @@ export default function ImportPage() {
                                 <CardHeader className="p-4 flex-1">
                                     <CardTitle className="text-lg truncate" title={card.name}>{card.name}</CardTitle>
                                     <CardDescription className="flex flex-col gap-1">
-                                        <span>{card.set}</span>
+                                        <div className="flex justify-between items-center text-xs">
+                                            <span className="font-semibold">{card.set}</span>
+                                            <span className="bg-muted px-1.5 py-0.5 rounded border border-border text-muted-foreground mr-2">
+                                                #{card.collectorNumber}
+                                            </span>
+                                        </div>
                                         <span className="text-xs px-2 py-0.5 rounded-full bg-secondary w-fit">
                                             {card.rarity}
                                         </span>
