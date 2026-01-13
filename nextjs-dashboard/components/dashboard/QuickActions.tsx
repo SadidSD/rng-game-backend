@@ -8,7 +8,7 @@ export function QuickActions() {
     return (
         <div className="grid grid-cols-2 gap-4">
             <Button asChild className="h-24 flex-col gap-2">
-                <Link href="/products/new">
+                <Link href="/products/create-choice">
                     <PlusCircle className="h-6 w-6" />
                     <span className="text-sm">Add Product</span>
                 </Link>
