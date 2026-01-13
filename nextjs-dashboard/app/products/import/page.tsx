@@ -74,9 +74,10 @@ export default function ImportPage() {
         }
 
         try {
-            // Fetch relevant prices from our Manapool Proxy
-            const res = await axios.get('/api/proxy/manapool', {
-                params: { query }
+            console.log('[Manapool] Fetching directly from Backend to avoid Vercel Timeout...');
+            // Fetch relevant prices directly from Backend Service (Bypass Proxy)
+            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/integrations/manapool/search`, {
+                params: { query, game: 'mtg' }
             });
             setManapoolPrices(res.data.data || []);
         } catch (error) {
