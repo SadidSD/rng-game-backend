@@ -90,24 +90,26 @@ export default function ImportPage() {
         if (selectedGame !== 'mtg') return null;
         if (manapoolPrices.length === 0) return null;
 
+        // Find ALL matches, not just the first one
         // Strategy 1: Exact Scryfall ID Match
-        let match = manapoolPrices.find(p => p.scryfall_id === card.id);
+        let matches = manapoolPrices.filter(p => p.scryfall_id === card.id);
 
-        // Strategy 2: Fallback Name + Set Code
-        if (!match) {
-            match = manapoolPrices.find(p => {
+        // Strategy 2: Fallback Name + Set Code match
+        if (matches.length === 0) {
+            matches = manapoolPrices.filter(p => {
                 const nameMatch = p.name.toLowerCase() === card.name.toLowerCase();
                 const setMatch = p.set_code?.toLowerCase() === card.setId?.toLowerCase();
                 return nameMatch && setMatch;
             });
         }
 
-        if (match) {
-            // Select price based on finish
-            if (finish === 'usd_foil' && match.price_foil) return match.price_foil;
-            if (finish === 'usd_etched' && match.price_etched) return match.price_etched;
-            // Default to non-foil (price)
-            return match.price;
+        if (matches.length > 0) {
+            // Scan all matches for the requested price type
+            for (const match of matches) {
+                if (finish === 'usd_foil' && match.price_foil) return match.price_foil;
+                if (finish === 'usd_etched' && match.price_etched) return match.price_etched;
+                if (finish === 'usd' && match.price) return match.price;
+            }
         }
 
         return null;
