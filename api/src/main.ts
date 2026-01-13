@@ -17,7 +17,13 @@ async function bootstrap() {
 
   // Enable CORS for Frontend
   app.enableCors({
-    origin: '*', // Allow all origins (Vercel, Localhost, etc.)
+    origin: [
+      'https://rng-game-backend.vercel.app',
+      'http://localhost:3000',
+      'https://rng-game-backend-production.up.railway.app'
+      // '*' // Fallback if specific origins fail (but usually safer to list explicit for debugging)
+    ],
+    credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Accept, Authorization, x-api-key',
   });
