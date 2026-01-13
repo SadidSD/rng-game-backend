@@ -17,6 +17,9 @@ export class ProductsService {
                 game: dto.game,
                 categoryId: dto.categoryId,
                 set: dto.set,
+                rarity: dto.rarity,
+                collectorNumber: dto.collectorNumber,
+                price: dto.price, // Save root price
                 slug: slug,
                 images: dto.images || [],
                 storeId,

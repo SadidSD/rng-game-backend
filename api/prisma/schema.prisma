@@ -70,8 +70,11 @@ model Product {
   description String?
   categoryId  String?
   category    Category? @relation(fields: [categoryId], references: [id])
+  price       Decimal?  @db.Decimal(10, 2) // Denormalized display price
   game        String?   // Keep for legacy/fallback, but ideally replace with category
   set         String?  // e.g. "Base Set", "Commander Legends"
+  rarity      String?
+  collectorNumber String?
   slug        String   // URL friendly name
   
   storeId     String

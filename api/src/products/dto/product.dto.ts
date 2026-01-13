@@ -54,6 +54,19 @@ export class CreateProductDto {
     @IsOptional()
     set?: string;
 
+    @IsString()
+    @IsOptional()
+    rarity?: string;
+
+    @IsString()
+    @IsOptional()
+    collectorNumber?: string;
+
+    @IsNumber()
+    @Min(0)
+    @IsOptional()
+    price?: number; // Base display price
+
     @IsArray()
     @IsString({ each: true })
     @IsOptional()

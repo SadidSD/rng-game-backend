@@ -262,6 +262,9 @@ export default function ImportPage() {
                 game: selectedGame === 'pokemon' ? 'Pokemon' : 'MTG', // Map to Backend expected values
                 categoryId: selectedCategoryId,
                 set: card.set,
+                rarity: card.rarity,
+                collectorNumber: card.collectorNumber,
+                price: getManapoolPrice(card, finish) ?? selectedPrice ?? 0, // Root price for display
                 images: [card.imageLarge || card.image],
                 variants: [
                     {
