@@ -207,8 +207,16 @@ export default function ImportPage() {
 
     const [selectedFinishes, setSelectedFinishes] = useState<{ [key: string]: string }>({});
 
-    const getSelectedFinish = (cardId: string) => {
-        return selectedFinishes[cardId] || 'usd'; // Default to non-foil (usd)
+    const getSelectedFinish = (card: CardData) => {
+        // Use updated logic defined above, but keep this wrapper if needed or remove if redundant
+        // Wait, I defined getSelectedFinish twice in previous step? 
+        // No, I defined it inside the component body, replacing lines 89-114.
+        // But the Original Code had getSelectedFinish at line 217.
+        // I should remove the old one or merge.
+        // I will replace this block with nothing/comment since I moved it up or update calls?
+        // Actually, the previous step inserted `getSelectedFinish` near line 115.
+        // So I should DELETE this old definition to avoid duplicates.
+        return selectedFinishes[card.id] || getDefaultFinish(card);
     };
 
     const handleFinishChange = (cardId: string, finish: string) => {
@@ -231,7 +239,7 @@ export default function ImportPage() {
         }
         setImporting(card.id);
 
-        const finish = getSelectedFinish(card.id);
+        const finish = getSelectedFinish(card);
         const selectedPrice = getPriceForFinish(card, finish);
 
         // Append finish to name if not standard
@@ -357,7 +365,7 @@ export default function ImportPage() {
                     // Simple client-side set filtering if a set is selected
                     .filter(card => !selectedSet || card.set === selectedSet)
                     .map((card) => {
-                        const selectedFinish = getSelectedFinish(card.id);
+                        const selectedFinish = getSelectedFinish(card);
                         const mpPrice = getManapoolPrice(card, selectedFinish);
                         const currentPrice = getPriceForFinish(card, selectedFinish);
 
