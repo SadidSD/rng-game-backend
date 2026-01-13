@@ -24,11 +24,10 @@ async function bootstrap() {
   // Enable CORS for Frontend
   app.enableCors({
     origin: [
-      'https://rng-game-backend.vercel.app',
       'http://localhost:3000',
       'https://rng-game-backend-production.up.railway.app',
-      /https:\/\/.*\.onrender\.com/ // Allow any Render subdomain
-      // '*' // Fallback if specific origins fail (but usually safer to list explicit for debugging)
+      /https:\/\/.*\.onrender\.com/, // Allow any Render subdomain
+      /https:\/\/.*\.vercel\.app/ // Allow any Vercel subdomain
     ],
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
