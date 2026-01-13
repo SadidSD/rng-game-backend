@@ -9,6 +9,12 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  // DEBUG: Check Environment Variables
+  console.log('--- ENV DEBUG ---');
+  console.log('MANAPOOL_ACCESS_TOKEN:', process.env.MANAPOOL_ACCESS_TOKEN ? 'DEFINED (Masked)' : 'MISSING');
+  console.log('Available Env Keys:', Object.keys(process.env).sort().join(', '));
+  console.log('--- ENV DEBUG ---');
+
   // 1. Global Validation
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
