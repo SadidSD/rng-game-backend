@@ -207,6 +207,14 @@ export default function ImportPage() {
 
     const [selectedFinishes, setSelectedFinishes] = useState<{ [key: string]: string }>({});
 
+    // Auto-detect best default finish
+    const getDefaultFinish = (card: CardData) => {
+        if (card.prices?.usd) return 'usd';
+        if (card.prices?.usd_foil) return 'usd_foil';
+        if (card.prices?.usd_etched) return 'usd_etched';
+        return 'usd';
+    };
+
     const getSelectedFinish = (card: CardData) => {
         // Use updated logic defined above, but keep this wrapper if needed or remove if redundant
         // Wait, I defined getSelectedFinish twice in previous step? 
