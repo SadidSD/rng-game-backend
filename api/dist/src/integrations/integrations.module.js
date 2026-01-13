@@ -12,11 +12,13 @@ const ebay_service_1 = require("./ebay.service");
 const tcgplayer_service_1 = require("./tcgplayer.service");
 const webhooks_controller_1 = require("./webhooks.controller");
 const integrations_controller_1 = require("./integrations.controller");
+const manapool_module_1 = require("./manapool/manapool.module");
 let IntegrationsModule = class IntegrationsModule {
 };
 exports.IntegrationsModule = IntegrationsModule;
 exports.IntegrationsModule = IntegrationsModule = __decorate([
     (0, common_1.Module)({
+        imports: [manapool_module_1.ManapoolModule],
         controllers: [webhooks_controller_1.WebhooksController, integrations_controller_1.IntegrationsController],
         providers: [ebay_service_1.EbayService, tcgplayer_service_1.TcgPlayerService],
     })

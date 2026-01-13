@@ -11,7 +11,12 @@ async function bootstrap() {
         transform: true,
     }));
     app.enableCors({
-        origin: '*',
+        origin: [
+            'https://rng-game-backend.vercel.app',
+            'http://localhost:3000',
+            'https://rng-game-backend-production.up.railway.app'
+        ],
+        credentials: true,
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
         allowedHeaders: 'Content-Type, Accept, Authorization, x-api-key',
     });
