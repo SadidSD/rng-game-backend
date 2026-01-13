@@ -85,21 +85,42 @@ export default function ImportPage() {
     };
 
     const getManapoolPrice = (card: CardData) => {
-        if (!manapoolPrices.length || selectedGame !== 'mtg') return null;
+        if (selectedGame !== 'mtg') return null;
+        if (manapoolPrices.length === 0) {
+            console.warn("[Manapool] Price list is empty.");
+            return null;
+        }
 
         // Strategy 1: Exact Scryfall ID Match (Most Accurate)
         let match = manapoolPrices.find(p => p.scryfall_id === card.id);
 
-        // Strategy 2: Name + Set Code Match (Fallback)
-        // Scryfall 'set' is usually lowercase code (e.g. 'lea'). Manapool 'set_code' is usually uppercase ('LEA').
-        if (!match) {
-            match = manapoolPrices.find(p =>
-                p.name === card.name &&
-                p.set_code?.toLowerCase() === card.setId?.toLowerCase()
-            );
+        if (match) {
+            console.log(`[Manapool Match ID] ${card.name}: $${match.price}`);
+            return match.price;
         }
 
-        return match ? match.price : null;
+        // Strategy 2: Name + Set Code Match (Fallback)
+        if (!match) {
+            match = manapoolPrices.find(p => {
+                const nameMatch = p.name.toLowerCase() === card.name.toLowerCase();
+                const setMatch = p.set_code?.toLowerCase() === card.setId?.toLowerCase();
+
+                // Debugging partial matches
+                if (nameMatch && !setMatch) {
+                    console.log(`[Manapool Mismatch Set] ${card.name}: Got '${p.set_code}', Expected '${card.setId}'`);
+                }
+
+                return nameMatch && setMatch;
+            });
+        }
+
+        if (match) {
+            console.log(`[Manapool Match Fallback] ${card.name}: $${match.price}`);
+            return match.price;
+        }
+
+        console.log(`[Manapool No Match] ${card.name} (ID: ${card.id}, Set: ${card.setId})`);
+        return null;
     };
 
     const handleSearch = async (e: React.FormEvent) => {
@@ -113,6 +134,7 @@ export default function ImportPage() {
 
         // Trigger Manapool Fetch in parallel
         fetchManapoolPrices(query);
+        console.log(`[Import] Searching for: ${query}`);
 
         try {
             let mappedCards: CardData[] = [];
