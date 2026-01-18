@@ -38,8 +38,16 @@ async function getProducts() {
     }
 }
 
-export async function ProductsTable() {
-    const products = await getProducts();
+export async function ProductsTable({ tab = 'all' }: { tab?: 'all' | 'singles' | 'sealed' }) {
+    const allProducts = await getProducts();
+
+    const products = allProducts.filter((product: any) => {
+        if (tab === 'all') return true;
+        const isSealed = product.variants?.some((v: any) => v.condition === 'SEALED');
+        if (tab === 'sealed') return isSealed;
+        if (tab === 'singles') return !isSealed;
+        return true;
+    });
 
     return (
         <Card x-chunk="dashboard-06-chunk-0">

@@ -56,11 +56,8 @@ export default function ProductsPage() {
                     <div className="flex items-center">
                         <TabsList>
                             <TabsTrigger value="all">All</TabsTrigger>
-                            <TabsTrigger value="active">Active</TabsTrigger>
-                            <TabsTrigger value="draft">Draft</TabsTrigger>
-                            <TabsTrigger value="archived" className="hidden sm:flex">
-                                Archived
-                            </TabsTrigger>
+                            <TabsTrigger value="singles">Singles</TabsTrigger>
+                            <TabsTrigger value="sealed">Sealed</TabsTrigger>
                         </TabsList>
                         <div className="ml-auto flex items-center gap-2">
                             <div className="relative">
@@ -110,7 +107,17 @@ export default function ProductsPage() {
                     </div>
                     <TabsContent value="all">
                         <Suspense fallback={<ProductsTableSkeleton />}>
-                            <ProductsTable />
+                            <ProductsTable tab="all" />
+                        </Suspense>
+                    </TabsContent>
+                    <TabsContent value="singles">
+                        <Suspense fallback={<ProductsTableSkeleton />}>
+                            <ProductsTable tab="singles" />
+                        </Suspense>
+                    </TabsContent>
+                    <TabsContent value="sealed">
+                        <Suspense fallback={<ProductsTableSkeleton />}>
+                            <ProductsTable tab="sealed" />
                         </Suspense>
                     </TabsContent>
                 </Tabs>
