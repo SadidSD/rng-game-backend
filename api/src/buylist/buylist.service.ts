@@ -21,6 +21,34 @@ export class BuylistService {
         });
     }
 
+    async getFeaturedCards(storeId: string) {
+        return this.prisma.buylistFeaturedCard.findMany({
+            where: { storeId },
+            orderBy: { createdAt: 'desc' }
+        });
+    }
+
+    async searchBuylist(storeId: string, query: string) {
+        // 1. Search Local "Featured" Cards
+        const localResults = await this.prisma.buylistFeaturedCard.findMany({
+            where: {
+                storeId,
+                name: { contains: query, mode: 'insensitive' }
+            }
+        });
+
+        // 2. Search Remote (Pokemon TCG) if local results are insufficient (e.g. < 5) OR always?
+        // Let's do ALWAYS for now to give broad results, but mark them differently.
+        // We need to inject PokemonTcgService. It might not be available yet in this module.
+        // Returning local for now, will add remote in next step after wiring Module.
+
+        return {
+            source: 'hybrid',
+            local: localResults,
+            remote: [] // Placeholder
+        };
+    }
+
     async submitOffer(storeId: string, dto: CreateBuylistOfferDto) {
         // Calculate totals
         let totalCash = 0;

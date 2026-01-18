@@ -29,6 +29,7 @@ model Store {
   customers   Customer[]
   buylistRules BuylistRule[]
   buylistOffers BuylistOffer[]
+  buylistFeaturedCards BuylistFeaturedCard[]
   events      Event[]
 }
 
@@ -280,6 +281,28 @@ model BuylistItem {
   isFoil      Boolean
   offerPrice  Decimal  @db.Decimal(10, 2)
   quantity    Int
+}
+
+model BuylistFeaturedCard {
+  id          String   @id @default(uuid())
+  
+  // Card Details
+  name        String
+  set         String?  // Optional, e.g. "Base Set"
+  setId       String?  // Optional, e.g. "base1"
+  game        String   @default("Pokemon") // Pokemon, MTG
+  
+  // Visuals
+  image       String   // URL to the image (Pokemon TCG API or other)
+  
+  // Financials
+  basePrice   Decimal? @db.Decimal(10, 2) // Optional starting offer
+  
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // -----------------------------------------------------------------------------

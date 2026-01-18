@@ -3,9 +3,10 @@ import { BuylistService } from './buylist.service';
 import { BuylistController } from './buylist.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ApiKeyGuard } from '../auth/guards/api-key.guard';
+import { PokemonTcgModule } from '../integrations/pokemon-tcg/pokemon-tcg.module';
 
 @Module({
-    imports: [PrismaModule],
+    imports: [PrismaModule, PokemonTcgModule],
     controllers: [BuylistController],
     providers: [BuylistService, ApiKeyGuard],
 })

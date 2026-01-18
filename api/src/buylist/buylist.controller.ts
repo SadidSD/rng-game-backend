@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { BuylistService } from './buylist.service';
 import { CreateBuylistRuleDto, CreateBuylistOfferDto, UpdateOfferStatusDto } from './dto/buylist.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -48,5 +48,17 @@ export class BuylistController {
     submitOffer(@Request() req, @Body() dto: CreateBuylistOfferDto) {
         // ApiKeyGuard attaches 'store' to req
         return this.buylistService.submitOffer(req.store.id, dto);
+    }
+
+    @Get('featured')
+    @UseGuards(ApiKeyGuard)
+    getFeaturedCards(@Request() req) {
+        return this.buylistService.getFeaturedCards(req.store.id);
+    }
+
+    @Get('search')
+    @UseGuards(ApiKeyGuard)
+    search(@Request() req, @Query('query') query: string) {
+        return this.buylistService.searchBuylist(req.store.id, query || '');
     }
 }
