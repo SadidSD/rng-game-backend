@@ -93,8 +93,8 @@ export class AuthService {
             create: {
                 email: dto.email,
                 storeId: storeId,
-                firstName: '', // Can be filled later
-                lastName: '',
+                firstName: dto.firstName || '',
+                lastName: dto.lastName || '',
             }
         });
 
