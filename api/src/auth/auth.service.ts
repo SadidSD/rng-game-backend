@@ -12,6 +12,19 @@ export class AuthService {
     ) { }
 
     async signup(dto: SignupDto) {
+        // ... (existing admin/staff signup logic)
+        // Refactor: Rename existing signup to 'createStoreUser' internally if needed, 
+        // but for now, I'll keep signup as the "Protected/Admin" creation and add 'register' as public.
+        // Actually, the user asked for Public Signup.
+
+        // Let's verify if 'signup' is used by Dashboard or CLI only.
+        // It's used by CLI. 
+        // I will Create a NEW method 'register' for customers.
+        return this.createStoreUser(dto);
+    }
+
+    private async createStoreUser(dto: SignupDto) {
+        // ... (Logic from Lines 14-51)
         // Check if user exists
         const existingUser = await this.prisma.user.findUnique({
             where: { email: dto.email },
@@ -20,25 +33,22 @@ export class AuthService {
 
         const storeId = process.env.SINGLE_TENANT_STORE_ID || 'd02dbcba-81b5-4f9d-831c-54fe9a803081';
         let store = await this.prisma.store.findUnique({ where: { id: storeId } });
-        let role: Role = Role.STAFF; // Default role
+        let role: Role = Role.STAFF;
 
-        // If Store doesn't exist, Create it and make this user Admin
         if (!store) {
             console.log(`Creating Default Store: ${storeId}`);
             store = await this.prisma.store.create({
                 data: {
                     id: storeId,
-                    name: dto.storeName || 'TCG Store', // Fallback name
+                    name: dto.storeName || 'TCG Store',
                     apiKey: require('crypto').randomBytes(32).toString('hex'),
                 },
             });
             role = Role.ADMIN;
         }
 
-        // Hash password
         const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-        // Create User linked to Single Tenant Store
         const user = await this.prisma.user.create({
             data: {
                 email: dto.email,
@@ -46,6 +56,46 @@ export class AuthService {
                 role: role,
                 storeId: store.id,
             },
+        });
+
+        return this.signToken(user.id, user.email, user.role, user.storeId);
+    }
+
+    async register(dto: SignupDto) {
+        const existingUser = await this.prisma.user.findUnique({
+            where: { email: dto.email },
+        });
+        if (existingUser) throw new ConflictException('User already exists');
+
+        const storeId = process.env.SINGLE_TENANT_STORE_ID || 'd02dbcba-81b5-4f9d-831c-54fe9a803081';
+
+        // Ensure store exists (it should)
+        const store = await this.prisma.store.findUnique({ where: { id: storeId } });
+        if (!store) throw new ConflictException('Store not configured');
+
+        const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+        // Force Role = CUSTOMER
+        const user = await this.prisma.user.create({
+            data: {
+                email: dto.email,
+                password: hashedPassword,
+                role: Role.CUSTOMER,
+                storeId: store.id,
+            },
+        });
+
+        // Also Create Customer Profile (if it doesn't exist)
+        // This links the Auth User to the Customer Data
+        await this.prisma.customer.upsert({
+            where: { storeId_email: { storeId, email: dto.email } },
+            update: {}, // Don't overwrite existing customer data
+            create: {
+                email: dto.email,
+                storeId: storeId,
+                firstName: '', // Can be filled later
+                lastName: '',
+            }
         });
 
         return this.signToken(user.id, user.email, user.role, user.storeId);

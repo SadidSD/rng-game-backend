@@ -11,7 +11,13 @@ export class AuthController {
 
     @Post('signup')
     signup(@Body() dto: SignupDto) {
+        // Keep this for admin/internal use if needed, or deprecate
         return this.authService.signup(dto);
+    }
+
+    @Post('register')
+    register(@Body() dto: SignupDto) {
+        return this.authService.register(dto);
     }
 
     @Post('login')
