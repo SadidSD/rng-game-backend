@@ -9,9 +9,16 @@ import {
 } from "@/components/ui/breadcrumb"
 import ProductForm from "@/app/ui/products/product-form"
 
+import { cookies } from "next/headers";
+
 async function getCategories() {
+    const cookieStore = cookies();
+    const token = cookieStore.get('tcg-auth-token');
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`, { cache: 'no-store' });
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
+            cache: 'no-store',
+            headers: { Authorization: `Bearer ${token?.value}` }
+        });
         if (!res.ok) return [];
         return await res.json();
     } catch (e) {
@@ -21,8 +28,13 @@ async function getCategories() {
 
 async function getProduct(id: string) {
     if (id === 'new') return null;
+    const cookieStore = cookies();
+    const token = cookieStore.get('tcg-auth-token');
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${id}`, { cache: 'no-store' });
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${id}`, {
+            cache: 'no-store',
+            headers: { Authorization: `Bearer ${token?.value}` }
+        });
         if (!res.ok) return null;
         return await res.json();
     } catch (e) {

@@ -10,6 +10,7 @@ import {
     Search,
     ShoppingCart,
     Users,
+    Settings,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -86,6 +87,13 @@ export default function Sidebar() {
                         >
                             <LineChart className="h-4 w-4" />
                             Analytics
+                        </Link>
+                        <Link
+                            href="/settings"
+                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                        >
+                            <Settings className="h-4 w-4" />
+                            Settings
                         </Link>
                     </nav>
                 </div>

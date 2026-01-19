@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Search, Loader2, DownloadCloud } from "lucide-react";
 import axios from 'axios';
+import Cookies from 'js-cookie';
 
 interface CardData {
     id: string;
@@ -53,7 +54,10 @@ export default function ImportPage() {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/categories`);
+                const token = Cookies.get('tcg-auth-token');
+                const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
                 if (res.data && res.data.length > 0) {
                     setCategories(res.data);
 
@@ -90,8 +94,10 @@ export default function ImportPage() {
         try {
             console.log('[Manapool] Fetching directly from Backend to avoid Vercel Timeout...');
             // Fetch relevant prices directly from Backend Service (Bypass Proxy)
+            const token = Cookies.get('tcg-auth-token');
             const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/integrations/manapool/search`, {
-                params: { query, game: 'mtg' }
+                params: { query, game: 'mtg' },
+                headers: { Authorization: `Bearer ${token}` }
             });
             setManapoolPrices(res.data.data || []);
         } catch (error) {
@@ -290,7 +296,10 @@ export default function ImportPage() {
                 ]
             };
 
-            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/products`, productData);
+            const token = Cookies.get('tcg-auth-token');
+            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/products`, productData, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             alert(`[${selectedGame.toUpperCase()}] Product imported successfully!`);
         } catch (error) {
             console.error('Import failed', error);

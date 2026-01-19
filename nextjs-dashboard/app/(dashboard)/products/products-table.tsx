@@ -27,9 +27,20 @@ import {
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 
+import { cookies } from "next/headers";
+
 async function getProducts() {
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, { cache: 'no-store' });
+        const cookieStore = cookies();
+        const token = cookieStore.get('tcg-auth-token');
+
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
+            cache: 'no-store',
+            headers: {
+                Authorization: `Bearer ${token?.value}`,
+                'Content-Type': 'application/json',
+            }
+        });
         if (!res.ok) return [];
         const data = await res.json();
         return Array.isArray(data) ? data : (data.data || []);

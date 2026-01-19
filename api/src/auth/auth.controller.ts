@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, UseGuards, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, SignupDto, Role } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -30,5 +30,11 @@ export class AuthController {
     @Get('admin')
     getAdmin(@Request() req) {
         return { message: 'Admin access granted', user: req.user };
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Patch('change-password')
+    changePassword(@Request() req, @Body() dto: any) {
+        return this.authService.changePassword(req.user.sub, dto);
     }
 }
