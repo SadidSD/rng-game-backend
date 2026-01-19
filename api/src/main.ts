@@ -26,8 +26,10 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'https://rng-game-backend-production.up.railway.app',
-      /https:\/\/.*\.onrender\.com/, // Allow any Render subdomain
-      /https:\/\/.*\.vercel\.app/ // Allow any Vercel subdomain
+      'https://rng-game-backend.vercel.app', // Explicit Add
+      'https://rng-gamez-shop.vercel.app',   // Explicit Add
+      /https:\/\/.*\.onrender\.com/,
+      /https:\/\/.*\.vercel\.app/
     ],
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
