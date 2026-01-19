@@ -1,11 +1,12 @@
-import { Button } from "@/components/ui/button"
+import { Suspense } from "react"
+import { CustomersTable, CustomersTableSkeleton } from "./customers-table"
 
 export default function CustomersPage() {
     return (
-        <div className="flex flex-col items-center justify-center h-[50vh] gap-4">
-            <h1 className="text-2xl font-bold">Customers</h1>
-            <p className="text-muted-foreground">Customer management is coming soon.</p>
-            <Button variant="outline">View All Customers</Button>
+        <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 py-4">
+            <Suspense fallback={<CustomersTableSkeleton />}>
+                <CustomersTable />
+            </Suspense>
         </div>
     )
 }
