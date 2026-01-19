@@ -39,7 +39,7 @@ interface Category {
 }
 
 export default function ImportPage() {
-    const [selectedGame, setSelectedGame] = useState<'pokemon' | 'mtg'>('pokemon');
+    const [selectedGame, setSelectedGame] = useState<'pokemon' | 'mtg'>('mtg');
     const [query, setQuery] = useState('');
     const [cards, setCards] = useState<CardData[]>([]);
     const [loading, setLoading] = useState(false);
@@ -49,14 +49,27 @@ export default function ImportPage() {
     const [availableSets, setAvailableSets] = useState<string[]>([]);
     const [selectedSet, setSelectedSet] = useState<string>('');
 
-    // Fetch categories on mount
+    // Fetch categories on mount and auto-select MTG
     useEffect(() => {
         const fetchCategories = async () => {
             try {
                 const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/categories`);
                 if (res.data && res.data.length > 0) {
                     setCategories(res.data);
-                    setSelectedCategoryId(res.data[0].id);
+
+                    // Auto-select MTG
+                    const mtgCat = res.data.find((c: Category) =>
+                        c.name.toLowerCase() === 'mtg' ||
+                        c.name.toLowerCase().includes('magic')
+                    );
+
+                    if (mtgCat) {
+                        setSelectedCategoryId(mtgCat.id);
+                    } else {
+                        // Fallback if MTG category not found, select first or warn
+                        console.warn('MTG Category not found, defaulting to first available.');
+                        setSelectedCategoryId(res.data[0].id);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to fetch categories', error);
@@ -294,37 +307,16 @@ export default function ImportPage() {
                 <p className="text-muted-foreground">Search and import cards from PokemonTCG or Scryfall (MTG) with Manapool Pricing.</p>
             </div>
 
-            {/* Game Selector */}
-            <div className="flex gap-2">
-                <Button
-                    variant={selectedGame === 'pokemon' ? 'default' : 'outline'}
-                    onClick={() => setSelectedGame('pokemon')}
-                >
-                    Pokemon TCG
-                </Button>
-                <Button
-                    variant={selectedGame === 'mtg' ? 'default' : 'outline'}
-                    onClick={() => setSelectedGame('mtg')}
-                >
-                    Magic: The Gathering
-                </Button>
-            </div>
+            {/* <div className="flex gap-2">
+                <Button variant={selectedGame === 'pokemon' ? 'default' : 'outline'} onClick={() => setSelectedGame('pokemon')}>Pokemon TCG</Button>
+                <Button variant={selectedGame === 'mtg' ? 'default' : 'outline'} onClick={() => setSelectedGame('mtg')}>Magic: The Gathering</Button>
+            </div> */ }
 
             <div className="flex flex-col md:flex-row gap-4">
                 <div className="w-full md:w-1/4 flex flex-col gap-4">
-                    {/* Category Selection */}
-                    <div>
-                        <label className="text-sm font-medium mb-1 block">Target Category</label>
-                        <select
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            value={selectedCategoryId}
-                            onChange={(e) => setSelectedCategoryId(e.target.value)}
-                        >
-                            {categories.map(cat => (
-                                <option key={cat.id} value={cat.id}>{cat.name}</option>
-                            ))}
-                        </select>
-                    </div>
+                    {/* Category Selection Removed - Fixed to MTG */}
+
+                    {/* Set Selection (Keep this if we want to filter search results by set) */}
 
                     {/* Set Selection */}
                     {availableSets.length > 0 && (
