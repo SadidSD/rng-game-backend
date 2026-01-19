@@ -54,10 +54,10 @@ export class BuylistService {
         let totalCash = 0;
         let totalCredit = 0;
 
-        // Simplified: Cash and Credit same for now, or apply logic
+        // Simplified: Store Credit Only (30% Bonus hardcoded for now, or use rule)
         dto.items.forEach(item => {
-            totalCash += item.offerPrice * item.quantity;
-            totalCredit += (item.offerPrice * 1.25) * item.quantity; // 25% bonus for credit example
+            totalCash = 0; // Usage: No Cash Payouts
+            totalCredit += item.offerPrice * item.quantity;
         });
 
         return this.prisma.buylistOffer.create({
@@ -98,9 +98,41 @@ export class BuylistService {
             throw new NotFoundException('Offer not found');
         }
 
-        return this.prisma.buylistOffer.update({
+        const updated = await this.prisma.buylistOffer.update({
             where: { id: offerId },
             data: { status: dto.status }
         });
+
+        // Loop: If COMPLETED, issue credit
+        if (dto.status === 'COMPLETED') {
+            await this.finalizeOfferCredit(storeId, offer);
+        }
+
+        return updated;
+    }
+
+    // Helper: Issue Store Credit
+    async finalizeOfferCredit(storeId: string, offer: any) {
+        // 1. Find Customer by Email
+        const customer = await this.prisma.customer.findFirst({
+            where: { storeId, email: offer.customerEmail }
+        });
+
+        if (!customer) {
+            // Option: Create Ghost Customer? Or Throw?
+            // For now, log warning.
+            console.warn(`[Buylist] Could not issue credit. Customer ${offer.customerEmail} not found.`);
+            return;
+        }
+
+        // 2. Add Credit
+        await this.prisma.customer.update({
+            where: { id: customer.id },
+            data: {
+                creditBalance: { increment: offer.totalCredit }
+            }
+        });
+
+        console.log(`[Buylist] Issued $${offer.totalCredit} credit to ${offer.customerEmail}`);
     }
 }

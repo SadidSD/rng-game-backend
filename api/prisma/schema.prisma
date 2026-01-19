@@ -169,6 +169,7 @@ model Customer {
   lastName    String?
   phone       String?
   notes       String?
+  creditBalance Decimal @default(0) @db.Decimal(10, 2)
   
   storeId     String
   store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
@@ -267,9 +268,12 @@ model BuylistOffer {
 
 enum OfferStatus {
   PENDING
-  APPROVED
+  APPROVED_TO_SEND
+  RECEIVED
+  APPROVED // keeping for legacy/flexibility, though RECEIVED covers intake
   REJECTED
   COMPLETED
+  CANCELLED
 }
 
 model BuylistItem {
