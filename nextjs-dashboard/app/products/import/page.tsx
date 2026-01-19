@@ -313,18 +313,23 @@ export default function ImportPage() {
             </div> */ }
 
             {/* Search */}
-            <form onSubmit={handleSearch} className="flex gap-4 w-full items-end">
-                <Input
-                    placeholder="Search Magic: The Gathering cards..."
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    className="flex-1"
-                />
-                <Button type="submit" disabled={loading}>
-                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-                    Search
-                </Button>
-            </form>
+            <div className="w-full max-w-4xl mx-auto">
+                <form onSubmit={handleSearch} className="flex gap-3 w-full items-end p-6 bg-muted/30 rounded-xl border border-border shadow-sm">
+                    <div className="flex-1 space-y-2">
+                        <label className="text-sm font-semibold text-foreground/80">Search by Card Name</label>
+                        <Input
+                            placeholder="e.g. Black Lotus, Sol Ring..."
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            className="h-12 text-lg border-muted-foreground/30 focus-visible:border-primary focus-visible:ring-2"
+                        />
+                    </div>
+                    <Button type="submit" disabled={loading} size="lg" className="h-12 px-8 text-base font-semibold">
+                        {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Search className="mr-2 h-5 w-5" />}
+                        Search
+                    </Button>
+                </form>
+            </div>
 
             {/* Set Selection */}
             {availableSets.length > 0 && (
