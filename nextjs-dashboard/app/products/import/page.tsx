@@ -302,7 +302,7 @@ export default function ImportPage() {
 
     return (
         <div className="flex flex-col gap-6 p-6">
-            <div>
+            <div className="text-center space-y-2">
                 <h1 className="text-3xl font-bold tracking-tight">Import Products</h1>
                 <p className="text-muted-foreground">Search and import cards from Scryfall (MTG) with Manapool Pricing.</p>
             </div>
