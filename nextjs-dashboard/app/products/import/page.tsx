@@ -304,7 +304,7 @@ export default function ImportPage() {
         <div className="flex flex-col gap-6 p-6">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Import Products</h1>
-                <p className="text-muted-foreground">Search and import cards from PokemonTCG or Scryfall (MTG) with Manapool Pricing.</p>
+                <p className="text-muted-foreground">Search and import cards from Scryfall (MTG) with Manapool Pricing.</p>
             </div>
 
             {/* <div className="flex gap-2">
@@ -312,45 +312,37 @@ export default function ImportPage() {
                 <Button variant={selectedGame === 'mtg' ? 'default' : 'outline'} onClick={() => setSelectedGame('mtg')}>Magic: The Gathering</Button>
             </div> */ }
 
-            <div className="flex flex-col md:flex-row gap-4">
-                <div className="w-full md:w-1/4 flex flex-col gap-4">
-                    {/* Category Selection Removed - Fixed to MTG */}
+            {/* Search */}
+            <form onSubmit={handleSearch} className="flex gap-4 w-full items-end">
+                <Input
+                    placeholder="Search Magic: The Gathering cards..."
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    className="flex-1"
+                />
+                <Button type="submit" disabled={loading}>
+                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                    Search
+                </Button>
+            </form>
 
-                    {/* Set Selection (Keep this if we want to filter search results by set) */}
-
-                    {/* Set Selection */}
-                    {availableSets.length > 0 && (
-                        <div>
-                            <label className="text-sm font-medium mb-1 block">Filter by Set</label>
-                            <select
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                value={selectedSet}
-                                onChange={(e) => {
-                                    setSelectedSet(e.target.value);
-                                }}
-                            >
-                                {availableSets.map(setName => (
-                                    <option key={setName} value={setName}>{setName}</option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
+            {/* Set Selection */}
+            {availableSets.length > 0 && (
+                <div className="w-full md:w-1/3">
+                    <label className="text-sm font-medium mb-1 block">Filter by Set</label>
+                    <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={selectedSet}
+                        onChange={(e) => {
+                            setSelectedSet(e.target.value);
+                        }}
+                    >
+                        {availableSets.map(setName => (
+                            <option key={setName} value={setName}>{setName}</option>
+                        ))}
+                    </select>
                 </div>
-
-                {/* Search */}
-                <form onSubmit={handleSearch} className="flex gap-4 w-full md:w-3/4 items-end">
-                    <Input
-                        placeholder={`Search ${selectedGame === 'pokemon' ? 'Pokemon' : 'Magic'} cards...`}
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        className="flex-1"
-                    />
-                    <Button type="submit" disabled={loading}>
-                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-                        Search
-                    </Button>
-                </form>
-            </div>
+            )}
 
             {/* Cards Grid */}
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
