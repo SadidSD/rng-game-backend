@@ -15,7 +15,7 @@ export class ManapoolService {
     }
 
     private priceCache: { data: any[], timestamp: number } | null = null;
-    private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+    private readonly CACHE_TTL = 60 * 60 * 1000; // 1 hour (Increased from 5m to reduce loading times)
 
     async searchCards(query: string, game: string = 'Pokemon') {
         const prices = await this.getAllPrices();
