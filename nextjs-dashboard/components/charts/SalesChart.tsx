@@ -10,23 +10,24 @@ import {
     ResponsiveContainer,
 } from "recharts"
 
-const data = [
-    { date: "Mon", sales: 4200 },
-    { date: "Tue", sales: 3800 },
-    { date: "Wed", sales: 5100 },
-    { date: "Thu", sales: 4600 },
-    { date: "Fri", sales: 6200 },
-    { date: "Sat", sales: 7800 },
-    { date: "Sun", sales: 5400 },
+const defaultData = [
+    { name: "Mon", total: 4200 },
+    { name: "Tue", total: 3800 },
+    { name: "Wed", total: 5100 },
+    { name: "Thu", total: 4600 },
+    { name: "Fri", total: 6200 },
+    { name: "Sat", total: 7800 },
+    { name: "Sun", total: 5400 },
 ]
 
-export function SalesChart() {
+export function SalesChart({ data }: { data?: any[] }) {
+    const chartData = data && data.length > 0 ? data : defaultData;
     return (
         <ResponsiveContainer width="100%" height={350}>
-            <LineChart data={data}>
+            <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis
-                    dataKey="date"
+                    dataKey="name"
                     stroke="#888888"
                     fontSize={12}
                     tickLine={false}
@@ -62,7 +63,7 @@ export function SalesChart() {
                 />
                 <Line
                     type="monotone"
-                    dataKey="sales"
+                    dataKey="total"
                     strokeWidth={2}
                     activeDot={{
                         r: 6,

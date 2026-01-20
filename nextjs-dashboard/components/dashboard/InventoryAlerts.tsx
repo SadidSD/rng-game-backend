@@ -11,10 +11,15 @@ const lowStockItems = [
     { id: 4, name: "Ash Blossom", game: "Yu-Gi-Oh!", stock: 4, threshold: 10 },
 ]
 
-export function InventoryAlerts() {
+export function InventoryAlerts({ items }: { items?: any[] }) {
+    const displayItems = items || []; // lowStockItems
+
+    if (displayItems.length === 0) {
+        return <div className="text-sm text-muted-foreground">No low stock alerts.</div>
+    }
     return (
         <div className="space-y-3">
-            {lowStockItems.map((item) => (
+            {displayItems.map((item) => (
                 <Link
                     key={item.id}
                     href={`/inventory?search=${item.name}`}
