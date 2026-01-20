@@ -27,4 +27,10 @@ export class ProductsController {
     findOne(@Request() req, @Param('id') id: string) {
         return this.productsService.findOne(req.user.storeId, id);
     }
+
+    @Delete(':id')
+    @Roles(Role.ADMIN, Role.OWNER)
+    remove(@Request() req, @Param('id') id: string) {
+        return this.productsService.remove(req.user.storeId, id);
+    }
 }

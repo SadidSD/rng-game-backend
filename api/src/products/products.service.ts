@@ -79,4 +79,12 @@ export class ProductsService {
         if (!product) throw new NotFoundException('Product not found');
         return product;
     }
+
+    async remove(storeId: string, id: string) {
+        // Ensure product exists and belongs to store
+        await this.findOne(storeId, id);
+        return this.prisma.product.delete({
+            where: { id }
+        });
+    }
 }
