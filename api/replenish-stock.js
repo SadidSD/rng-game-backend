@@ -28,14 +28,15 @@ async function main() {
             });
 
             if (inventory) {
-                if (inventory.quantity < 50) {
-                    await prisma.inventoryItem.update({
-                        where: { id: inventory.id },
-                        data: { quantity: 500 }
-                    });
-                    console.log(`Updated stock for ${v.product.name} (${v.condition}) to 500.`);
-                    updatedCount++;
+                // Force update all to 500
+                await prisma.inventoryItem.update({
+                    where: { id: inventory.id },
+                    data: { quantity: 500 }
+                });
+                if (v.product.name.includes('Mass')) {
+                    console.log(`!!! FORCE UPDATE STOCK FOR ${v.product.name} (${v.condition}) !!!`);
                 }
+                updatedCount++;
             } else {
                 await prisma.inventoryItem.create({
                     data: {
