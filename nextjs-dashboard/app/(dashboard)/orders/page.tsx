@@ -160,7 +160,9 @@ export default function OrdersPage() {
                                                         {order.customer?.firstName} {order.customer?.lastName}
                                                         <div className="text-xs text-muted-foreground">{order.customer?.email}</div>
                                                     </TableCell>
-                                                    <TableCell>{order.items?.length || 0}</TableCell>
+                                                    <TableCell className="max-w-[200px] truncate" title={order.items?.map(i => `${i.productName} (${i.quantity})`).join(', ')}>
+                                                        {order.items?.map(i => `${i.productName} (x${i.quantity})`).join(', ') || 'No Items'}
+                                                    </TableCell>
                                                     <TableCell>${Number(order.total).toFixed(2)}</TableCell>
                                                     <TableCell>
                                                         <Badge variant={getStatusColor(order.status)}>
