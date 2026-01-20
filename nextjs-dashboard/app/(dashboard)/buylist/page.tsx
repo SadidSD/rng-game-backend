@@ -39,6 +39,10 @@ interface BuylistOffer {
     createdAt: string;
 }
 
+import Cookies from 'js-cookie';
+
+// ... 
+
 export default function BuylistPage() {
     const [offers, setOffers] = useState<BuylistOffer[]>([]);
     const [loading, setLoading] = useState(true);
@@ -48,8 +52,14 @@ export default function BuylistPage() {
 
     const fetchOffers = async () => {
         try {
+            const token = Cookies.get('tcg-auth-token');
+            if (!token) {
+                console.error("No auth token found");
+                return;
+            }
+
             const res = await axios.get(`${API_URL}/buylist/offers`, {
-                headers: { 'x-api-key': 'tcg-frontend-secret-key' } // Or auth token
+                headers: { Authorization: `Bearer ${token}` }
             });
             setOffers(res.data);
         } catch (error) {
@@ -61,7 +71,10 @@ export default function BuylistPage() {
 
     const updateStatus = async (id: string, status: string) => {
         try {
-            await axios.patch(`${API_URL}/buylist/offers/${id}/status`, { status });
+            const token = Cookies.get('tcg-auth-token');
+            await axios.patch(`${API_URL}/buylist/offers/${id}/status`, { status }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             // Refresh
             fetchOffers();
         } catch (error) {

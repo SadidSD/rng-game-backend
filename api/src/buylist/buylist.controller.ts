@@ -31,6 +31,7 @@ export class BuylistController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN, Role.STAFF)
     getOffers(@Request() req) {
+        console.log(`[Buylist] Fetching Offers. User: ${req.user.email}, Role: ${req.user.role}, Store ID: ${req.user.storeId}`);
         return this.buylistService.getOffers(req.user.storeId);
     }
 
@@ -46,9 +47,11 @@ export class BuylistController {
     @Post('offers')
     @UseGuards(ApiKeyGuard)
     submitOffer(@Request() req, @Body() dto: CreateBuylistOfferDto) {
-        // ApiKeyGuard attaches 'store' to req
+        console.log(`[Buylist] Submitting Offer. Store ID: ${req.store.id}`);
         return this.buylistService.submitOffer(req.store.id, dto);
     }
+
+
 
     @Get('featured')
     @UseGuards(ApiKeyGuard)
