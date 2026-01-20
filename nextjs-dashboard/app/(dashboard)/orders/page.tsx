@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react"
 import {
     Card,
     CardContent,
@@ -24,18 +27,22 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search, Filter, Download } from "lucide-react"
 import Link from "next/link"
+import axios from "axios"
+import Cookies from "js-cookie"
+import { format } from "date-fns"
 
-const orders = [
-    { id: "ORD-001", customer: "John Doe", items: 5, total: 245.99, status: "shipped", paymentStatus: "paid", date: "2024-12-01", game: "Pokémon" },
-    { id: "ORD-002", customer: "Jane Smith", items: 3, total: 189.50, status: "processing", paymentStatus: "paid", date: "2024-12-01", game: "MTG" },
-    { id: "ORD-003", customer: "Mike Johnson", items: 8, total: 432.00, status: "delivered", paymentStatus: "paid", date: "2024-11-30", game: "Yu-Gi-Oh!" },
-    { id: "ORD-004", customer: "Sarah Williams", items: 2, total: 95.99, status: "pending", paymentStatus: "pending", date: "2024-12-01", game: "Pokémon" },
-    { id: "ORD-005", customer: "Tom Brown", items: 12, total: 678.50, status: "shipped", paymentStatus: "paid", date: "2024-11-29", game: "MTG" },
-]
+interface Order {
+    id: string;
+    customer: { firstName: string; lastName: string; email: string };
+    items: any[];
+    total: number;
+    status: string;
+    createdAt: string;
+}
 
 function getStatusColor(status: string) {
-    switch (status) {
-        case "delivered": return "default"
+    switch (status.toLowerCase()) {
+        case "completed": return "default"
         case "shipped": return "secondary"
         case "processing": return "outline"
         case "pending": return "destructive"
@@ -43,11 +50,34 @@ function getStatusColor(status: string) {
     }
 }
 
-function getPaymentColor(status: string) {
-    return status === "paid" ? "default" : "destructive"
-}
-
 export default function OrdersPage() {
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchOrders = async () => {
+            try {
+                const token = Cookies.get('tcg-auth-token');
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://rng-game-backend.onrender.com/api';
+                const res = await axios.get(`${apiUrl}/orders`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setOrders(res.data);
+            } catch (error) {
+                console.error("Failed to fetch orders", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchOrders();
+    }, []);
+
+    const filteredOrders = (status: string) => {
+        if (status === 'all') return orders;
+        return orders.filter(o => o.status.toLowerCase() === status);
+    };
+
     return (
         <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
@@ -70,7 +100,7 @@ export default function OrdersPage() {
                         <TabsTrigger value="pending">Pending</TabsTrigger>
                         <TabsTrigger value="processing">Processing</TabsTrigger>
                         <TabsTrigger value="shipped">Shipped</TabsTrigger>
-                        <TabsTrigger value="delivered">Delivered</TabsTrigger>
+                        <TabsTrigger value="completed">Completed</TabsTrigger>
                     </TabsList>
                     <div className="flex items-center gap-2">
                         <div className="relative">
@@ -87,80 +117,71 @@ export default function OrdersPage() {
                     </div>
                 </div>
 
-                <TabsContent value="all" className="mt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>All Orders</CardTitle>
-                            <CardDescription>
-                                View and manage all customer orders
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Order ID</TableHead>
-                                        <TableHead>Customer</TableHead>
-                                        <TableHead>Game</TableHead>
-                                        <TableHead>Items</TableHead>
-                                        <TableHead>Total</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Payment</TableHead>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {orders.map((order) => (
-                                        <TableRow key={order.id}>
-                                            <TableCell className="font-medium">
-                                                <Link href={`/orders/${order.id}`} className="hover:underline">
-                                                    {order.id}
-                                                </Link>
-                                            </TableCell>
-                                            <TableCell>{order.customer}</TableCell>
-                                            <TableCell>
-                                                <Badge variant="outline">{order.game}</Badge>
-                                            </TableCell>
-                                            <TableCell>{order.items}</TableCell>
-                                            <TableCell>${order.total.toFixed(2)}</TableCell>
-                                            <TableCell>
-                                                <Badge variant={getStatusColor(order.status)}>
-                                                    {order.status}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant={getPaymentColor(order.paymentStatus)}>
-                                                    {order.paymentStatus}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>{order.date}</TableCell>
-                                            <TableCell>
-                                                <Button variant="ghost" size="sm" asChild>
-                                                    <Link href={`/orders/${order.id}`}>View</Link>
-                                                </Button>
-                                            </TableCell>
+                {['all', 'pending', 'processing', 'shipped', 'completed'].map((tab) => (
+                    <TabsContent key={tab} value={tab} className="mt-4">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>{tab.charAt(0).toUpperCase() + tab.slice(1)} Orders</CardTitle>
+                                <CardDescription>
+                                    View and manage {tab} customer orders
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Order ID</TableHead>
+                                            <TableHead>Customer</TableHead>
+                                            <TableHead>Items</TableHead>
+                                            <TableHead>Total</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead>Date</TableHead>
+                                            <TableHead>Actions</TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="pending" className="mt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Pending Orders</CardTitle>
-                            <CardDescription>Orders awaiting processing</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-sm text-muted-foreground">
-                                {orders.filter(o => o.status === "pending").length} pending orders
-                            </p>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {loading ? (
+                                            <TableRow>
+                                                <TableCell colSpan={7} className="text-center h-24">Loading...</TableCell>
+                                            </TableRow>
+                                        ) : filteredOrders(tab).length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={7} className="text-center h-24">No orders found.</TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            filteredOrders(tab).map((order) => (
+                                                <TableRow key={order.id}>
+                                                    <TableCell className="font-medium">
+                                                        <Link href={`/orders/${order.id}`} className="hover:underline">
+                                                            {order.id.slice(0, 8).toUpperCase()}
+                                                        </Link>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {order.customer?.firstName} {order.customer?.lastName}
+                                                        <div className="text-xs text-muted-foreground">{order.customer?.email}</div>
+                                                    </TableCell>
+                                                    <TableCell>{order.items?.length || 0}</TableCell>
+                                                    <TableCell>${Number(order.total).toFixed(2)}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant={getStatusColor(order.status)}>
+                                                            {order.status}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell>{format(new Date(order.createdAt), 'MMM dd, yyyy')}</TableCell>
+                                                    <TableCell>
+                                                        <Button variant="ghost" size="sm" asChild>
+                                                            <Link href={`/orders/${order.id}`}>View</Link>
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                ))}
             </Tabs>
         </div>
     )
