@@ -57,7 +57,7 @@ export function ProductActions({ product }: { product: any }) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => router.push(`/products/${product.id}/edit`)}>
+                <DropdownMenuItem onClick={() => router.push(`/products/${product.id}`)}>
                     Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleDelete} className="text-red-500 font-medium">

@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
 import { ProductsService } from './products.service';
-import { CreateProductDto } from './dto/product.dto';
+import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -25,6 +25,12 @@ export class ProductsController {
     @Get(':id')
     findOne(@Request() req, @Param('id') id: string) {
         return this.productsService.findOne(req.user.storeId, id);
+    }
+
+    @Patch(':id')
+    @Roles(Role.ADMIN, Role.STAFF)
+    update(@Request() req, @Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
+        return this.productsService.update(req.user.storeId, id, updateProductDto);
     }
 
     @Delete(':id')

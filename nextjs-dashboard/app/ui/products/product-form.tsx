@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { PlusCircle, Upload, X } from "lucide-react"
 import Image from "next/image"
+import Cookies from 'js-cookie';
 
 import { Button } from "@/components/ui/button"
 import {
@@ -116,6 +117,7 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
             price: minPrice, // Base display price
             images: imageUrl ? [imageUrl] : [],
             variants: variants.map(v => ({
+                id: v.id, // Include ID for updates
                 condition: v.condition,
                 isFoil: v.isFoil,
                 price: v.price,
@@ -128,10 +130,17 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
             const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
             const apiUrl = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
 
-            const res = await fetch(`${apiUrl}/products`, {
-                method: 'POST',
+            const url = initialData?.id
+                ? `${apiUrl}/products/${initialData.id}`
+                : `${apiUrl}/products`;
+
+            const method = initialData?.id ? 'PATCH' : 'POST';
+
+            const res = await fetch(url, {
+                method,
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${Cookies.get('tcg-auth-token')}`
                 },
                 body: JSON.stringify(payload)
             });

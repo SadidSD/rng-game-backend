@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateProductDto } from './dto/product.dto';
+import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -57,7 +57,7 @@ export class ProductsService {
             where.name = { contains: query.search, mode: 'insensitive' };
         }
 
-        return this.prisma.product.findMany({
+        const products = await this.prisma.product.findMany({
             where,
             include: {
                 variants: {
@@ -66,6 +66,43 @@ export class ProductsService {
                 category: true
             },
             orderBy: { createdAt: 'desc' },
+        });
+
+        // 2. Calculate Total Sales (Aggregation)
+        // Gather all variant IDs
+        const variantIds = products.flatMap(p => p.variants.map(v => v.id));
+
+        // Group OrderItems by variantId and sum quantity, filter by valid Order Status
+        const salesAgg = await this.prisma.orderItem.groupBy({
+            by: ['variantId'],
+            _sum: {
+                quantity: true
+            },
+            where: {
+                variantId: { in: variantIds },
+                order: {
+                    status: {
+                        in: ['PAID', 'SHIPPED', 'COMPLETED']
+                    }
+                }
+            }
+        });
+
+        // Map sales to dictionary for O(1) lookup
+        const salesMap = new Map<string, number>();
+        salesAgg.forEach(agg => {
+            if (agg.variantId) {
+                salesMap.set(agg.variantId, agg._sum.quantity || 0);
+            }
+        });
+
+        // Attach totalSales to each product
+        return products.map(p => {
+            const productSales = p.variants.reduce((sum, v) => sum + (salesMap.get(v.id) || 0), 0);
+            return {
+                ...p,
+                totalSales: productSales
+            };
         });
     }
 
@@ -87,6 +124,93 @@ export class ProductsService {
         await this.findOne(storeId, id);
         return this.prisma.product.delete({
             where: { id }
+        });
+    }
+    async update(storeId: string, id: string, dto: UpdateProductDto) {
+        // Ensure product exists
+        const product = await this.findOne(storeId, id);
+
+        return this.prisma.$transaction(async (tx) => {
+            // 1. Update Product Core
+            const updatedProduct = await tx.product.update({
+                where: { id },
+                data: {
+                    name: dto.name,
+                    description: dto.description,
+                    game: dto.game,
+                    categoryId: dto.categoryId,
+                    set: dto.set,
+                    rarity: dto.rarity,
+                    collectorNumber: dto.collectorNumber,
+                    price: dto.price,
+                    images: dto.images,
+                    // Slug update logic could go here if needed, but risky for SEO
+                }
+            });
+
+            // 2. Handle Variants if provided
+            if (dto.variants) {
+                // Get existing variants
+                const existingVariants = await tx.productVariant.findMany({
+                    where: { productId: id },
+                    select: { id: true }
+                });
+                const existingIds = existingVariants.map(v => v.id);
+
+                // Identify variants to delete (those not in the new list)
+                const incomingIds = dto.variants.filter(v => v.id).map(v => v.id);
+                const toDelete = existingIds.filter(eid => !incomingIds.includes(eid));
+
+                if (toDelete.length > 0) {
+                    await tx.productVariant.deleteMany({
+                        where: { id: { in: toDelete } }
+                    });
+                }
+
+                // Upsert variants
+                for (const v of dto.variants) {
+                    if (v.id) {
+                        // Update existing
+                        await tx.productVariant.update({
+                            where: { id: v.id },
+                            data: {
+                                condition: v.condition,
+                                isFoil: v.isFoil,
+                                language: v.language,
+                                price: v.price,
+                                inventory: {
+                                    update: {
+                                        quantity: v.quantity
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        // Create new
+                        if (!v.condition || v.price === undefined || v.quantity === undefined) {
+                            throw new Error("Condition, Price, and Quantity are required for new variants");
+                        }
+                        await tx.productVariant.create({
+                            data: {
+                                productId: id,
+                                condition: v.condition,
+                                isFoil: v.isFoil || false,
+                                language: v.language || 'English',
+                                price: v.price,
+                                storeId,
+                                inventory: {
+                                    create: {
+                                        quantity: v.quantity,
+                                        storeId
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+
+            return updatedProduct;
         });
     }
 }
