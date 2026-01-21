@@ -25,8 +25,12 @@ async function getDashboardStats() {
     const cookieStore = cookies()
     const token = cookieStore.get('tcg-auth-token')
 
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    // Ensure URL ends with /api to match backend global prefix
+    const apiUrl = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
+
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/analytics/dashboard`, {
+        const res = await fetch(`${apiUrl}/analytics/dashboard`, {
             headers: {
                 Authorization: `Bearer ${token?.value}`
             },
