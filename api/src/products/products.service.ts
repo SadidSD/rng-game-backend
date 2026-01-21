@@ -82,7 +82,7 @@ export class ProductsService {
                 variantId: { in: variantIds },
                 order: {
                     status: {
-                        in: ['PAID', 'SHIPPED', 'COMPLETED']
+                        in: ['PENDING', 'PAID', 'SHIPPED', 'COMPLETED']
                     }
                 }
             }
