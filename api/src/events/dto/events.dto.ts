@@ -15,7 +15,37 @@ export class CreateEventDto {
     @IsNumber()
     @IsOptional()
     maxPlayers?: number;
+
+    @IsString()
+    @IsOptional()
+    game?: string;
+
+    @IsString()
+    @IsOptional()
+    format?: string;
+
+    @IsNumber()
+    @IsOptional()
+    entryFee?: number;
+
+    @IsString()
+    @IsOptional()
+    image?: string;
+
+    @IsString()
+    @IsOptional()
+    prizes?: string;
+
+    @IsString()
+    @IsOptional()
+    location?: string;
+
+    @IsString()
+    @IsOptional()
+    status?: string;
 }
+
+export class UpdateEventDto extends CreateEventDto { }
 
 export class RegisterPlayerDto {
     @IsString()
@@ -25,4 +55,12 @@ export class RegisterPlayerDto {
     @IsEmail()
     @IsOptional()
     playerEmail?: string;
+
+    @IsString()
+    @IsOptional()
+    customerId?: string;
+
+    @IsString()
+    @IsOptional()
+    deckList?: string;
 }

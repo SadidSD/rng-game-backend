@@ -175,6 +175,7 @@ model Customer {
   store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
   
   orders      Order[]
+  events      EventPlayer[]
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -314,6 +315,7 @@ model BuylistFeaturedCard {
 // Events
 // -----------------------------------------------------------------------------
 
+
 model Event {
   id          String   @id @default(uuid())
   name        String
@@ -321,6 +323,15 @@ model Event {
   date        DateTime
   maxPlayers  Int?
   
+  // New Fields
+  game        String   @default("TCG") // MTG, Pokemon, etc.
+  format      String?
+  entryFee    Decimal  @default(0) @db.Decimal(10, 2)
+  image       String?
+  prizes      String?
+  location    String?  @default("In-Store")
+  status      EventStatus @default(UPCOMING)
+
   players     EventPlayer[]
   
   storeId     String
@@ -330,14 +341,28 @@ model Event {
   updatedAt   DateTime @updatedAt
 }
 
+enum EventStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
 model EventPlayer {
   id          String   @id @default(uuid())
   eventId     String
   event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   
+  // Link to registered customer (Optional)
+  customerId  String?
+  customer    Customer? @relation(fields: [customerId], references: [id])
+
   playerName  String
   playerEmail String?
+  
   paid        Boolean  @default(false)
+  checkedIn   Boolean  @default(false)
+  deckList    String?  // URL or text
   
   createdAt   DateTime @default(now())
 }

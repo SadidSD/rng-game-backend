@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Request, Patch, Delete } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { CreateEventDto, RegisterPlayerDto } from './dto/events.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -19,11 +19,38 @@ export class EventsController {
         return this.eventsService.create(req.user.storeId, dto);
     }
 
+    @Patch(':id')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    update(@Request() req, @Param('id') id: string, @Body() dto: Partial<CreateEventDto>) {
+        return this.eventsService.update(req.user.storeId, id, dto);
+    }
+
+    @Delete(':id')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    remove(@Request() req, @Param('id') id: string) {
+        return this.eventsService.remove(req.user.storeId, id);
+    }
+
+    @Get('admin/list')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    findAllAdmin(@Request() req) {
+        return this.eventsService.findAll(req.user.storeId);
+    }
+
     // --- Public (Storefront) ---
     @Get()
     @UseGuards(ApiKeyGuard)
     findAll(@Request() req) {
-        return this.eventsService.findAll(req.store.id);
+        return this.eventsService.findPublic(req.store.id);
+    }
+
+    @Get(':id')
+    @UseGuards(ApiKeyGuard)
+    findOne(@Request() req, @Param('id') id: string) {
+        return this.eventsService.findOne(req.store.id, id);
     }
 
     @Post(':id/register')
