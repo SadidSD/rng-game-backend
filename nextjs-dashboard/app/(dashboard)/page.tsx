@@ -25,31 +25,40 @@ async function getDashboardStats() {
     const cookieStore = cookies()
     const token = cookieStore.get('tcg-auth-token')
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    // Clean trailing slash from base URL
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
     // Ensure URL ends with /api to match backend global prefix
     const apiUrl = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
 
     try {
+        console.log(`[Dashboard] Fetching stats from: ${apiUrl}/analytics/dashboard`);
         const res = await fetch(`${apiUrl}/analytics/dashboard`, {
             headers: {
                 Authorization: `Bearer ${token?.value}`
             },
             cache: 'no-store'
         })
-        if (!res.ok) return null
+
+        if (!res.ok) {
+            console.error(`[Dashboard] Failed with status: ${res.status} ${res.statusText}`);
+            return { error: `API Error: ${res.status} ${res.statusText}` };
+        }
         return res.json()
     } catch (e) {
-        return null
+        console.error('[Dashboard] Network/Fetch Error:', e);
+        return { error: `Network Error: ${(e as Error).message}` };
     }
 }
 
 export default async function Dashboard() {
-    const stats = await getDashboardStats()
+    const stats: any = await getDashboardStats()
 
-    if (!stats) {
+    if (!stats || stats.error) {
         return (
             <div className="p-8 text-center text-muted-foreground">
-                Unable to load dashboard data. Check your connection or login again.
+                <p>Unable to load dashboard data.</p>
+                <p className="text-xs text-red-400 mt-2">{stats?.error || 'Unknown error'}</p>
+                <p className="text-xs text-gray-500 mt-1">Check console for details.</p>
             </div>
         )
     }
