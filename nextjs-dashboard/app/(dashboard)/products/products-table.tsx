@@ -73,6 +73,9 @@ export async function ProductsTable({ tab = 'all' }: { tab?: 'all' | 'singles' |
                             <TableHead>Status</TableHead>
                             <TableHead>Price</TableHead>
                             <TableHead className="hidden md:table-cell">
+                                Stock
+                            </TableHead>
+                            <TableHead className="hidden md:table-cell">
                                 Total Sales
                             </TableHead>
                             <TableHead className="hidden md:table-cell">
@@ -108,7 +111,11 @@ export async function ProductsTable({ tab = 'all' }: { tab?: 'all' | 'singles' |
                                     </TableCell>
                                     <TableCell>${product.price}</TableCell>
                                     <TableCell className="hidden md:table-cell">
-                                        {product.inventory?.quantity || 0}
+                                        {/* Sum of all variant quantities */}
+                                        {product.variants?.reduce((acc: number, v: any) => acc + (v.quantity || 0), 0) || product.inventory?.quantity || 0}
+                                    </TableCell>
+                                    <TableCell className="hidden md:table-cell">
+                                        {product.inventory?.quantity || 0} {/* Total Sales Placeholder? Actually inventory.quantity was used as sales placeholder before? */}
                                     </TableCell>
                                     <TableCell className="hidden md:table-cell">
                                         {new Date(product.createdAt).toLocaleDateString()}
@@ -152,6 +159,7 @@ export function ProductsTableSkeleton() {
                             <TableHead>Name</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Price</TableHead>
+                            <TableHead className="hidden md:table-cell">Stock</TableHead>
                             <TableHead className="hidden md:table-cell">Total Sales</TableHead>
                             <TableHead className="hidden md:table-cell">Created at</TableHead>
                             <TableHead><span className="sr-only">Actions</span></TableHead>
@@ -171,6 +179,9 @@ export function ProductsTableSkeleton() {
                                 </TableCell>
                                 <TableCell>
                                     <Skeleton className="h-4 w-[50px]" />
+                                </TableCell>
+                                <TableCell className="hidden md:table-cell">
+                                    <Skeleton className="h-4 w-[30px]" />
                                 </TableCell>
                                 <TableCell className="hidden md:table-cell">
                                     <Skeleton className="h-4 w-[30px]" />

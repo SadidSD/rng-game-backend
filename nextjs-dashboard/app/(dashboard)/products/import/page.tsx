@@ -259,7 +259,7 @@ export default function ImportPage() {
 
     // ...
 
-    const handleImport = async (card: CardData) => {
+    const handleImport = async (card: CardData, quantity: number = 1) => {
         if (!selectedCategoryId) {
             alert('Please select a category first.');
             return;
@@ -289,7 +289,7 @@ export default function ImportPage() {
                     {
                         condition: 'NM', // Default to Near Mint for imports
                         price: getManapoolPrice(card, finish) ?? selectedPrice ?? 0,
-                        quantity: 0, // Default stock 0
+                        quantity: quantity, // Use selected quantity
                         isFoil: finish === 'usd_foil' || finish === 'usd_etched',
                         language: 'English'
                     }
@@ -422,10 +422,27 @@ export default function ImportPage() {
                                             <span>{mpPrice ? `$${mpPrice.toFixed(2)}` : 'N/A'}</span>
                                         </div>
                                     </div>
+                                    {/* Quantity Selector */}
+                                    <div className="flex w-full items-center gap-2 mb-2">
+                                        <span className="text-sm font-semibold text-muted-foreground w-16">Qty:</span>
+                                        <Input
+                                            type="number"
+                                            min="1"
+                                            defaultValue="1"
+                                            className="h-8"
+                                            id={`qty-${card.id}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    </div>
+
                                     <Button
                                         className="w-full"
                                         variant="secondary"
-                                        onClick={() => handleImport(card)}
+                                        onClick={() => {
+                                            const qtyInput = document.getElementById(`qty-${card.id}`) as HTMLInputElement;
+                                            const qty = qtyInput ? parseInt(qtyInput.value) : 1;
+                                            handleImport(card, qty);
+                                        }}
                                         disabled={importing === card.id}
                                     >
                                         {importing === card.id ? (
