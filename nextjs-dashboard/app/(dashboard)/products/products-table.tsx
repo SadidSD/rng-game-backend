@@ -112,7 +112,7 @@ export async function ProductsTable({ tab = 'all' }: { tab?: 'all' | 'singles' |
                                     <TableCell>${product.price}</TableCell>
                                     <TableCell className="hidden md:table-cell">
                                         {/* Sum of all variant quantities */}
-                                        {product.variants?.reduce((acc: number, v: any) => acc + (v.quantity || 0), 0) || product.inventory?.quantity || 0}
+                                        {product.variants?.reduce((acc: number, v: any) => acc + (v.inventory?.quantity || 0), 0) || /* Legacy fallback */ product.inventory?.quantity || 0}
                                     </TableCell>
                                     <TableCell className="hidden md:table-cell">
                                         {product.inventory?.quantity || 0} {/* Total Sales Placeholder? Actually inventory.quantity was used as sales placeholder before? */}

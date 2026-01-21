@@ -60,7 +60,9 @@ export class ProductsService {
         return this.prisma.product.findMany({
             where,
             include: {
-                variants: true,
+                variants: {
+                    include: { inventory: true }
+                },
                 category: true
             },
             orderBy: { createdAt: 'desc' },
