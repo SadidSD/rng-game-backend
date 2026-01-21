@@ -26,7 +26,7 @@ export function QuickActions() {
                 </Link>
             </Button>
             <Button asChild variant="outline" className="h-24 flex-col gap-2">
-                <Link href="/">
+                <Link href="/#analytics">
                     <FileText className="h-6 w-6" />
                     <span className="text-sm">View Reports</span>
                 </Link>
