@@ -24,7 +24,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
+import { VariantManager, Variant } from "./variant-manager"
 
 interface ProductFormProps {
     categories: any[];
@@ -34,28 +34,42 @@ interface ProductFormProps {
 export default function ProductForm({ categories, initialData }: ProductFormProps) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
-    const [imageUrl, setImageUrl] = useState(initialData?.image || "");
+    const [imageUrl, setImageUrl] = useState(initialData?.images?.[0] || initialData?.image || "");
+
+    // Card Identity State
     const [formData, setFormData] = useState({
         name: initialData?.name || "",
         description: initialData?.description || "",
-        price: initialData?.price || "",
-        stock: initialData?.inventory?.quantity || 0,
         categoryId: initialData?.categoryId || "",
-        game: initialData?.game || "Pokemon Cards", // Default/Fallback
-        status: initialData?.status || "active",
+        game: initialData?.game || "Pokemon",
+        set: initialData?.set || "",
+        rarity: initialData?.rarity || "",
+        collectorNumber: initialData?.collectorNumber || "",
     });
+
+    // Variants State
+    // Map initial variants to our UI model if they exist
+    const [variants, setVariants] = useState<Variant[]>(
+        initialData?.variants?.map((v: any) => ({
+            id: v.id,
+            condition: v.condition,
+            isFoil: v.isFoil,
+            price: Number(v.price),
+            quantity: Number(v.quantity || v.inventory?.quantity || 0)
+        })) || []
+    );
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files?.[0]) return;
-
         const file = e.target.files[0];
         const form = new FormData();
         form.append('file', file);
 
         try {
-            // Retrieve API URL from env or use default localhost if undefined (for client side usually env needs NEXT_PUBLIC)
-            // But we are in Dashboard which is Next.js too.
-            const uploadUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/uploads`;
+            // Clean trailing slash from base URL
+            const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
+            const uploadUrl = baseUrl.endsWith('/api') ? `${baseUrl}/uploads` : `${baseUrl}/api/uploads`;
+
             const res = await fetch(uploadUrl, {
                 method: 'POST',
                 body: form
@@ -79,39 +93,55 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (variants.length === 0) {
+            alert("Please add at least one variant (e.g. NM Non-Foil).");
+            return;
+        }
+
         setLoading(true);
+
+        // Calculate aggregates
+        const totalStock = variants.reduce((acc, v) => acc + v.quantity, 0);
+        const minPrice = Math.min(...variants.map(v => v.price));
 
         const payload = {
             name: formData.name,
             description: formData.description,
-            game: formData.game, // Using legacy game field too
+            game: formData.game,
             categoryId: formData.categoryId,
+            set: formData.set,
+            rarity: formData.rarity,
+            collectorNumber: formData.collectorNumber,
+            price: minPrice, // Base display price
             images: imageUrl ? [imageUrl] : [],
-            variants: [
-                {
-                    condition: "NM", // Default
-                    price: Number(formData.price),
-                    quantity: Number(formData.stock)
-                }
-            ]
+            variants: variants.map(v => ({
+                condition: v.condition,
+                isFoil: v.isFoil,
+                price: v.price,
+                quantity: v.quantity
+            }))
         };
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+            // Clean trailing slash from base URL
+            const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
+            const apiUrl = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
+
             const res = await fetch(`${apiUrl}/products`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    // 'Authorization': 'Bearer ...' // Add auth if needed later
                 },
                 body: JSON.stringify(payload)
             });
 
             if (res.ok) {
                 router.push('/products');
-                router.refresh(); // Refresh server data
+                router.refresh();
             } else {
-                alert("Failed to create product");
+                const err = await res.json();
+                alert(`Failed to create product: ${err.message || 'Unknown error'}`);
             }
         } catch (error) {
             console.error(error);
@@ -124,19 +154,21 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
     return (
         <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-[1fr_250px] lg:grid-cols-3 lg:gap-8">
             <div className="grid auto-rows-max gap-4 lg:col-span-2 lg:gap-8">
+                {/* 1. Card Identity Section */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Product Details</CardTitle>
+                        <CardTitle>Card Identity</CardTitle>
                         <CardDescription>
-                            Enter the basic information for your product.
+                            Static details about the card itself (Set, Rarity, Number).
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="grid gap-6">
                             <div className="grid gap-3">
-                                <Label htmlFor="name">Name</Label>
+                                <Label htmlFor="name">Card Name</Label>
                                 <Input
                                     id="name"
+                                    placeholder="e.g. Charizard ex"
                                     type="text"
                                     className="w-full"
                                     required
@@ -144,11 +176,66 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                                 />
                             </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-3">
+                                    <Label htmlFor="set">Set Name</Label>
+                                    <Input
+                                        id="set"
+                                        placeholder="e.g. Obsidian Flames"
+                                        type="text"
+                                        value={formData.set}
+                                        onChange={e => setFormData({ ...formData, set: e.target.value })}
+                                    />
+                                </div>
+                                <div className="grid gap-3">
+                                    <Label htmlFor="number">Card Number</Label>
+                                    <Input
+                                        id="number"
+                                        placeholder="e.g. 125/197"
+                                        type="text"
+                                        value={formData.collectorNumber}
+                                        onChange={e => setFormData({ ...formData, collectorNumber: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-3">
+                                    <Label htmlFor="rarity">Rarity</Label>
+                                    <Input
+                                        id="rarity"
+                                        placeholder="e.g. Illustration Rare"
+                                        type="text"
+                                        value={formData.rarity}
+                                        onChange={e => setFormData({ ...formData, rarity: e.target.value })}
+                                    />
+                                </div>
+                                <div className="grid gap-3">
+                                    <Label htmlFor="game">Game</Label>
+                                    <Select
+                                        value={formData.game}
+                                        onValueChange={(val) => setFormData({ ...formData, game: val })}
+                                    >
+                                        <SelectTrigger id="game">
+                                            <SelectValue placeholder="Select Game" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Pokemon">Pokemon</SelectItem>
+                                            <SelectItem value="MTG">Magic: The Gathering</SelectItem>
+                                            <SelectItem value="YuGiOh">Yu-Gi-Oh!</SelectItem>
+                                            <SelectItem value="Lorcana">Lorcana</SelectItem>
+                                            <SelectItem value="OnePiece">One Piece</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
                             <div className="grid gap-3">
-                                <Label htmlFor="description">Description</Label>
+                                <Label htmlFor="description">Description (Optional)</Label>
                                 <Textarea
                                     id="description"
-                                    className="min-h-32"
+                                    className="min-h-20"
                                     value={formData.description}
                                     onChange={e => setFormData({ ...formData, description: e.target.value })}
                                 />
@@ -157,88 +244,59 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Stock & Pricing</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid gap-6 sm:grid-cols-2">
-                            <div className="grid gap-3">
-                                <Label htmlFor="price">Price</Label>
-                                <Input
-                                    id="price"
-                                    type="number"
-                                    step="0.01"
-                                    required
-                                    value={formData.price}
-                                    onChange={e => setFormData({ ...formData, price: e.target.value })}
-                                />
-                            </div>
-                            <div className="grid gap-3">
-                                <Label htmlFor="stock">Stock Quantity</Label>
-                                <Input
-                                    id="stock"
-                                    type="number"
-                                    required
-                                    value={formData.stock}
-                                    onChange={e => setFormData({ ...formData, stock: Number(e.target.value) })}
-                                />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                {/* 2. Inventory Matrix */}
+                <VariantManager variants={variants} onChange={setVariants} />
 
+                {/* 3. Category (Hidden/Auto or Explicit) */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Product Category</CardTitle>
+                        <CardTitle>Organization</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid gap-6">
-                            <div className="grid gap-3">
-                                <Label htmlFor="category">Category</Label>
-                                <Select
-                                    value={formData.categoryId}
-                                    onValueChange={(val) => {
-                                        // Also update 'game' fallback name if possible, or just id
-                                        const cat = categories.find(c => c.id === val);
-                                        setFormData({ ...formData, categoryId: val, game: cat ? cat.name : formData.game })
-                                    }}
-                                >
-                                    <SelectTrigger id="category" aria-label="Select category">
-                                        <SelectValue placeholder="Select category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {categories.map((cat) => (
-                                            <SelectItem key={cat.id} value={cat.id}>
-                                                {cat.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                        <div className="grid gap-3">
+                            <Label htmlFor="category">Store Category</Label>
+                            <Select
+                                value={formData.categoryId}
+                                onValueChange={(val) => {
+                                    setFormData({ ...formData, categoryId: val })
+                                }}
+                            >
+                                <SelectTrigger id="category">
+                                    <SelectValue placeholder="Select category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {categories.map((cat) => (
+                                        <SelectItem key={cat.id} value={cat.id}>
+                                            {cat.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
+            {/* Right Column: Images & Actions */}
             <div className="grid auto-rows-max gap-4">
                 <Card className="overflow-hidden">
                     <CardHeader>
-                        <CardTitle>Product Images</CardTitle>
+                        <CardTitle>Card Image</CardTitle>
                         <CardDescription>
-                            Upload an image for the product.
+                            Upload the main card image.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="grid gap-2">
                             {imageUrl ? (
-                                <div className="relative aspect-square w-full rounded-md object-cover bg-gray-100">
+                                <div className="relative aspect-[2/3] w-full rounded-md object-cover bg-gray-100">
                                     <Image
                                         alt="Product image"
-                                        className="aspect-square w-full rounded-md object-cover"
-                                        height="300"
+                                        className="aspect-[2/3] w-full rounded-md object-contain"
+                                        height="400"
                                         src={imageUrl}
                                         width="300"
+                                        style={{ objectFit: 'contain' }}
                                     />
                                     <button
                                         type="button"
@@ -249,16 +307,16 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
                                     </button>
                                 </div>
                             ) : (
-                                <div className="flex aspect-square w-full items-center justify-center rounded-md border border-dashed text-gray-400">
-                                    <Upload className="h-8 w-8" />
-                                    <span className="sr-only">Upload</span>
-                                    {/* Hidden Input triggered by label or overlay? 
-                                        For simplicity let's put an input here */}
+                                <div className="flex aspect-[2/3] w-full items-center justify-center rounded-md border border-dashed text-gray-400">
+                                    <div className="text-center">
+                                        <Upload className="h-8 w-8 mx-auto mb-2" />
+                                        <span className="text-sm">Upload Card</span>
+                                    </div>
                                 </div>
                             )}
                             <div className="grid gap-2">
-                                <Label htmlFor="image-upload" className="cursor-pointer bg-black text-white py-2 px-4 rounded text-center hover:bg-gray-800">
-                                    {loading ? "Uploading..." : "Upload Image"}
+                                <Label htmlFor="image-upload" className="cursor-pointer bg-black text-white py-2 px-4 rounded text-center hover:bg-gray-800 transition-all">
+                                    {loading ? "Uploading..." : "Choose Image"}
                                 </Label>
                                 <Input
                                     id="image-upload"
@@ -277,7 +335,7 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
                         Discard
                     </Button>
                     <Button size="sm" type="submit" disabled={loading}>
-                        {loading ? "Saving..." : "Save Product"}
+                        {loading ? "Saving..." : "Save Card"}
                     </Button>
                 </div>
             </div>
