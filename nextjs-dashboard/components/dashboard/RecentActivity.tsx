@@ -19,7 +19,7 @@ export function RecentActivity({ orders }: { orders?: any[] }) {
                             <p className="text-sm font-medium leading-none">
                                 New order #{order.id.slice(0, 8)}
                             </p>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-sm text-muted-foreground" suppressHydrationWarning>
                                 {new Date(order.createdAt).toLocaleString()}
                             </p>
                             {order.customer?.email && (
