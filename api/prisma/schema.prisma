@@ -66,6 +66,20 @@ enum Role {
 // Products & Inventory
 // -----------------------------------------------------------------------------
 
+model Card {
+  id          String   @id @default(uuid())
+  oracleId    String   @unique // Scryfall Oracle ID
+  name        String
+  oracleText  String?  // Oracle text for the card
+  
+  legalities  Json?    // Format legality
+  
+  products    Product[] // Printings of this card (e.g. Alpha, Beta)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model Product {
   id          String   @id @default(uuid())
   name        String
@@ -77,6 +91,10 @@ model Product {
   set         String?  // e.g. "Base Set", "Commander Legends"
   rarity      String?
   collectorNumber String?
+
+  cardId      String?
+  card        Card?    @relation(fields: [cardId], references: [id])
+
   slug        String   // URL friendly name
   
   storeId     String

@@ -15,6 +15,8 @@ async function main() {
         set: 'Alpha',
         rarity: 'Rare',
         collectorNumber: '001',
+        oracleId: 'bd8fa327-dd41-4737-8f19-2cf5eb1f7cdd',
+        legalities: { commander: 'banned', vintage: 'restricted' },
         price: 99999.00,
         images: ['https://cards.scryfall.io/large/front/b/d/bd8fa327-dd41-4737-8f19-2cf5eb1f7cdd.jpg'],
         slug: 'black-lotus-debug-' + Date.now(),

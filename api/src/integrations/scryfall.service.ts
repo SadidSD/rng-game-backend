@@ -29,6 +29,9 @@ export class ScryfallService {
                 setId: card.set,
                 image: card.image_uris?.normal || card.card_faces?.[0]?.image_uris?.normal || '',
                 rarity: card.rarity,
+                oracleId: card.oracle_id,
+                oracleText: card.oracle_text,
+                legalities: card.legalities,
                 tcgplayerUrl: card.purchase_uris?.tcgplayer,
                 price: card.prices?.usd || 0
             };

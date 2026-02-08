@@ -283,6 +283,9 @@ export default function ImportPage() {
                 set: card.set,
                 rarity: card.rarity,
                 collectorNumber: card.collectorNumber,
+                oracleId: card.oracleId,
+                oracleText: card.oracleText,
+                legalities: card.legalities,
                 price: getManapoolPrice(card, finish) ?? selectedPrice ?? 0, // Root price for display
                 images: [card.imageLarge || card.image],
                 variants: [

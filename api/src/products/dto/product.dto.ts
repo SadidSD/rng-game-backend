@@ -62,6 +62,18 @@ export class CreateProductDto {
     @IsOptional()
     collectorNumber?: string;
 
+    @IsString()
+    @IsOptional()
+    oracleId?: string;
+
+    @IsString()
+    @IsOptional()
+    oracleText?: string;
+
+    @IsOptional()
+    legalities?: any; // JSON object from Scryfall
+
+
     @IsNumber()
     @Min(0)
     @IsOptional()

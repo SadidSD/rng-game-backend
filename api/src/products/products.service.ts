@@ -10,40 +10,70 @@ export class ProductsService {
         // Generate a simple slug
         const slug = dto.name.toLowerCase().replace(/ /g, '-') + '-' + Date.now();
 
-        return this.prisma.product.create({
-            data: {
-                name: dto.name,
-                description: dto.description,
-                game: dto.game,
-                categoryId: dto.categoryId,
-                set: dto.set,
-                rarity: dto.rarity,
-                collectorNumber: dto.collectorNumber,
-                price: dto.price, // Save root price
-                slug: slug,
-                images: dto.images || [],
-                storeId,
-                variants: {
-                    create: dto.variants?.map(v => ({
-                        condition: v.condition,
-                        isFoil: v.isFoil || false,
-                        language: v.language || 'English',
-                        price: v.price,
-                        storeId,
-                        inventory: {
-                            create: {
-                                quantity: v.quantity,
-                                storeId
+        return this.prisma.$transaction(async (tx) => {
+            let cardId = null;
+
+            // 1. Handle Card Identity (Oracle)
+            if (dto.oracleId) {
+                const card = await tx.card.upsert({
+                    where: { oracleId: dto.oracleId },
+                    update: {
+                        // Update details if they changed (optional, could just keep existing)
+                        legalities: dto.legalities,
+                        // oracleText: dto.oracleText // If we passed it
+                    },
+                    create: {
+                        oracleId: dto.oracleId,
+                        name: dto.name, // Use the product name as the card name
+                        oracleText: dto.oracleText || '',
+                        legalities: dto.legalities
+                    }
+                });
+                cardId = card.id;
+            }
+
+            // 2. Create Product (Printing)
+            return tx.product.create({
+                data: {
+                    name: dto.name,
+                    description: dto.description,
+                    game: dto.game,
+                    categoryId: dto.categoryId,
+                    set: dto.set,
+                    rarity: dto.rarity,
+                    collectorNumber: dto.collectorNumber,
+                    // Remove fields that moved to Card
+                    // oracleId: dto.oracleId, 
+                    // legalities: dto.legalities,
+                    cardId: cardId, // Link to Card
+
+                    price: dto.price, // Save root price
+                    slug: slug,
+                    images: dto.images || [],
+                    storeId,
+                    variants: {
+                        create: dto.variants?.map(v => ({
+                            condition: v.condition,
+                            isFoil: v.isFoil || false,
+                            language: v.language || 'English',
+                            price: v.price,
+                            storeId,
+                            inventory: {
+                                create: {
+                                    quantity: v.quantity,
+                                    storeId
+                                }
                             }
-                        }
-                    })),
+                        })),
+                    },
                 },
-            },
-            include: {
-                variants: {
-                    include: { inventory: true }
-                }
-            },
+                include: {
+                    variants: {
+                        include: { inventory: true }
+                    },
+                    card: true // Return card details
+                },
+            });
         });
     }
 
