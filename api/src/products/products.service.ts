@@ -11,7 +11,7 @@ export class ProductsService {
         const slug = dto.name.toLowerCase().replace(/ /g, '-') + '-' + Date.now();
 
         return this.prisma.$transaction(async (tx) => {
-            let cardId = null;
+            let cardId: string | null = null;
 
             // 1. Handle Card Identity (Oracle)
             if (dto.oracleId) {
