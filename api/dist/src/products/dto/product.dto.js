@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateProductDto = exports.CreateProductVariantDto = void 0;
+exports.UpdateProductDto = exports.UpdateProductVariantDto = exports.CreateProductDto = exports.CreateProductVariantDto = void 0;
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 const client_1 = require("@prisma/client");
@@ -51,6 +51,12 @@ class CreateProductDto {
     game;
     categoryId;
     set;
+    rarity;
+    collectorNumber;
+    oracleId;
+    oracleText;
+    legalities;
+    price;
     images;
     variants;
 }
@@ -81,6 +87,36 @@ __decorate([
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "set", void 0);
 __decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateProductDto.prototype, "rarity", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateProductDto.prototype, "collectorNumber", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateProductDto.prototype, "oracleId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateProductDto.prototype, "oracleText", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Object)
+], CreateProductDto.prototype, "legalities", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateProductDto.prototype, "price", void 0);
+__decorate([
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.IsString)({ each: true }),
     (0, class_validator_1.IsOptional)(),
@@ -93,4 +129,25 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Array)
 ], CreateProductDto.prototype, "variants", void 0);
+const mapped_types_1 = require("@nestjs/mapped-types");
+class UpdateProductVariantDto extends (0, mapped_types_1.PartialType)(CreateProductVariantDto) {
+    id;
+}
+exports.UpdateProductVariantDto = UpdateProductVariantDto;
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], UpdateProductVariantDto.prototype, "id", void 0);
+class UpdateProductDto extends (0, mapped_types_1.PartialType)((0, mapped_types_1.OmitType)(CreateProductDto, ['variants'])) {
+    variants;
+}
+exports.UpdateProductDto = UpdateProductDto;
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => UpdateProductVariantDto),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], UpdateProductDto.prototype, "variants", void 0);
 //# sourceMappingURL=product.dto.js.map

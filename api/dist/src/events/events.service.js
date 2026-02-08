@@ -24,6 +24,13 @@ let EventsService = class EventsService {
                 description: dto.description,
                 date: new Date(dto.date),
                 maxPlayers: dto.maxPlayers,
+                game: dto.game,
+                format: dto.format,
+                entryFee: dto.entryFee,
+                image: dto.image,
+                prizes: dto.prizes,
+                location: dto.location,
+                status: dto.status,
                 storeId,
             },
         });
@@ -32,7 +39,21 @@ let EventsService = class EventsService {
         return this.prisma.event.findMany({
             where: { storeId },
             orderBy: { date: 'asc' },
-            include: { _count: { select: { players: true } } }
+            include: {
+                _count: { select: { players: true } }
+            }
+        });
+    }
+    async findPublic(storeId) {
+        return this.prisma.event.findMany({
+            where: {
+                storeId,
+                status: { not: 'CANCELLED' }
+            },
+            orderBy: { date: 'asc' },
+            include: {
+                _count: { select: { players: true } }
+            }
         });
     }
     async findOne(storeId, id) {
@@ -44,16 +65,38 @@ let EventsService = class EventsService {
             throw new common_1.NotFoundException('Event not found');
         return event;
     }
+    async update(storeId, id, dto) {
+        await this.findOne(storeId, id);
+        return this.prisma.event.update({
+            where: { id },
+            data: {
+                ...dto,
+                date: dto.date ? new Date(dto.date) : undefined,
+                status: dto.status,
+            }
+        });
+    }
+    async remove(storeId, id) {
+        await this.findOne(storeId, id);
+        return this.prisma.event.delete({ where: { id } });
+    }
     async registerPlayer(storeId, eventId, dto) {
         const event = await this.findOne(storeId, eventId);
         if (event.maxPlayers && event.players.length >= event.maxPlayers) {
             throw new Error('Event is full');
         }
+        const existing = event.players.find(p => (dto.customerId && p.customerId === dto.customerId) ||
+            (dto.playerEmail && p.playerEmail === dto.playerEmail));
+        if (existing) {
+            throw new Error('Player already registered');
+        }
         return this.prisma.eventPlayer.create({
             data: {
                 eventId,
                 playerName: dto.playerName,
-                playerEmail: dto.playerEmail
+                playerEmail: dto.playerEmail,
+                customerId: dto.customerId,
+                deckList: dto.deckList
             }
         });
     }

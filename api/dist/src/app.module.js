@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 const auth_module_1 = require("./auth/auth.module");
@@ -31,7 +32,12 @@ let AppModule = class AppModule {
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [auth_module_1.AuthModule, users_module_1.UsersModule, store_module_1.StoreModule, public_module_1.PublicModule, products_module_1.ProductsModule, inventory_module_1.InventoryModule, buylist_module_1.BuylistModule, orders_module_1.OrdersModule, customers_module_1.CustomersModule, events_module_1.EventsModule, analytics_module_1.AnalyticsModule, integrations_module_1.IntegrationsModule, uploads_module_1.UploadsModule, categories_module_1.CategoriesModule, prisma_module_1.PrismaModule, pokemon_tcg_module_1.PokemonTcgModule],
+        imports: [
+            config_1.ConfigModule.forRoot({
+                isGlobal: true,
+            }),
+            auth_module_1.AuthModule, users_module_1.UsersModule, store_module_1.StoreModule, public_module_1.PublicModule, products_module_1.ProductsModule, inventory_module_1.InventoryModule, buylist_module_1.BuylistModule, orders_module_1.OrdersModule, customers_module_1.CustomersModule, events_module_1.EventsModule, analytics_module_1.AnalyticsModule, integrations_module_1.IntegrationsModule, uploads_module_1.UploadsModule, categories_module_1.CategoriesModule, prisma_module_1.PrismaModule, pokemon_tcg_module_1.PokemonTcgModule
+        ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
     })

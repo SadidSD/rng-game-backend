@@ -29,8 +29,20 @@ let AnalyticsService = class AnalyticsService {
         const productCount = await this.prisma.product.count({
             where: { storeId }
         });
+        const lowStockItems = await this.prisma.inventoryItem.findMany({
+            where: { storeId, quantity: { lt: 5 } },
+            take: 4,
+            include: {
+                variant: {
+                    include: { product: true }
+                }
+            }
+        });
         const lowStockCount = await this.prisma.inventoryItem.count({
             where: { storeId, quantity: { lt: 5 } }
+        });
+        const buylistCount = await this.prisma.buylistOffer.count({
+            where: { storeId, status: 'PENDING' }
         });
         const recentOrders = await this.prisma.order.findMany({
             where: { storeId },
@@ -38,14 +50,50 @@ let AnalyticsService = class AnalyticsService {
             orderBy: { createdAt: 'desc' },
             include: { customer: true }
         });
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const lastWeekOrders = await this.prisma.order.findMany({
+            where: {
+                storeId,
+                createdAt: { gte: sevenDaysAgo },
+                status: { not: 'CANCELLED' }
+            },
+            select: { createdAt: true, total: true }
+        });
+        const chartData = this.aggregateSalesByDay(lastWeekOrders);
         return {
             totalSales: Number(salesAgg._sum.total || 0),
             totalOrders: salesAgg._count.id,
             totalCustomers: customerCount,
+            buylistQueue: buylistCount,
             totalProducts: productCount,
             lowStockAlerts: lowStockCount,
-            recentOrders
+            lowStockItems: lowStockItems.map(i => ({
+                id: i.id,
+                name: i.variant.product.name,
+                game: i.variant.product.game || 'TCG',
+                stock: i.quantity,
+                threshold: 5
+            })),
+            recentOrders,
+            chartData
         };
+    }
+    aggregateSalesByDay(orders) {
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const map = new Map();
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dayName = days[d.getDay()];
+            map.set(dayName, 0);
+        }
+        for (const o of orders) {
+            const dayName = days[new Date(o.createdAt).getDay()];
+            const current = map.get(dayName) || 0;
+            map.set(dayName, current + Number(o.total));
+        }
+        return Array.from(map.entries()).map(([name, total]) => ({ name, total }));
     }
 };
 exports.AnalyticsService = AnalyticsService;

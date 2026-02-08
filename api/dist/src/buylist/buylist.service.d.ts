@@ -21,6 +21,34 @@ export declare class BuylistService {
         rarity: string | null;
         buyPercentage: import("@prisma/client/runtime/library").Decimal;
     }[]>;
+    getFeaturedCards(storeId: string): Promise<{
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        storeId: string;
+        game: string;
+        set: string | null;
+        image: string;
+        setId: string | null;
+        basePrice: import("@prisma/client/runtime/library").Decimal | null;
+    }[]>;
+    searchBuylist(storeId: string, query: string): Promise<{
+        source: string;
+        local: {
+            id: string;
+            name: string;
+            createdAt: Date;
+            updatedAt: Date;
+            storeId: string;
+            game: string;
+            set: string | null;
+            image: string;
+            setId: string | null;
+            basePrice: import("@prisma/client/runtime/library").Decimal | null;
+        }[];
+        remote: never[];
+    }>;
     submitOffer(storeId: string, dto: CreateBuylistOfferDto): Promise<{
         items: {
             id: string;
@@ -36,9 +64,9 @@ export declare class BuylistService {
         createdAt: Date;
         updatedAt: Date;
         storeId: string;
+        status: import(".prisma/client").$Enums.OfferStatus;
         customerName: string;
         customerEmail: string;
-        status: import(".prisma/client").$Enums.OfferStatus;
         totalCash: import("@prisma/client/runtime/library").Decimal;
         totalCredit: import("@prisma/client/runtime/library").Decimal;
     }>;
@@ -57,9 +85,9 @@ export declare class BuylistService {
         createdAt: Date;
         updatedAt: Date;
         storeId: string;
+        status: import(".prisma/client").$Enums.OfferStatus;
         customerName: string;
         customerEmail: string;
-        status: import(".prisma/client").$Enums.OfferStatus;
         totalCash: import("@prisma/client/runtime/library").Decimal;
         totalCredit: import("@prisma/client/runtime/library").Decimal;
     })[]>;
@@ -68,10 +96,11 @@ export declare class BuylistService {
         createdAt: Date;
         updatedAt: Date;
         storeId: string;
+        status: import(".prisma/client").$Enums.OfferStatus;
         customerName: string;
         customerEmail: string;
-        status: import(".prisma/client").$Enums.OfferStatus;
         totalCash: import("@prisma/client/runtime/library").Decimal;
         totalCredit: import("@prisma/client/runtime/library").Decimal;
     }>;
+    finalizeOfferCredit(storeId: string, offer: any): Promise<void>;
 }

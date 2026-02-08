@@ -70,9 +70,20 @@ model Card {
   id          String   @id @default(uuid())
   oracleId    String   @unique // Scryfall Oracle ID
   name        String
-  oracleText  String?  // Oracle text for the card
+  oracleText  String
+  legalities  Json?    // Stores format legality (e.g. standard, commander)
   
-  legalities  Json?    // Format legality
+  // Advanced Filtering Fields
+  manaCost    String?
+  manaValue   Float?
+  colors      String[]
+  colorIdentity String[]
+  typeLine    String?
+  supertypes  String[] // e.g. ["Legendary"]
+  subtypes    String[] // e.g. ["Human", "Wizard"]
+  power       String?
+  toughness   String?
+  loyalty     String?
   
   products    Product[] // Printings of this card (e.g. Alpha, Beta)
   

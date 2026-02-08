@@ -25,13 +25,32 @@ let PublicProductsController = class PublicProductsController {
         const storeId = req.store.id;
         const products = await this.prisma.product.findMany({
             where: { storeId },
-            include: { variants: true },
+            include: {
+                variants: true,
+                category: true
+            },
         });
         return {
             store: req.store.name,
             count: products.length,
             data: products
         };
+    }
+    async getProduct(req, id) {
+        const storeId = req.store.id;
+        const product = await this.prisma.product.findFirst({
+            where: { id, storeId },
+            include: {
+                variants: {
+                    include: { inventory: true }
+                },
+                card: true,
+                category: true
+            }
+        });
+        if (!product)
+            return null;
+        return product;
     }
 };
 exports.PublicProductsController = PublicProductsController;
@@ -42,6 +61,14 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], PublicProductsController.prototype, "getProducts", null);
+__decorate([
+    (0, common_1.Get)('products/:id'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], PublicProductsController.prototype, "getProduct", null);
 exports.PublicProductsController = PublicProductsController = __decorate([
     (0, common_1.Controller)('public'),
     (0, common_1.UseGuards)(api_key_guard_1.ApiKeyGuard),

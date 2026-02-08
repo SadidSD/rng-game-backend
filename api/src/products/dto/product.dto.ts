@@ -73,6 +73,51 @@ export class CreateProductDto {
     @IsOptional()
     legalities?: any; // JSON object from Scryfall
 
+    // Advanced Filtering
+    @IsString()
+    @IsOptional()
+    manaCost?: string;
+
+    @IsNumber()
+    @IsOptional()
+    manaValue?: number;
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    colors?: string[];
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    colorIdentity?: string[];
+
+    @IsString()
+    @IsOptional()
+    typeLine?: string;
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    supertypes?: string[];
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    subtypes?: string[];
+
+    @IsString()
+    @IsOptional()
+    power?: string;
+
+    @IsString()
+    @IsOptional()
+    toughness?: string;
+
+    @IsString()
+    @IsOptional()
+    loyalty?: string;
+
 
     @IsNumber()
     @Min(0)

@@ -30,12 +30,31 @@ let BuylistService = class BuylistService {
             where: { storeId }
         });
     }
+    async getFeaturedCards(storeId) {
+        return this.prisma.buylistFeaturedCard.findMany({
+            where: { storeId },
+            orderBy: { createdAt: 'desc' }
+        });
+    }
+    async searchBuylist(storeId, query) {
+        const localResults = await this.prisma.buylistFeaturedCard.findMany({
+            where: {
+                storeId,
+                name: { contains: query, mode: 'insensitive' }
+            }
+        });
+        return {
+            source: 'hybrid',
+            local: localResults,
+            remote: []
+        };
+    }
     async submitOffer(storeId, dto) {
         let totalCash = 0;
         let totalCredit = 0;
         dto.items.forEach(item => {
-            totalCash += item.offerPrice * item.quantity;
-            totalCredit += (item.offerPrice * 1.25) * item.quantity;
+            totalCash = 0;
+            totalCredit += item.offerPrice * item.quantity;
         });
         return this.prisma.buylistOffer.create({
             data: {
@@ -71,10 +90,30 @@ let BuylistService = class BuylistService {
         if (!offer || offer.storeId !== storeId) {
             throw new common_1.NotFoundException('Offer not found');
         }
-        return this.prisma.buylistOffer.update({
+        const updated = await this.prisma.buylistOffer.update({
             where: { id: offerId },
             data: { status: dto.status }
         });
+        if (dto.status === 'COMPLETED') {
+            await this.finalizeOfferCredit(storeId, offer);
+        }
+        return updated;
+    }
+    async finalizeOfferCredit(storeId, offer) {
+        const customer = await this.prisma.customer.findFirst({
+            where: { storeId, email: offer.customerEmail }
+        });
+        if (!customer) {
+            console.warn(`[Buylist] Could not issue credit. Customer ${offer.customerEmail} not found.`);
+            return;
+        }
+        await this.prisma.customer.update({
+            where: { id: customer.id },
+            data: {
+                creditBalance: { increment: offer.totalCredit }
+            }
+        });
+        console.log(`[Buylist] Issued $${offer.totalCredit} credit to ${offer.customerEmail}`);
     }
 };
 exports.BuylistService = BuylistService;

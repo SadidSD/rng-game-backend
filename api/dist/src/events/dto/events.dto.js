@@ -9,13 +9,20 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RegisterPlayerDto = exports.CreateEventDto = void 0;
+exports.RegisterPlayerDto = exports.UpdateEventDto = exports.CreateEventDto = void 0;
 const class_validator_1 = require("class-validator");
 class CreateEventDto {
     name;
     description;
     date;
     maxPlayers;
+    game;
+    format;
+    entryFee;
+    image;
+    prizes;
+    location;
+    status;
 }
 exports.CreateEventDto = CreateEventDto;
 __decorate([
@@ -37,9 +44,49 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], CreateEventDto.prototype, "maxPlayers", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateEventDto.prototype, "game", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateEventDto.prototype, "format", void 0);
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateEventDto.prototype, "entryFee", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateEventDto.prototype, "image", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateEventDto.prototype, "prizes", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateEventDto.prototype, "location", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateEventDto.prototype, "status", void 0);
+class UpdateEventDto extends CreateEventDto {
+}
+exports.UpdateEventDto = UpdateEventDto;
 class RegisterPlayerDto {
     playerName;
     playerEmail;
+    customerId;
+    deckList;
 }
 exports.RegisterPlayerDto = RegisterPlayerDto;
 __decorate([
@@ -52,4 +99,14 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], RegisterPlayerDto.prototype, "playerEmail", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], RegisterPlayerDto.prototype, "customerId", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], RegisterPlayerDto.prototype, "deckList", void 0);
 //# sourceMappingURL=events.dto.js.map

@@ -20,13 +20,34 @@ export class ProductsService {
                     update: {
                         // Update details if they changed (optional, could just keep existing)
                         legalities: dto.legalities,
-                        // oracleText: dto.oracleText // If we passed it
+                        // oracleText: dto.oracleText,
+                        manaCost: dto.manaCost,
+                        manaValue: dto.manaValue,
+                        colors: dto.colors,
+                        colorIdentity: dto.colorIdentity,
+                        typeLine: dto.typeLine,
+                        supertypes: dto.supertypes,
+                        subtypes: dto.subtypes,
+                        power: dto.power,
+                        toughness: dto.toughness,
+                        loyalty: dto.loyalty
                     },
                     create: {
                         oracleId: dto.oracleId,
                         name: dto.name, // Use the product name as the card name
                         oracleText: dto.oracleText || '',
-                        legalities: dto.legalities
+                        legalities: dto.legalities,
+                        // Advanced Filtering
+                        manaCost: dto.manaCost,
+                        manaValue: dto.manaValue,
+                        colors: dto.colors,
+                        colorIdentity: dto.colorIdentity,
+                        typeLine: dto.typeLine,
+                        supertypes: dto.supertypes,
+                        subtypes: dto.subtypes,
+                        power: dto.power,
+                        toughness: dto.toughness,
+                        loyalty: dto.loyalty
                     }
                 });
                 cardId = card.id;

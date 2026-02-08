@@ -36,9 +36,9 @@ export declare class BuylistController {
         createdAt: Date;
         updatedAt: Date;
         storeId: string;
+        status: import(".prisma/client").$Enums.OfferStatus;
         customerName: string;
         customerEmail: string;
-        status: import(".prisma/client").$Enums.OfferStatus;
         totalCash: import("@prisma/client/runtime/library").Decimal;
         totalCredit: import("@prisma/client/runtime/library").Decimal;
     })[]>;
@@ -47,9 +47,9 @@ export declare class BuylistController {
         createdAt: Date;
         updatedAt: Date;
         storeId: string;
+        status: import(".prisma/client").$Enums.OfferStatus;
         customerName: string;
         customerEmail: string;
-        status: import(".prisma/client").$Enums.OfferStatus;
         totalCash: import("@prisma/client/runtime/library").Decimal;
         totalCredit: import("@prisma/client/runtime/library").Decimal;
     }>;
@@ -68,10 +68,38 @@ export declare class BuylistController {
         createdAt: Date;
         updatedAt: Date;
         storeId: string;
+        status: import(".prisma/client").$Enums.OfferStatus;
         customerName: string;
         customerEmail: string;
-        status: import(".prisma/client").$Enums.OfferStatus;
         totalCash: import("@prisma/client/runtime/library").Decimal;
         totalCredit: import("@prisma/client/runtime/library").Decimal;
+    }>;
+    getFeaturedCards(req: any): Promise<{
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        storeId: string;
+        game: string;
+        set: string | null;
+        image: string;
+        setId: string | null;
+        basePrice: import("@prisma/client/runtime/library").Decimal | null;
+    }[]>;
+    search(req: any, query: string): Promise<{
+        source: string;
+        local: {
+            id: string;
+            name: string;
+            createdAt: Date;
+            updatedAt: Date;
+            storeId: string;
+            game: string;
+            set: string | null;
+            image: string;
+            setId: string | null;
+            basePrice: import("@prisma/client/runtime/library").Decimal | null;
+        }[];
+        remote: never[];
     }>;
 }

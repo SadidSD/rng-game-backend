@@ -12,12 +12,13 @@ const buylist_service_1 = require("./buylist.service");
 const buylist_controller_1 = require("./buylist.controller");
 const prisma_module_1 = require("../prisma/prisma.module");
 const api_key_guard_1 = require("../auth/guards/api-key.guard");
+const pokemon_tcg_module_1 = require("../integrations/pokemon-tcg/pokemon-tcg.module");
 let BuylistModule = class BuylistModule {
 };
 exports.BuylistModule = BuylistModule;
 exports.BuylistModule = BuylistModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule],
+        imports: [prisma_module_1.PrismaModule, pokemon_tcg_module_1.PokemonTcgModule],
         controllers: [buylist_controller_1.BuylistController],
         providers: [buylist_service_1.BuylistService, api_key_guard_1.ApiKeyGuard],
     })

@@ -24,7 +24,7 @@ let ManapoolService = class ManapoolService {
         this.baseUrl = 'https://manapool.com/api/v1';
     }
     priceCache = null;
-    CACHE_TTL = 5 * 60 * 1000;
+    CACHE_TTL = 60 * 60 * 1000;
     async searchCards(query, game = 'Pokemon') {
         const prices = await this.getAllPrices();
         const lowerQuery = query.toLowerCase();
@@ -33,8 +33,11 @@ let ManapoolService = class ManapoolService {
                 (card.scryfall_id && card.scryfall_id === query)).map(card => ({
                 ...card,
                 price: card.price_cents / 100,
+                price_foil: card.price_cents_foil ? card.price_cents_foil / 100 : null,
+                price_etched: card.price_cents_etch ? card.price_cents_etch / 100 : null,
                 marketPrice: card.price_cents / 100,
-                currency: 'USD'
+                currency: 'USD',
+                raw_data: card
             }))
         };
     }
@@ -43,9 +46,11 @@ let ManapoolService = class ManapoolService {
             return this.priceCache.data;
         }
         const accessToken = this.configService.get('MANAPOOL_ACCESS_TOKEN');
+        console.log(`[Manapool] Token available: ${accessToken ? 'YES' : 'NO'} (${accessToken ? accessToken.substring(0, 5) + '...' : ''})`);
         if (!accessToken)
-            throw new common_1.HttpException('Manapool Token Missing', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new common_1.HttpException('Manapool Token Missing in Environment', common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         try {
+            console.log(`[Manapool] Fetching prices from ${this.baseUrl}/prices/singles...`);
             const response = await axios_1.default.get(`${this.baseUrl}/prices/singles`, {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
@@ -56,11 +61,13 @@ let ManapoolService = class ManapoolService {
                 data: response.data.data || [],
                 timestamp: Date.now()
             };
+            console.log(`[Manapool] Fetched ${this.priceCache.data.length} prices.`);
             return this.priceCache.data;
         }
         catch (error) {
-            console.error('Manapool Price Fetch Error:', error.message);
-            throw new common_1.HttpException('Failed to fetch Manapool prices', common_1.HttpStatus.BAD_GATEWAY);
+            console.error('Manapool Price Fetch Error FULL:', error);
+            const cause = error.response?.data?.message || error.message;
+            throw new common_1.HttpException(`Failed to fetch Manapool prices: ${cause}`, common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 };

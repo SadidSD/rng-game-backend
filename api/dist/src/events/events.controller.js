@@ -29,8 +29,20 @@ let EventsController = class EventsController {
     create(req, dto) {
         return this.eventsService.create(req.user.storeId, dto);
     }
+    update(req, id, dto) {
+        return this.eventsService.update(req.user.storeId, id, dto);
+    }
+    remove(req, id) {
+        return this.eventsService.remove(req.user.storeId, id);
+    }
+    findAllAdmin(req) {
+        return this.eventsService.findAll(req.user.storeId);
+    }
     findAll(req) {
-        return this.eventsService.findAll(req.store.id);
+        return this.eventsService.findPublic(req.store.id);
+    }
+    findOne(req, id) {
+        return this.eventsService.findOne(req.store.id, id);
     }
     register(req, id, dto) {
         return this.eventsService.registerPlayer(req.store.id, id, dto);
@@ -48,6 +60,36 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], EventsController.prototype, "create", null);
 __decorate([
+    (0, common_1.Patch)(':id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(auth_dto_1.Role.ADMIN, auth_dto_1.Role.STAFF),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, Object]),
+    __metadata("design:returntype", void 0)
+], EventsController.prototype, "update", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(auth_dto_1.Role.ADMIN, auth_dto_1.Role.STAFF),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], EventsController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Get)('admin/list'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(auth_dto_1.Role.ADMIN, auth_dto_1.Role.STAFF),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], EventsController.prototype, "findAllAdmin", null);
+__decorate([
     (0, common_1.Get)(),
     (0, common_1.UseGuards)(api_key_guard_1.ApiKeyGuard),
     __param(0, (0, common_1.Request)()),
@@ -55,6 +97,15 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], EventsController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    (0, common_1.UseGuards)(api_key_guard_1.ApiKeyGuard),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], EventsController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(':id/register'),
     (0, common_1.UseGuards)(api_key_guard_1.ApiKeyGuard),

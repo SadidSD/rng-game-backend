@@ -56,6 +56,9 @@ let AuthService = class AuthService {
         this.jwtService = jwtService;
     }
     async signup(dto) {
+        return this.createStoreUser(dto);
+    }
+    async createStoreUser(dto) {
         const existingUser = await this.prisma.user.findUnique({
             where: { email: dto.email },
         });
@@ -86,6 +89,37 @@ let AuthService = class AuthService {
         });
         return this.signToken(user.id, user.email, user.role, user.storeId);
     }
+    async register(dto) {
+        const existingUser = await this.prisma.user.findUnique({
+            where: { email: dto.email },
+        });
+        if (existingUser)
+            throw new common_1.ConflictException('User already exists');
+        const storeId = process.env.SINGLE_TENANT_STORE_ID || 'd02dbcba-81b5-4f9d-831c-54fe9a803081';
+        const store = await this.prisma.store.findUnique({ where: { id: storeId } });
+        if (!store)
+            throw new common_1.ConflictException('Store not configured');
+        const hashedPassword = await bcrypt.hash(dto.password, 10);
+        const user = await this.prisma.user.create({
+            data: {
+                email: dto.email,
+                password: hashedPassword,
+                role: auth_dto_1.Role.CUSTOMER,
+                storeId: store.id,
+            },
+        });
+        await this.prisma.customer.upsert({
+            where: { storeId_email: { storeId, email: dto.email } },
+            update: {},
+            create: {
+                email: dto.email,
+                storeId: storeId,
+                firstName: dto.firstName || '',
+                lastName: dto.lastName || '',
+            }
+        });
+        return this.signToken(user.id, user.email, user.role, user.storeId);
+    }
     async login(dto) {
         const user = await this.prisma.user.findUnique({
             where: { email: dto.email },
@@ -105,6 +139,39 @@ let AuthService = class AuthService {
         });
         return {
             access_token: token,
+        };
+    }
+    async changePassword(userId, dto) {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user)
+            throw new common_1.UnauthorizedException('User not found');
+        const isMatch = await bcrypt.compare(dto.oldPassword, user.password);
+        if (!isMatch)
+            throw new common_1.UnauthorizedException('Invalid current password');
+        const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { password: hashedPassword },
+        });
+        return { message: 'Password updated successfully' };
+    }
+    async debugLogin(email, password) {
+        const user = await this.prisma.user.findUnique({ where: { email } });
+        if (!user)
+            return { status: 'User Not Found', email };
+        let passwordMatch = false;
+        if (password) {
+            passwordMatch = await bcrypt.compare(password, user.password);
+        }
+        return {
+            status: 'User Found',
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            storeId: user.storeId,
+            passwordProvided: !!password,
+            passwordMatch,
+            storedHashPrefix: user.password.substring(0, 10)
         };
     }
 };

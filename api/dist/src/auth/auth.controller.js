@@ -27,14 +27,25 @@ let AuthController = class AuthController {
     signup(dto) {
         return this.authService.signup(dto);
     }
+    register(dto) {
+        return this.authService.register(dto);
+    }
     login(dto) {
         return this.authService.login(dto);
+    }
+    debug(req) {
+        const email = req.query.email || 'admin@tcg.com';
+        const password = req.query.password;
+        return this.authService.debugLogin(email, password);
     }
     getProfile(req) {
         return req.user;
     }
     getAdmin(req) {
         return { message: 'Admin access granted', user: req.user };
+    }
+    changePassword(req, dto) {
+        return this.authService.changePassword(req.user.sub, dto);
     }
 };
 exports.AuthController = AuthController;
@@ -46,12 +57,26 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "signup", null);
 __decorate([
+    (0, common_1.Post)('register'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [auth_dto_1.SignupDto]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "register", null);
+__decorate([
     (0, common_1.Post)('login'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [auth_dto_1.LoginDto]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "login", null);
+__decorate([
+    (0, common_1.Get)('debug'),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "debug", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)('profile'),
@@ -69,6 +94,15 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "getAdmin", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Patch)('change-password'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], AuthController.prototype, "changePassword", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])

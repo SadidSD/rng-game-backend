@@ -6,15 +6,23 @@ const app_module_1 = require("./app.module");
 const swagger_1 = require("@nestjs/swagger");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
+    console.log('--- ENV DEBUG ---');
+    console.log('MANAPOOL_ACCESS_TOKEN:', process.env.MANAPOOL_ACCESS_TOKEN ? 'DEFINED (Masked)' : 'MISSING');
+    console.log('Available Env Keys:', Object.keys(process.env).sort().join(', '));
+    console.log('--- ENV DEBUG ---');
     app.useGlobalPipes(new common_1.ValidationPipe({
         whitelist: true,
         transform: true,
     }));
     app.enableCors({
         origin: [
-            'https://rng-game-backend.vercel.app',
             'http://localhost:3000',
-            'https://rng-game-backend-production.up.railway.app'
+            'https://rng-game-backend-production.up.railway.app',
+            'https://rng-game-backend.vercel.app',
+            'https://rng-gamez-shop.vercel.app',
+            'http://localhost:3002',
+            /https:\/\/.*\.onrender\.com/,
+            /https:\/\/.*\.vercel\.app/
         ],
         credentials: true,
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',

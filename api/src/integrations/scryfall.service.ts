@@ -33,7 +33,19 @@ export class ScryfallService {
                 oracleText: card.oracle_text,
                 legalities: card.legalities,
                 tcgplayerUrl: card.purchase_uris?.tcgplayer,
-                price: card.prices?.usd || 0
+                price: card.prices?.usd || 0,
+
+                // Advanced Filtering
+                manaCost: card.mana_cost,
+                manaValue: card.cmc,
+                colors: card.colors || [],
+                colorIdentity: card.color_identity || [],
+                typeLine: card.type_line,
+                power: card.power,
+                toughness: card.toughness,
+                loyalty: card.loyalty,
+                supertypes: [], // Placeholder
+                subtypes: []    // Placeholder
             };
         } catch (error) {
             console.error(`[Scryfall] Error fetching ${name}:`, error.message);

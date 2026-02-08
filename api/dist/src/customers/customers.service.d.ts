@@ -13,6 +13,7 @@ export declare class CustomersService {
         lastName: string | null;
         phone: string | null;
         notes: string | null;
+        creditBalance: import("@prisma/client/runtime/library").Decimal;
     }>;
     findAll(storeId: string, search?: string): Promise<({
         _count: {
@@ -28,6 +29,7 @@ export declare class CustomersService {
         lastName: string | null;
         phone: string | null;
         notes: string | null;
+        creditBalance: import("@prisma/client/runtime/library").Decimal;
     })[]>;
     findOne(storeId: string, id: string): Promise<{
         orders: {
@@ -35,15 +37,15 @@ export declare class CustomersService {
             createdAt: Date;
             updatedAt: Date;
             storeId: string;
+            orderNumber: number;
             status: import(".prisma/client").$Enums.OrderStatus;
+            total: import("@prisma/client/runtime/library").Decimal;
+            customerId: string | null;
             shippingName: string | null;
             shippingAddress: string | null;
             shippingCity: string | null;
             shippingZip: string | null;
-            orderNumber: number;
-            total: import("@prisma/client/runtime/library").Decimal;
             trackingNumber: string | null;
-            customerId: string | null;
         }[];
     } & {
         id: string;
@@ -55,6 +57,7 @@ export declare class CustomersService {
         lastName: string | null;
         phone: string | null;
         notes: string | null;
+        creditBalance: import("@prisma/client/runtime/library").Decimal;
     }>;
     update(storeId: string, id: string, dto: UpdateCustomerDto): Promise<{
         id: string;
@@ -66,5 +69,6 @@ export declare class CustomersService {
         lastName: string | null;
         phone: string | null;
         notes: string | null;
+        creditBalance: import("@prisma/client/runtime/library").Decimal;
     }>;
 }

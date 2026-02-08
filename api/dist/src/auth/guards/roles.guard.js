@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RolesGuard = void 0;
 const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
+const auth_dto_1 = require("../dto/auth.dto");
 const roles_decorator_1 = require("../decorators/roles.decorator");
 let RolesGuard = class RolesGuard {
     reflector;
@@ -29,6 +30,8 @@ let RolesGuard = class RolesGuard {
         const { user } = context.switchToHttp().getRequest();
         if (!user)
             return false;
+        if (user.role === auth_dto_1.Role.OWNER)
+            return true;
         return requiredRoles.some((role) => user.role === role);
     }
 };

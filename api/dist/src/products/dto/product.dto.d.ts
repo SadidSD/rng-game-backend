@@ -12,6 +12,21 @@ export declare class CreateProductDto {
     game: string;
     categoryId?: string;
     set?: string;
+    rarity?: string;
+    collectorNumber?: string;
+    oracleId?: string;
+    oracleText?: string;
+    legalities?: any;
+    price?: number;
     images?: string[];
     variants?: CreateProductVariantDto[];
 }
+declare const UpdateProductVariantDto_base: import("@nestjs/mapped-types").MappedType<Partial<CreateProductVariantDto>>;
+export declare class UpdateProductVariantDto extends UpdateProductVariantDto_base {
+    id?: string;
+}
+declare const UpdateProductDto_base: import("@nestjs/mapped-types").MappedType<Partial<Omit<CreateProductDto, "variants">>>;
+export declare class UpdateProductDto extends UpdateProductDto_base {
+    variants?: UpdateProductVariantDto[];
+}
+export {};

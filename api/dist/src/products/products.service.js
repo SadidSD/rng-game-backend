@@ -19,37 +19,60 @@ let ProductsService = class ProductsService {
     }
     async create(storeId, dto) {
         const slug = dto.name.toLowerCase().replace(/ /g, '-') + '-' + Date.now();
-        return this.prisma.product.create({
-            data: {
-                name: dto.name,
-                description: dto.description,
-                game: dto.game,
-                categoryId: dto.categoryId,
-                set: dto.set,
-                slug: slug,
-                images: dto.images || [],
-                storeId,
-                variants: {
-                    create: dto.variants?.map(v => ({
-                        condition: v.condition,
-                        isFoil: v.isFoil || false,
-                        language: v.language || 'English',
-                        price: v.price,
-                        storeId,
-                        inventory: {
-                            create: {
-                                quantity: v.quantity,
-                                storeId
+        return this.prisma.$transaction(async (tx) => {
+            let cardId = null;
+            if (dto.oracleId) {
+                const card = await tx.card.upsert({
+                    where: { oracleId: dto.oracleId },
+                    update: {
+                        legalities: dto.legalities,
+                    },
+                    create: {
+                        oracleId: dto.oracleId,
+                        name: dto.name,
+                        oracleText: dto.oracleText || '',
+                        legalities: dto.legalities
+                    }
+                });
+                cardId = card.id;
+            }
+            return tx.product.create({
+                data: {
+                    name: dto.name,
+                    description: dto.description,
+                    game: dto.game,
+                    categoryId: dto.categoryId,
+                    set: dto.set,
+                    rarity: dto.rarity,
+                    collectorNumber: dto.collectorNumber,
+                    cardId: cardId,
+                    price: dto.price,
+                    slug: slug,
+                    images: dto.images || [],
+                    storeId,
+                    variants: {
+                        create: dto.variants?.map(v => ({
+                            condition: v.condition,
+                            isFoil: v.isFoil || false,
+                            language: v.language || 'English',
+                            price: v.price,
+                            storeId,
+                            inventory: {
+                                create: {
+                                    quantity: v.quantity,
+                                    storeId
+                                }
                             }
-                        }
-                    })),
+                        })),
+                    },
                 },
-            },
-            include: {
-                variants: {
-                    include: { inventory: true }
-                }
-            },
+                include: {
+                    variants: {
+                        include: { inventory: true }
+                    },
+                    card: true
+                },
+            });
         });
     }
     async findAll(storeId, query) {
@@ -60,13 +83,43 @@ let ProductsService = class ProductsService {
         if (query.search) {
             where.name = { contains: query.search, mode: 'insensitive' };
         }
-        return this.prisma.product.findMany({
+        const products = await this.prisma.product.findMany({
             where,
             include: {
-                variants: true,
+                variants: {
+                    include: { inventory: true }
+                },
                 category: true
             },
             orderBy: { createdAt: 'desc' },
+        });
+        const variantIds = products.flatMap(p => p.variants.map(v => v.id));
+        const salesAgg = await this.prisma.orderItem.groupBy({
+            by: ['variantId'],
+            _sum: {
+                quantity: true
+            },
+            where: {
+                variantId: { in: variantIds },
+                order: {
+                    status: {
+                        in: ['PENDING', 'PAID', 'SHIPPED', 'COMPLETED']
+                    }
+                }
+            }
+        });
+        const salesMap = new Map();
+        salesAgg.forEach(agg => {
+            if (agg.variantId) {
+                salesMap.set(agg.variantId, agg._sum.quantity || 0);
+            }
+        });
+        return products.map(p => {
+            const productSales = p.variants.reduce((sum, v) => sum + (salesMap.get(v.id) || 0), 0);
+            return {
+                ...p,
+                totalSales: productSales
+            };
         });
     }
     async findOne(storeId, id) {
@@ -81,6 +134,85 @@ let ProductsService = class ProductsService {
         if (!product)
             throw new common_1.NotFoundException('Product not found');
         return product;
+    }
+    async remove(storeId, id) {
+        await this.findOne(storeId, id);
+        return this.prisma.product.delete({
+            where: { id }
+        });
+    }
+    async update(storeId, id, dto) {
+        const product = await this.findOne(storeId, id);
+        return this.prisma.$transaction(async (tx) => {
+            const updatedProduct = await tx.product.update({
+                where: { id },
+                data: {
+                    name: dto.name,
+                    description: dto.description,
+                    game: dto.game,
+                    categoryId: dto.categoryId,
+                    set: dto.set,
+                    rarity: dto.rarity,
+                    collectorNumber: dto.collectorNumber,
+                    price: dto.price,
+                    images: dto.images,
+                }
+            });
+            if (dto.variants) {
+                const existingVariants = await tx.productVariant.findMany({
+                    where: { productId: id },
+                    select: { id: true }
+                });
+                const existingIds = existingVariants.map(v => v.id);
+                const incomingIds = dto.variants.filter(v => v.id).map(v => v.id);
+                const toDelete = existingIds.filter(eid => !incomingIds.includes(eid));
+                if (toDelete.length > 0) {
+                    await tx.productVariant.deleteMany({
+                        where: { id: { in: toDelete } }
+                    });
+                }
+                for (const v of dto.variants) {
+                    if (v.id) {
+                        await tx.productVariant.update({
+                            where: { id: v.id },
+                            data: {
+                                condition: v.condition,
+                                isFoil: v.isFoil,
+                                language: v.language,
+                                price: v.price,
+                                inventory: {
+                                    update: {
+                                        quantity: v.quantity
+                                    }
+                                }
+                            }
+                        });
+                    }
+                    else {
+                        if (!v.condition || v.price === undefined || v.quantity === undefined) {
+                            throw new Error("Condition, Price, and Quantity are required for new variants");
+                        }
+                        await tx.productVariant.create({
+                            data: {
+                                productId: id,
+                                condition: v.condition,
+                                isFoil: v.isFoil || false,
+                                language: v.language || 'English',
+                                price: v.price,
+                                storeId,
+                                inventory: {
+                                    create: {
+                                        quantity: v.quantity,
+                                        storeId
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+            return updatedProduct;
+        });
     }
 };
 exports.ProductsService = ProductsService;

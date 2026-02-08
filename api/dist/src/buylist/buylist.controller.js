@@ -33,13 +33,21 @@ let BuylistController = class BuylistController {
         return this.buylistService.getRules(req.user.storeId);
     }
     getOffers(req) {
+        console.log(`[Buylist] Fetching Offers. User: ${req.user.email}, Role: ${req.user.role}, Store ID: ${req.user.storeId}`);
         return this.buylistService.getOffers(req.user.storeId);
     }
     updateOffer(req, id, dto) {
         return this.buylistService.updateOfferStatus(req.user.storeId, id, dto);
     }
     submitOffer(req, dto) {
+        console.log(`[Buylist] Submitting Offer. Store ID: ${req.store.id}`);
         return this.buylistService.submitOffer(req.store.id, dto);
+    }
+    getFeaturedCards(req) {
+        return this.buylistService.getFeaturedCards(req.store.id);
+    }
+    search(req, query) {
+        return this.buylistService.searchBuylist(req.store.id, query || '');
     }
 };
 exports.BuylistController = BuylistController;
@@ -91,6 +99,23 @@ __decorate([
     __metadata("design:paramtypes", [Object, buylist_dto_1.CreateBuylistOfferDto]),
     __metadata("design:returntype", void 0)
 ], BuylistController.prototype, "submitOffer", null);
+__decorate([
+    (0, common_1.Get)('featured'),
+    (0, common_1.UseGuards)(api_key_guard_1.ApiKeyGuard),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], BuylistController.prototype, "getFeaturedCards", null);
+__decorate([
+    (0, common_1.Get)('search'),
+    (0, common_1.UseGuards)(api_key_guard_1.ApiKeyGuard),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Query)('query')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], BuylistController.prototype, "search", null);
 exports.BuylistController = BuylistController = __decorate([
     (0, common_1.Controller)('buylist'),
     __metadata("design:paramtypes", [buylist_service_1.BuylistService])

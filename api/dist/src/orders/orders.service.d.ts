@@ -9,24 +9,24 @@ export declare class OrdersService {
             price: import("@prisma/client/runtime/library").Decimal;
             quantity: number;
             variantId: string | null;
+            orderId: string;
             productName: string;
             variantSku: string | null;
-            orderId: string;
         }[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
         storeId: string;
+        orderNumber: number;
         status: import(".prisma/client").$Enums.OrderStatus;
+        total: import("@prisma/client/runtime/library").Decimal;
+        customerId: string | null;
         shippingName: string | null;
         shippingAddress: string | null;
         shippingCity: string | null;
         shippingZip: string | null;
-        orderNumber: number;
-        total: import("@prisma/client/runtime/library").Decimal;
         trackingNumber: string | null;
-        customerId: string | null;
     }>;
     findAll(storeId: string): Promise<({
         customer: {
@@ -39,30 +39,31 @@ export declare class OrdersService {
             lastName: string | null;
             phone: string | null;
             notes: string | null;
+            creditBalance: import("@prisma/client/runtime/library").Decimal;
         } | null;
         items: {
             id: string;
             price: import("@prisma/client/runtime/library").Decimal;
             quantity: number;
             variantId: string | null;
+            orderId: string;
             productName: string;
             variantSku: string | null;
-            orderId: string;
         }[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
         storeId: string;
+        orderNumber: number;
         status: import(".prisma/client").$Enums.OrderStatus;
+        total: import("@prisma/client/runtime/library").Decimal;
+        customerId: string | null;
         shippingName: string | null;
         shippingAddress: string | null;
         shippingCity: string | null;
         shippingZip: string | null;
-        orderNumber: number;
-        total: import("@prisma/client/runtime/library").Decimal;
         trackingNumber: string | null;
-        customerId: string | null;
     })[]>;
     findOne(storeId: string, id: string): Promise<{
         customer: {
@@ -75,30 +76,31 @@ export declare class OrdersService {
             lastName: string | null;
             phone: string | null;
             notes: string | null;
+            creditBalance: import("@prisma/client/runtime/library").Decimal;
         } | null;
         items: {
             id: string;
             price: import("@prisma/client/runtime/library").Decimal;
             quantity: number;
             variantId: string | null;
+            orderId: string;
             productName: string;
             variantSku: string | null;
-            orderId: string;
         }[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
         storeId: string;
+        orderNumber: number;
         status: import(".prisma/client").$Enums.OrderStatus;
+        total: import("@prisma/client/runtime/library").Decimal;
+        customerId: string | null;
         shippingName: string | null;
         shippingAddress: string | null;
         shippingCity: string | null;
         shippingZip: string | null;
-        orderNumber: number;
-        total: import("@prisma/client/runtime/library").Decimal;
         trackingNumber: string | null;
-        customerId: string | null;
     }>;
     updateStatus(storeId: string, id: string, dto: UpdateOrderStatusDto): Promise<{
         customer: {
@@ -111,29 +113,30 @@ export declare class OrdersService {
             lastName: string | null;
             phone: string | null;
             notes: string | null;
+            creditBalance: import("@prisma/client/runtime/library").Decimal;
         } | null;
         items: {
             id: string;
             price: import("@prisma/client/runtime/library").Decimal;
             quantity: number;
             variantId: string | null;
+            orderId: string;
             productName: string;
             variantSku: string | null;
-            orderId: string;
         }[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
         storeId: string;
+        orderNumber: number;
         status: import(".prisma/client").$Enums.OrderStatus;
+        total: import("@prisma/client/runtime/library").Decimal;
+        customerId: string | null;
         shippingName: string | null;
         shippingAddress: string | null;
         shippingCity: string | null;
         shippingZip: string | null;
-        orderNumber: number;
-        total: import("@prisma/client/runtime/library").Decimal;
         trackingNumber: string | null;
-        customerId: string | null;
     }>;
 }

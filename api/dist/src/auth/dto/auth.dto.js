@@ -17,6 +17,8 @@ class SignupDto {
     storeName;
     email;
     password;
+    firstName;
+    lastName;
 }
 exports.SignupDto = SignupDto;
 __decorate([
@@ -33,6 +35,18 @@ __decorate([
     (0, class_validator_1.MinLength)(6),
     __metadata("design:type", String)
 ], SignupDto.prototype, "password", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], SignupDto.prototype, "firstName", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], SignupDto.prototype, "lastName", void 0);
 class LoginDto {
     email;
     password;
