@@ -61,6 +61,7 @@ export default function ImportPage() {
                 const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+
                 if (res.data && res.data.length > 0) {
                     setCategories(res.data);
 
@@ -73,9 +74,26 @@ export default function ImportPage() {
                     if (mtgCat) {
                         setSelectedCategoryId(mtgCat.id);
                     } else {
-                        // Fallback if MTG category not found, select first or warn
-                        console.warn('MTG Category not found, defaulting to first available.');
+                        // Fallback: If categories exist but no MTG, select first (or create? let's stick to simple selection first)
                         setSelectedCategoryId(res.data[0].id);
+                    }
+                } else {
+                    // [Auto-Create] No categories found? Create MTG immediately.
+                    console.log('No categories found. Auto-creating Magic: The Gathering...');
+                    try {
+                        const createRes = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
+                            name: 'Magic: The Gathering',
+                            slug: 'magic-the-gathering'
+                        }, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        if (createRes.data && createRes.data.id) {
+                            setCategories([createRes.data]);
+                            setSelectedCategoryId(createRes.data.id);
+                            console.log('Auto-created MTG Category:', createRes.data);
+                        }
+                    } catch (createError) {
+                        console.error('Failed to auto-create MTG category on init', createError);
                     }
                 }
             } catch (error) {
@@ -281,28 +299,24 @@ export default function ImportPage() {
         }
 
         if (!targetCategoryId) {
-            // Attempt to create "Magic: The Gathering" category automatically
-            if (confirm('Target Category (MTG) detailed not found. Create "Magic: The Gathering" category automatically?')) {
-                try {
-                    const token = Cookies.get('tcg-auth-token');
-                    const createRes = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
-                        name: 'Magic: The Gathering'
-                    }, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
+            // Last-ditch effort: Create silently if missing (e.g. initial fetch failed)
+            try {
+                const token = Cookies.get('tcg-auth-token');
+                const createRes = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
+                    name: 'Magic: The Gathering',
+                    slug: 'magic-the-gathering'
+                }, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
 
-                    if (createRes.data && createRes.data.id) {
-                        targetCategoryId = createRes.data.id;
-                        setCategories(prev => [...prev, createRes.data]);
-                        setSelectedCategoryId(createRes.data.id);
-                        alert('Category created! Proceeding with import...');
-                    }
-                } catch (e) {
-                    console.error('Failed to auto-create category', e);
-                    alert('Failed to auto-create category. Please create it manually in the Categories page.');
-                    return;
+                if (createRes.data && createRes.data.id) {
+                    targetCategoryId = createRes.data.id;
+                    setCategories(prev => [...prev, createRes.data]);
+                    setSelectedCategoryId(createRes.data.id);
                 }
-            } else {
+            } catch (e) {
+                console.error('Failed to auto-create category in handleImport', e);
+                alert('System Error: Could not find or create "Magic: The Gathering" category. Please check your connection or create it manually.');
                 return;
             }
         }
@@ -362,12 +376,6 @@ export default function ImportPage() {
             <div className="text-center space-y-2">
                 <h1 className="text-3xl font-bold tracking-tight">Import Products</h1>
                 <p className="text-muted-foreground">Search and import cards from Scryfall (MTG) with Manapool Pricing.</p>
-                {/* Warning if no categories */}
-                {categories.length === 0 && (
-                    <div className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 p-4 rounded-md mt-4">
-                        Warning: No categories found in the system. Please create a "Magic: The Gathering" category in the Categories page first.
-                    </div>
-                )}
             </div>
 
             {/* <div className="flex gap-2">
