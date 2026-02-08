@@ -32,6 +32,9 @@ interface CardData {
     };
     price?: number; // Keep for backward compat / initial sort
     tcgplayerUrl?: string;
+    oracleId?: string;
+    oracleText?: string;
+    legalities?: any;
 }
 
 interface Category {
@@ -194,6 +197,9 @@ export default function ImportPage() {
                         collectorNumber: card.collector_number,
                         image: image || '/placeholder.png', // Fallback
                         imageLarge: imageLarge || image || '/placeholder.png',
+                        oracleId: card.oracle_id,
+                        oracleText: card.oracle_text || card.card_faces?.map((f: any) => f.oracle_text).join('\n//\n') || '',
+                        legalities: card.legalities,
                         prices: {
                             usd: card.prices?.usd ? parseFloat(card.prices.usd) : undefined,
                             usd_foil: card.prices?.usd_foil ? parseFloat(card.prices.usd_foil) : undefined,
