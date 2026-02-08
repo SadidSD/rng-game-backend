@@ -267,7 +267,7 @@ export default function ImportPage() {
 
     const handleImport = async (card: CardData, quantity: number = 1) => {
         if (!selectedCategoryId) {
-            alert('Please select a category first.');
+            alert('Target Category (MTG) not found. Please ensure the "Magic: The Gathering" category exists in the system.');
             return;
         }
         setImporting(card.id);
@@ -349,22 +349,7 @@ export default function ImportPage() {
                 </form>
             </div>
 
-            {/* Category Selection (Critical Fix) */}
-            <div className="w-full max-w-4xl mx-auto flex gap-4">
-                <div className="w-full md:w-1/2">
-                    <label className="text-sm font-medium mb-1 block">Target Category</label>
-                    <select
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        value={selectedCategoryId}
-                        onChange={(e) => setSelectedCategoryId(e.target.value)}
-                    >
-                        <option value="" disabled>Select a Category...</option>
-                        {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-                    </select>
-                </div>
-            </div>
+
 
             {/* Set Selection */}
             {
