@@ -20,6 +20,9 @@ export class RolesGuard implements CanActivate {
         // If no user attached (e.g. public route or auth failed), deny
         if (!user) return false;
 
+        // OWNER has access to everything
+        if (user.role === Role.OWNER) return true;
+
         // Admin/Owner usually has access to everything, but let's be strict for now
         // Example: If user.role is ADMIN, and required is STAFF, ADMIN should pass?
         // For now, strict match or hierarchy. Let's do exact array inclusion.
