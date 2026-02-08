@@ -28,6 +28,7 @@ async function bootstrap() {
       'https://rng-game-backend-production.up.railway.app',
       'https://rng-game-backend.vercel.app', // Explicit Add
       'https://rng-gamez-shop.vercel.app',   // Explicit Add
+      'http://localhost:3002',
       /https:\/\/.*\.onrender\.com/,
       /https:\/\/.*\.vercel\.app/
     ],
