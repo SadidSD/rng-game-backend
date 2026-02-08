@@ -349,23 +349,42 @@ export default function ImportPage() {
                 </form>
             </div>
 
-            {/* Set Selection */}
-            {availableSets.length > 0 && (
-                <div className="w-full md:w-1/3">
-                    <label className="text-sm font-medium mb-1 block">Filter by Set</label>
+            {/* Category Selection (Critical Fix) */}
+            <div className="w-full max-w-4xl mx-auto flex gap-4">
+                <div className="w-full md:w-1/2">
+                    <label className="text-sm font-medium mb-1 block">Target Category</label>
                     <select
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        value={selectedSet}
-                        onChange={(e) => {
-                            setSelectedSet(e.target.value);
-                        }}
+                        value={selectedCategoryId}
+                        onChange={(e) => setSelectedCategoryId(e.target.value)}
                     >
-                        {availableSets.map(setName => (
-                            <option key={setName} value={setName}>{setName}</option>
+                        <option value="" disabled>Select a Category...</option>
+                        {categories.map(cat => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
                         ))}
                     </select>
                 </div>
-            )}
+            </div>
+
+            {/* Set Selection */}
+            {
+                availableSets.length > 0 && (
+                    <div className="w-full md:w-1/3">
+                        <label className="text-sm font-medium mb-1 block">Filter by Set</label>
+                        <select
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            value={selectedSet}
+                            onChange={(e) => {
+                                setSelectedSet(e.target.value);
+                            }}
+                        >
+                            {availableSets.map(setName => (
+                                <option key={setName} value={setName}>{setName}</option>
+                            ))}
+                        </select>
+                    </div>
+                )
+            }
 
             {/* Cards Grid */}
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -468,9 +487,11 @@ export default function ImportPage() {
                 }
             </div >
 
-            {!loading && cards.length === 0 && query && (
-                <div className="text-center text-muted-foreground py-12">No results found.</div>
-            )}
+            {
+                !loading && cards.length === 0 && query && (
+                    <div className="text-center text-muted-foreground py-12">No results found.</div>
+                )
+            }
         </div >
     );
 }
