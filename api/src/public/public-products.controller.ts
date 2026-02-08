@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request, Param } from '@nestjs/common';
 import { ApiKeyGuard } from '../auth/guards/api-key.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -25,5 +25,23 @@ export class PublicProductsController {
             count: products.length,
             data: products
         };
+    }
+
+    @Get('products/:id')
+    async getProduct(@Request() req, @Param('id') id: string) {
+        const storeId = req.store.id;
+        const product = await this.prisma.product.findFirst({
+            where: { id, storeId },
+            include: {
+                variants: {
+                    include: { inventory: true }
+                },
+                card: true, // Critical for PDP Oracle Text
+                category: true
+            }
+        });
+
+        if (!product) return null; // Or throw NotFoundException
+        return product;
     }
 }
