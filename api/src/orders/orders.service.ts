@@ -1,16 +1,27 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { StripeService } from '../payments/stripe.service';
 import { CreateOrderDto, UpdateOrderStatusDto } from './dto/orders.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class OrdersService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private stripeService: StripeService,
+        private configService: ConfigService,
+    ) { }
 
+    /**
+     * Create an order and initiate Stripe payment
+     * Returns Stripe Checkout Session URL
+     */
     async create(storeId: string, dto: CreateOrderDto) {
         return this.prisma.$transaction(async (tx) => {
             // 1. Validate Stock and Calculate Total
             let total = 0;
             const orderItemsData: any[] = [];
+            const stripeLineItems: any[] = [];
 
             for (const itemDto of dto.items) {
                 const variant = await tx.productVariant.findUnique({
@@ -18,24 +29,17 @@ export class OrdersService {
                     include: { inventory: true, product: true }
                 });
 
-
                 if (!variant) throw new NotFoundException(`Variant ${itemDto.variantId} not found`);
                 if (variant.product.storeId !== storeId) throw new BadRequestException('Product does not belong to this store');
 
-                // Check stock
+                // Check stock (don't deduct yet - wait for payment)
                 const currentStock = variant.inventory?.quantity || 0;
                 if (currentStock < itemDto.quantity) {
                     throw new BadRequestException(`Insufficient stock for ${variant.product.name} (Requested: ${itemDto.quantity}, Available: ${currentStock})`);
                 }
 
-                // Deduct Stock
-                await tx.inventoryItem.update({
-                    where: { variantId: variant.id },
-                    data: { quantity: { decrement: itemDto.quantity } }
-                });
-
                 // Snapshot Price
-                const price = Number(variant.price); // Decimal to Number
+                const price = Number(variant.price);
                 total += price * itemDto.quantity;
 
                 orderItemsData.push({
@@ -45,10 +49,15 @@ export class OrdersService {
                     price: variant.price,
                     variantId: variant.id
                 });
+
+                stripeLineItems.push({
+                    name: `${variant.product.name} (${variant.condition}${variant.isFoil ? ' - Foil' : ''})`,
+                    price: price,
+                    quantity: itemDto.quantity,
+                });
             }
 
             // 2. Find or Create Customer
-            // For MVP, simplistic upsert or find
             let customer = await tx.customer.findFirst({
                 where: { storeId, email: dto.customerEmail }
             });
@@ -64,13 +73,14 @@ export class OrdersService {
                 });
             }
 
-            // 3. Create Order
+            // 3. Create Order (PENDING status, no inventory deduction yet)
             const order = await tx.order.create({
                 data: {
                     storeId,
                     customerId: customer.id,
                     total: total,
                     status: 'PENDING',
+                    paymentStatus: 'PENDING',
                     shippingName: dto.shippingName,
                     shippingAddress: dto.shippingAddress,
                     shippingCity: dto.shippingCity,
@@ -82,7 +92,87 @@ export class OrdersService {
                 include: { items: true }
             });
 
-            return order;
+            // 4. Create Stripe Checkout Session
+            const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+            const checkoutSession = await this.stripeService.createCheckoutSession({
+                items: stripeLineItems,
+                customerEmail: dto.customerEmail,
+                orderId: order.id,
+                successUrl: `${frontendUrl}/order-success?session_id={CHECKOUT_SESSION_ID}`,
+                cancelUrl: `${frontendUrl}/checkout?cancelled=true`,
+            });
+
+            // 5. Update order with Stripe session ID
+            await tx.order.update({
+                where: { id: order.id },
+                data: { stripeSessionId: checkoutSession.sessionId }
+            });
+
+            return {
+                orderId: order.id,
+                stripeSessionUrl: checkoutSession.url,
+                total: total,
+            };
+        });
+    }
+
+    /**
+     * Complete payment - called by webhook after Stripe confirms payment
+     * Deducts inventory and updates order status
+     */
+    async completePayment(orderId: string) {
+        return this.prisma.$transaction(async (tx) => {
+            const order = await tx.order.findUnique({
+                where: { id: orderId },
+                include: { items: true }
+            });
+
+            if (!order) throw new NotFoundException('Order not found');
+            if (order.paymentStatus === 'PAID') {
+                console.log(`[Orders] Order ${orderId} already paid`);
+                return order;
+            }
+
+            // Deduct inventory for each item
+            for (const item of order.items) {
+                if (!item.variantId) continue; // Skip if variant was deleted
+
+                const variant = await tx.productVariant.findUnique({
+                    where: { id: item.variantId },
+                    include: { inventory: true }
+                });
+
+                if (!variant) {
+                    console.warn(`[Orders] Variant ${item.variantId} not found, skipping inventory deduction`);
+                    continue;
+                }
+
+                const currentStock = variant.inventory?.quantity || 0;
+                if (currentStock < item.quantity) {
+                    // Stock insufficient - this shouldn't happen if we validated earlier
+                    // Log warning but don't fail the payment
+                    console.error(`[Orders] Insufficient stock for ${variant.id}: requested ${item.quantity}, available ${currentStock}`);
+                    continue;
+                }
+
+                await tx.inventoryItem.update({
+                    where: { variantId: variant.id },
+                    data: { quantity: { decrement: item.quantity } }
+                });
+            }
+
+            // Update order status
+            const updatedOrder = await tx.order.update({
+                where: { id: orderId },
+                data: {
+                    status: 'PAID',
+                    paymentStatus: 'PAID',
+                    paidAt: new Date(),
+                }
+            });
+
+            console.log(`[Orders] Payment completed for order ${orderId}`);
+            return updatedOrder;
         });
     }
 
@@ -104,8 +194,6 @@ export class OrdersService {
     }
 
     async updateStatus(storeId: string, id: string, dto: UpdateOrderStatusDto) {
-        // Verify ownership implicitly via update many or check first
-        // using updateMany ensures storeId matches
         const { count } = await this.prisma.order.updateMany({
             where: { id, storeId },
             data: { status: dto.status }

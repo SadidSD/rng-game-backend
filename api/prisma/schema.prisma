@@ -230,11 +230,23 @@ model Order {
 
   items       OrderItem[]
   
+  // Payment Tracking (Stripe)
+  stripeSessionId String? // Checkout Session ID
+  paymentStatus   PaymentStatus @default(PENDING)
+  paidAt          DateTime?
+  
   storeId     String
   store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
 }
 
 enum OrderStatus {

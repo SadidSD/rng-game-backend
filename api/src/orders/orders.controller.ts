@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto, UpdateOrderStatusDto } from './dto/orders.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -14,6 +15,7 @@ export class OrdersController {
     // --- Public Checkout (API Key) ---
     @Post()
     @UseGuards(ApiKeyGuard)
+    @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 checkouts per minute
     create(@Request() req, @Body() dto: CreateOrderDto) {
         return this.ordersService.create(req.store.id, dto);
     }
