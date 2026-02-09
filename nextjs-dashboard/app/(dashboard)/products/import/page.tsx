@@ -32,9 +32,20 @@ interface CardData {
     };
     price?: number; // Keep for backward compat / initial sort
     tcgplayerUrl?: string;
+    // Identity Fields
     oracleId?: string;
     oracleText?: string;
     legalities?: any;
+    manaCost?: string;
+    manaValue?: number;
+    colors?: string[];
+    colorIdentity?: string[];
+    typeLine?: string;
+    supertypes?: string[];
+    subtypes?: string[];
+    power?: string;
+    toughness?: string;
+    loyalty?: string;
 }
 
 interface Category {
@@ -204,7 +215,16 @@ export default function ImportPage() {
                         image = card.card_faces[0].image_uris.normal;
                         imageLarge = card.card_faces[0].image_uris.large;
                     }
-                    // End: Image Logic
+
+                    // Handle faces for oracle text/mana cost if split
+                    const oracleText = card.oracle_text || card.card_faces?.map((f: any) => f.oracle_text).join('\n//\n') || '';
+                    const manaCost = card.mana_cost || card.card_faces?.map((f: any) => f.mana_cost).join(' // ') || '';
+                    const typeLine = card.type_line || card.card_faces?.map((f: any) => f.type_line).join(' // ') || '';
+
+                    // Derive supertypes/subtypes roughly from typeLine if needed, or leave empty if backend handles it
+                    // The backend schema expects string arrays.
+                    // For now, let's just pass the raw strings like manaCost, typeLine.
+                    // Colors/ColorIdentity are arrays in Scryfall.
 
                     return {
                         id: card.id,
@@ -213,11 +233,22 @@ export default function ImportPage() {
                         setId: card.set,
                         rarity: card.rarity,
                         collectorNumber: card.collector_number,
-                        image: image || '/placeholder.png', // Fallback
+                        image: image || '/placeholder.png',
                         imageLarge: imageLarge || image || '/placeholder.png',
+
+                        // Identity Mappings
                         oracleId: card.oracle_id,
-                        oracleText: card.oracle_text || card.card_faces?.map((f: any) => f.oracle_text).join('\n//\n') || '',
+                        oracleText: oracleText,
                         legalities: card.legalities,
+                        manaCost: manaCost,
+                        manaValue: card.cmc,
+                        colors: card.colors || card.card_faces?.[0]?.colors || [],
+                        colorIdentity: card.color_identity || [],
+                        typeLine: typeLine,
+                        power: card.power,
+                        toughness: card.toughness,
+                        loyalty: card.loyalty,
+
                         prices: {
                             usd: card.prices?.usd ? parseFloat(card.prices.usd) : undefined,
                             usd_foil: card.prices?.usd_foil ? parseFloat(card.prices.usd_foil) : undefined,
@@ -345,6 +376,16 @@ export default function ImportPage() {
                 oracleId: card.oracleId,
                 oracleText: card.oracleText,
                 legalities: card.legalities,
+                // Pass full identity data
+                manaCost: card.manaCost,
+                manaValue: card.manaValue,
+                colors: card.colors,
+                colorIdentity: card.colorIdentity,
+                typeLine: card.typeLine,
+                power: card.power,
+                toughness: card.toughness,
+                loyalty: card.loyalty,
+
                 price: getManapoolPrice(card, finish) ?? selectedPrice ?? 0, // Root price for display
                 images: [card.imageLarge || card.image],
                 variants: [
