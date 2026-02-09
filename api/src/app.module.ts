@@ -25,6 +25,8 @@ import { SentryModule } from './sentry/sentry.module';
 import { LoggerModule } from './logger/logger.module';
 import { SanitizationMiddleware } from './middleware/sanitization.middleware';
 import { HttpsRedirectMiddleware } from './middleware/https-redirect.middleware';
+import { HealthModule } from './health/health.module';
+import { NotificationModule } from './notifications/notification.module';
 
 @Module({
   imports: [
@@ -38,6 +40,8 @@ import { HttpsRedirectMiddleware } from './middleware/https-redirect.middleware'
     }]),
     SentryModule,
     LoggerModule,
+    NotificationModule,
+    HealthModule,
     AuthModule, UsersModule, StoreModule, PublicModule, ProductsModule, InventoryModule, BuylistModule, OrdersModule, CustomersModule, EventsModule, AnalyticsModule, IntegrationsModule, UploadsModule, CategoriesModule, PrismaModule, PokemonTcgModule, PaymentsModule],
   controllers: [AppController],
   providers: [

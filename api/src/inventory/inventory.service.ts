@@ -1,10 +1,16 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateInventoryDto, InventoryAction } from './dto/update-inventory.dto';
+import { LoggerService } from '../logger/logger.service';
 
 @Injectable()
 export class InventoryService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private logger: LoggerService,
+    ) {
+        this.logger.setContext('InventoryService');
+    }
 
     async getInventory(storeId: string, variantId: string) {
         const item = await this.prisma.inventoryItem.findUnique({
@@ -56,6 +62,40 @@ export class InventoryService {
             data: { quantity: newQuantity }
         });
 
+        // 4. Check for low stock alert
+        const threshold = updated.lowStockThreshold || 5;
+        if (newQuantity <= threshold && newQuantity > 0) {
+            this.logger.warn(`Low stock alert: Variant ${variantId} has ${newQuantity} units (threshold: ${threshold})`);
+        } else if (newQuantity === 0) {
+            this.logger.error(`Out of stock: Variant ${variantId} is depleted`);
+        }
+
         return updated;
+    }
+
+    /**
+     * Get all low stock items for a store
+     */
+    async getLowStockItems(storeId: string) {
+        const items = await this.prisma.inventoryItem.findMany({
+            where: {
+                storeId,
+                quantity: { lte: this.prisma.inventoryItem.fields.lowStockThreshold }
+            },
+            include: {
+                variant: {
+                    include: { product: true }
+                }
+            },
+            orderBy: { quantity: 'asc' }
+        });
+
+        return items.map(item => ({
+            variantId: item.variantId,
+            productName: item.variant.product.name,
+            sku: item.variant.sku,
+            quantity: item.quantity,
+            threshold: item.lowStockThreshold,
+        }));
     }
 }

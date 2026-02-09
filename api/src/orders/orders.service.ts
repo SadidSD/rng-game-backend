@@ -4,6 +4,7 @@ import { StripeService } from '../payments/stripe.service';
 import { CreateOrderDto, UpdateOrderStatusDto } from './dto/orders.dto';
 import { ConfigService } from '@nestjs/config';
 import { LoggerService } from '../logger/logger.service';
+import { NotificationService } from '../notifications/notification.service';
 
 @Injectable()
 export class OrdersService {
@@ -12,6 +13,7 @@ export class OrdersService {
         private stripeService: StripeService,
         private configService: ConfigService,
         private logger: LoggerService,
+        private notificationService: NotificationService,
     ) {
         this.logger.setContext('OrdersService');
     }
@@ -176,6 +178,15 @@ export class OrdersService {
             });
 
             this.logger.info(`Payment completed for order ${orderId}`);
+
+            // Send admin notification
+            await this.notificationService.sendOrderNotification({
+                orderId: updatedOrder.id,
+                customerEmail: order.customer?.email || 'unknown',
+                total: Number(updatedOrder.total),
+                itemCount: order.items.length,
+            }).catch(err => this.logger.error(`Failed to send notification: ${err.message}`));
+
             return updatedOrder;
         });
     }
