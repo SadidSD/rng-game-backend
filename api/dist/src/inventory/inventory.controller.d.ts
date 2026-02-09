@@ -5,8 +5,8 @@ export declare class InventoryController {
     constructor(inventoryService: InventoryService);
     findOne(req: any, variantId: string): Promise<{
         id: string;
-        updatedAt: Date;
         storeId: string;
+        updatedAt: Date;
         quantity: number;
         lowStock: number;
         location: string | null;
@@ -14,8 +14,8 @@ export declare class InventoryController {
     } | null>;
     update(req: any, variantId: string, dto: UpdateInventoryDto): Promise<{
         id: string;
-        updatedAt: Date;
         storeId: string;
+        updatedAt: Date;
         quantity: number;
         lowStock: number;
         location: string | null;

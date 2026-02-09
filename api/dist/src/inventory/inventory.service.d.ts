@@ -5,8 +5,8 @@ export declare class InventoryService {
     constructor(prisma: PrismaService);
     getInventory(storeId: string, variantId: string): Promise<{
         id: string;
-        updatedAt: Date;
         storeId: string;
+        updatedAt: Date;
         quantity: number;
         lowStock: number;
         location: string | null;
@@ -14,8 +14,8 @@ export declare class InventoryService {
     } | null>;
     updateInventory(storeId: string, variantId: string, dto: UpdateInventoryDto): Promise<{
         id: string;
-        updatedAt: Date;
         storeId: string;
+        updatedAt: Date;
         quantity: number;
         lowStock: number;
         location: string | null;

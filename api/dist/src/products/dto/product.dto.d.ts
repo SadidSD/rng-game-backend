@@ -17,6 +17,16 @@ export declare class CreateProductDto {
     oracleId?: string;
     oracleText?: string;
     legalities?: any;
+    manaCost?: string;
+    manaValue?: number;
+    colors?: string[];
+    colorIdentity?: string[];
+    typeLine?: string;
+    supertypes?: string[];
+    subtypes?: string[];
+    power?: string;
+    toughness?: string;
+    loyalty?: string;
     price?: number;
     images?: string[];
     variants?: CreateProductVariantDto[];

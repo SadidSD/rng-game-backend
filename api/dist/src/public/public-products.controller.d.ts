@@ -9,19 +9,48 @@ export declare class PublicProductsController {
             category: {
                 id: string;
                 name: string;
-                createdAt: Date;
-                updatedAt: Date;
-                storeId: string;
                 description: string | null;
                 slug: string;
-                image: string | null;
-            } | null;
-            variants: {
-                id: string;
+                storeId: string;
                 createdAt: Date;
                 updatedAt: Date;
-                storeId: string;
+                image: string | null;
+            } | null;
+            card: {
+                id: string;
+                name: string;
+                createdAt: Date;
+                updatedAt: Date;
+                oracleId: string;
+                oracleText: string;
+                legalities: import("@prisma/client/runtime/library").JsonValue | null;
+                manaCost: string | null;
+                manaValue: number | null;
+                colors: string[];
+                colorIdentity: string[];
+                typeLine: string | null;
+                supertypes: string[];
+                subtypes: string[];
+                power: string | null;
+                toughness: string | null;
+                loyalty: string | null;
+            } | null;
+            variants: ({
+                inventory: {
+                    id: string;
+                    storeId: string;
+                    updatedAt: Date;
+                    quantity: number;
+                    lowStock: number;
+                    location: string | null;
+                    variantId: string;
+                } | null;
+            } & {
+                id: string;
                 price: import("@prisma/client/runtime/library").Decimal;
+                storeId: string;
+                createdAt: Date;
+                updatedAt: Date;
                 sku: string | null;
                 productId: string;
                 condition: import(".prisma/client").$Enums.Condition;
@@ -29,13 +58,10 @@ export declare class PublicProductsController {
                 language: string;
                 costPrice: import("@prisma/client/runtime/library").Decimal | null;
                 salePrice: import("@prisma/client/runtime/library").Decimal | null;
-            }[];
+            })[];
         } & {
             id: string;
             name: string;
-            createdAt: Date;
-            updatedAt: Date;
-            storeId: string;
             description: string | null;
             categoryId: string | null;
             price: import("@prisma/client/runtime/library").Decimal | null;
@@ -45,35 +71,48 @@ export declare class PublicProductsController {
             collectorNumber: string | null;
             cardId: string | null;
             slug: string;
+            storeId: string;
             tags: string[];
             images: string[];
+            createdAt: Date;
+            updatedAt: Date;
         })[];
     }>;
     getProduct(req: any, id: string): Promise<({
+        category: {
+            id: string;
+            name: string;
+            description: string | null;
+            slug: string;
+            storeId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            image: string | null;
+        } | null;
         card: {
             id: string;
             name: string;
             createdAt: Date;
             updatedAt: Date;
             oracleId: string;
-            oracleText: string | null;
+            oracleText: string;
             legalities: import("@prisma/client/runtime/library").JsonValue | null;
-        } | null;
-        category: {
-            id: string;
-            name: string;
-            createdAt: Date;
-            updatedAt: Date;
-            storeId: string;
-            description: string | null;
-            slug: string;
-            image: string | null;
+            manaCost: string | null;
+            manaValue: number | null;
+            colors: string[];
+            colorIdentity: string[];
+            typeLine: string | null;
+            supertypes: string[];
+            subtypes: string[];
+            power: string | null;
+            toughness: string | null;
+            loyalty: string | null;
         } | null;
         variants: ({
             inventory: {
                 id: string;
-                updatedAt: Date;
                 storeId: string;
+                updatedAt: Date;
                 quantity: number;
                 lowStock: number;
                 location: string | null;
@@ -81,10 +120,10 @@ export declare class PublicProductsController {
             } | null;
         } & {
             id: string;
+            price: import("@prisma/client/runtime/library").Decimal;
+            storeId: string;
             createdAt: Date;
             updatedAt: Date;
-            storeId: string;
-            price: import("@prisma/client/runtime/library").Decimal;
             sku: string | null;
             productId: string;
             condition: import(".prisma/client").$Enums.Condition;
@@ -96,9 +135,6 @@ export declare class PublicProductsController {
     } & {
         id: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        storeId: string;
         description: string | null;
         categoryId: string | null;
         price: import("@prisma/client/runtime/library").Decimal | null;
@@ -108,7 +144,10 @@ export declare class PublicProductsController {
         collectorNumber: string | null;
         cardId: string | null;
         slug: string;
+        storeId: string;
         tags: string[];
         images: string[];
+        createdAt: Date;
+        updatedAt: Date;
     }) | null>;
 }

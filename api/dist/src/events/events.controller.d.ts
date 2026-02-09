@@ -6,11 +6,11 @@ export declare class EventsController {
     create(req: any, dto: CreateEventDto): Promise<{
         id: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        storeId: string;
         description: string | null;
         game: string;
+        storeId: string;
+        createdAt: Date;
+        updatedAt: Date;
         image: string | null;
         location: string | null;
         status: import(".prisma/client").$Enums.EventStatus;
@@ -23,11 +23,11 @@ export declare class EventsController {
     update(req: any, id: string, dto: Partial<CreateEventDto>): Promise<{
         id: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        storeId: string;
         description: string | null;
         game: string;
+        storeId: string;
+        createdAt: Date;
+        updatedAt: Date;
         image: string | null;
         location: string | null;
         status: import(".prisma/client").$Enums.EventStatus;
@@ -40,11 +40,11 @@ export declare class EventsController {
     remove(req: any, id: string): Promise<{
         id: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        storeId: string;
         description: string | null;
         game: string;
+        storeId: string;
+        createdAt: Date;
+        updatedAt: Date;
         image: string | null;
         location: string | null;
         status: import(".prisma/client").$Enums.EventStatus;
@@ -61,11 +61,11 @@ export declare class EventsController {
     } & {
         id: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        storeId: string;
         description: string | null;
         game: string;
+        storeId: string;
+        createdAt: Date;
+        updatedAt: Date;
         image: string | null;
         location: string | null;
         status: import(".prisma/client").$Enums.EventStatus;
@@ -82,11 +82,11 @@ export declare class EventsController {
     } & {
         id: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        storeId: string;
         description: string | null;
         game: string;
+        storeId: string;
+        createdAt: Date;
+        updatedAt: Date;
         image: string | null;
         location: string | null;
         status: import(".prisma/client").$Enums.EventStatus;
@@ -111,11 +111,11 @@ export declare class EventsController {
     } & {
         id: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        storeId: string;
         description: string | null;
         game: string;
+        storeId: string;
+        createdAt: Date;
+        updatedAt: Date;
         image: string | null;
         location: string | null;
         status: import(".prisma/client").$Enums.EventStatus;

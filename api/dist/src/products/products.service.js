@@ -26,12 +26,32 @@ let ProductsService = class ProductsService {
                     where: { oracleId: dto.oracleId },
                     update: {
                         legalities: dto.legalities,
+                        manaCost: dto.manaCost,
+                        manaValue: dto.manaValue,
+                        colors: dto.colors,
+                        colorIdentity: dto.colorIdentity,
+                        typeLine: dto.typeLine,
+                        supertypes: dto.supertypes,
+                        subtypes: dto.subtypes,
+                        power: dto.power,
+                        toughness: dto.toughness,
+                        loyalty: dto.loyalty
                     },
                     create: {
                         oracleId: dto.oracleId,
                         name: dto.name,
                         oracleText: dto.oracleText || '',
-                        legalities: dto.legalities
+                        legalities: dto.legalities,
+                        manaCost: dto.manaCost,
+                        manaValue: dto.manaValue,
+                        colors: dto.colors,
+                        colorIdentity: dto.colorIdentity,
+                        typeLine: dto.typeLine,
+                        supertypes: dto.supertypes,
+                        subtypes: dto.subtypes,
+                        power: dto.power,
+                        toughness: dto.toughness,
+                        loyalty: dto.loyalty
                     }
                 });
                 cardId = card.id;

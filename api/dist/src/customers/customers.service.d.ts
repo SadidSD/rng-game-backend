@@ -5,10 +5,10 @@ export declare class CustomersService {
     constructor(prisma: PrismaService);
     create(storeId: string, dto: CreateCustomerDto): Promise<{
         id: string;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
         email: string;
-        storeId: string;
         firstName: string | null;
         lastName: string | null;
         phone: string | null;
@@ -21,10 +21,10 @@ export declare class CustomersService {
         };
     } & {
         id: string;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
         email: string;
-        storeId: string;
         firstName: string | null;
         lastName: string | null;
         phone: string | null;
@@ -34,9 +34,9 @@ export declare class CustomersService {
     findOne(storeId: string, id: string): Promise<{
         orders: {
             id: string;
+            storeId: string;
             createdAt: Date;
             updatedAt: Date;
-            storeId: string;
             orderNumber: number;
             status: import(".prisma/client").$Enums.OrderStatus;
             total: import("@prisma/client/runtime/library").Decimal;
@@ -49,10 +49,10 @@ export declare class CustomersService {
         }[];
     } & {
         id: string;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
         email: string;
-        storeId: string;
         firstName: string | null;
         lastName: string | null;
         phone: string | null;
@@ -61,10 +61,10 @@ export declare class CustomersService {
     }>;
     update(storeId: string, id: string, dto: UpdateCustomerDto): Promise<{
         id: string;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
         email: string;
-        storeId: string;
         firstName: string | null;
         lastName: string | null;
         phone: string | null;

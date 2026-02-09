@@ -5,20 +5,20 @@ export declare class BuylistController {
     constructor(buylistService: BuylistService);
     createRule(req: any, dto: CreateBuylistRuleDto): Promise<{
         id: string;
-        createdAt: Date;
-        storeId: string;
         game: string;
         set: string | null;
         rarity: string | null;
+        storeId: string;
+        createdAt: Date;
         buyPercentage: import("@prisma/client/runtime/library").Decimal;
     }>;
     getRules(req: any): Promise<{
         id: string;
-        createdAt: Date;
-        storeId: string;
         game: string;
         set: string | null;
         rarity: string | null;
+        storeId: string;
+        createdAt: Date;
         buyPercentage: import("@prisma/client/runtime/library").Decimal;
     }[]>;
     getOffers(req: any): Promise<({
@@ -33,9 +33,9 @@ export declare class BuylistController {
         }[];
     } & {
         id: string;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
-        storeId: string;
         status: import(".prisma/client").$Enums.OfferStatus;
         customerName: string;
         customerEmail: string;
@@ -44,9 +44,9 @@ export declare class BuylistController {
     })[]>;
     updateOffer(req: any, id: string, dto: UpdateOfferStatusDto): Promise<{
         id: string;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
-        storeId: string;
         status: import(".prisma/client").$Enums.OfferStatus;
         customerName: string;
         customerEmail: string;
@@ -65,9 +65,9 @@ export declare class BuylistController {
         }[];
     } & {
         id: string;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
-        storeId: string;
         status: import(".prisma/client").$Enums.OfferStatus;
         customerName: string;
         customerEmail: string;
@@ -77,11 +77,11 @@ export declare class BuylistController {
     getFeaturedCards(req: any): Promise<{
         id: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        storeId: string;
         game: string;
         set: string | null;
+        storeId: string;
+        createdAt: Date;
+        updatedAt: Date;
         image: string;
         setId: string | null;
         basePrice: import("@prisma/client/runtime/library").Decimal | null;
@@ -91,11 +91,11 @@ export declare class BuylistController {
         local: {
             id: string;
             name: string;
-            createdAt: Date;
-            updatedAt: Date;
-            storeId: string;
             game: string;
             set: string | null;
+            storeId: string;
+            createdAt: Date;
+            updatedAt: Date;
             image: string;
             setId: string | null;
             basePrice: import("@prisma/client/runtime/library").Decimal | null;

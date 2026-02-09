@@ -53,7 +53,7 @@ async function bootstrap() {
   // Add Health Check at Root (/) to satisfy Railway/LoadBalancers
   const httpAdapter = app.getHttpAdapter();
   httpAdapter.get('/', (req: any, res: any) => {
-    res.send({ status: 'ok', message: 'TCG Backend is running' });
+    res.send({ status: 'ok', message: 'TCG Backend is running (v1.2 - Filters Enabled)' });
   });
 
   const port = process.env.PORT || 3001;

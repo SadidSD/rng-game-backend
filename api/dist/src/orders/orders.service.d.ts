@@ -15,9 +15,9 @@ export declare class OrdersService {
         }[];
     } & {
         id: string;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
-        storeId: string;
         orderNumber: number;
         status: import(".prisma/client").$Enums.OrderStatus;
         total: import("@prisma/client/runtime/library").Decimal;
@@ -31,10 +31,10 @@ export declare class OrdersService {
     findAll(storeId: string): Promise<({
         customer: {
             id: string;
+            storeId: string;
             createdAt: Date;
             updatedAt: Date;
             email: string;
-            storeId: string;
             firstName: string | null;
             lastName: string | null;
             phone: string | null;
@@ -52,9 +52,9 @@ export declare class OrdersService {
         }[];
     } & {
         id: string;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
-        storeId: string;
         orderNumber: number;
         status: import(".prisma/client").$Enums.OrderStatus;
         total: import("@prisma/client/runtime/library").Decimal;
@@ -68,10 +68,10 @@ export declare class OrdersService {
     findOne(storeId: string, id: string): Promise<{
         customer: {
             id: string;
+            storeId: string;
             createdAt: Date;
             updatedAt: Date;
             email: string;
-            storeId: string;
             firstName: string | null;
             lastName: string | null;
             phone: string | null;
@@ -89,9 +89,9 @@ export declare class OrdersService {
         }[];
     } & {
         id: string;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
-        storeId: string;
         orderNumber: number;
         status: import(".prisma/client").$Enums.OrderStatus;
         total: import("@prisma/client/runtime/library").Decimal;
@@ -105,10 +105,10 @@ export declare class OrdersService {
     updateStatus(storeId: string, id: string, dto: UpdateOrderStatusDto): Promise<{
         customer: {
             id: string;
+            storeId: string;
             createdAt: Date;
             updatedAt: Date;
             email: string;
-            storeId: string;
             firstName: string | null;
             lastName: string | null;
             phone: string | null;
@@ -126,9 +126,9 @@ export declare class OrdersService {
         }[];
     } & {
         id: string;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
-        storeId: string;
         orderNumber: number;
         status: import(".prisma/client").$Enums.OrderStatus;
         total: import("@prisma/client/runtime/library").Decimal;

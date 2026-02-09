@@ -13,5 +13,15 @@ export declare class ScryfallService {
         legalities: any;
         tcgplayerUrl: any;
         price: any;
+        manaCost: any;
+        manaValue: any;
+        colors: any;
+        colorIdentity: any;
+        typeLine: any;
+        power: any;
+        toughness: any;
+        loyalty: any;
+        supertypes: never[];
+        subtypes: never[];
     } | null>;
 }

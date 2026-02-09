@@ -5,30 +5,30 @@ export declare class BuylistService {
     constructor(prisma: PrismaService);
     createRule(storeId: string, dto: CreateBuylistRuleDto): Promise<{
         id: string;
-        createdAt: Date;
-        storeId: string;
         game: string;
         set: string | null;
         rarity: string | null;
+        storeId: string;
+        createdAt: Date;
         buyPercentage: import("@prisma/client/runtime/library").Decimal;
     }>;
     getRules(storeId: string): Promise<{
         id: string;
-        createdAt: Date;
-        storeId: string;
         game: string;
         set: string | null;
         rarity: string | null;
+        storeId: string;
+        createdAt: Date;
         buyPercentage: import("@prisma/client/runtime/library").Decimal;
     }[]>;
     getFeaturedCards(storeId: string): Promise<{
         id: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        storeId: string;
         game: string;
         set: string | null;
+        storeId: string;
+        createdAt: Date;
+        updatedAt: Date;
         image: string;
         setId: string | null;
         basePrice: import("@prisma/client/runtime/library").Decimal | null;
@@ -38,11 +38,11 @@ export declare class BuylistService {
         local: {
             id: string;
             name: string;
-            createdAt: Date;
-            updatedAt: Date;
-            storeId: string;
             game: string;
             set: string | null;
+            storeId: string;
+            createdAt: Date;
+            updatedAt: Date;
             image: string;
             setId: string | null;
             basePrice: import("@prisma/client/runtime/library").Decimal | null;
@@ -61,9 +61,9 @@ export declare class BuylistService {
         }[];
     } & {
         id: string;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
-        storeId: string;
         status: import(".prisma/client").$Enums.OfferStatus;
         customerName: string;
         customerEmail: string;
@@ -82,9 +82,9 @@ export declare class BuylistService {
         }[];
     } & {
         id: string;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
-        storeId: string;
         status: import(".prisma/client").$Enums.OfferStatus;
         customerName: string;
         customerEmail: string;
@@ -93,9 +93,9 @@ export declare class BuylistService {
     })[]>;
     updateOfferStatus(storeId: string, offerId: string, dto: UpdateOfferStatusDto): Promise<{
         id: string;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
-        storeId: string;
         status: import(".prisma/client").$Enums.OfferStatus;
         customerName: string;
         customerEmail: string;

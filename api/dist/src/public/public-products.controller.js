@@ -23,12 +23,90 @@ let PublicProductsController = class PublicProductsController {
     }
     async getProducts(req) {
         const storeId = req.store.id;
+        const query = req.query;
+        const where = { storeId };
+        const cardWhere = {};
+        let hasCardFilters = false;
+        if (query.name) {
+            where.name = { contains: query.name, mode: 'insensitive' };
+        }
+        if (query.colors) {
+            const colors = query.colors.split(',');
+            cardWhere.colorIdentity = { hasSome: colors };
+            hasCardFilters = true;
+        }
+        if (query.type) {
+            cardWhere.typeLine = { contains: query.type, mode: 'insensitive' };
+            hasCardFilters = true;
+        }
+        if (query.cmcMin || query.cmcMax) {
+            cardWhere.manaValue = {};
+            if (query.cmcMin)
+                cardWhere.manaValue.gte = parseFloat(query.cmcMin);
+            if (query.cmcMax)
+                cardWhere.manaValue.lte = parseFloat(query.cmcMax);
+            hasCardFilters = true;
+        }
+        if (query.format) {
+            const format = query.format.toLowerCase();
+            cardWhere.legalities = {
+                path: [format],
+                equals: 'legal'
+            };
+            hasCardFilters = true;
+        }
+        if (hasCardFilters) {
+            where.card = cardWhere;
+        }
+        if (query.set) {
+            where.set = { contains: query.set, mode: 'insensitive' };
+        }
+        if (query.rarity) {
+            where.rarity = { equals: query.rarity, mode: 'insensitive' };
+        }
+        const variantWhere = {};
+        let hasVariantFilters = false;
+        if (query.priceMin || query.priceMax) {
+            variantWhere.price = {};
+            if (query.priceMin)
+                variantWhere.price.gte = parseFloat(query.priceMin);
+            if (query.priceMax)
+                variantWhere.price.lte = parseFloat(query.priceMax);
+            hasVariantFilters = true;
+        }
+        if (query.foil) {
+            variantWhere.isFoil = query.foil === 'true';
+            hasVariantFilters = true;
+        }
+        if (query.inStock === 'true') {
+            variantWhere.inventory = {
+                quantity: { gt: 0 }
+            };
+            hasVariantFilters = true;
+        }
+        if (hasVariantFilters) {
+            where.variants = {
+                some: variantWhere
+            };
+        }
+        let orderBy = { createdAt: 'desc' };
+        if (query.sort === 'price_asc')
+            orderBy = { price: 'asc' };
+        if (query.sort === 'price_desc')
+            orderBy = { price: 'desc' };
+        if (query.sort === 'name_asc')
+            orderBy = { name: 'asc' };
         const products = await this.prisma.product.findMany({
-            where: { storeId },
+            where,
             include: {
-                variants: true,
+                variants: {
+                    include: { inventory: true }
+                },
+                card: true,
                 category: true
             },
+            orderBy,
+            take: 100
         });
         return {
             store: req.store.name,

@@ -5,16 +5,16 @@ export declare class StoreController {
     constructor(storeService: StoreService);
     getSettings(req: any): Promise<{
         id: string;
-        apiKey: string;
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        apiKey: string;
     }>;
     updateSettings(req: any, dto: UpdateStoreDto): Promise<{
         id: string;
-        apiKey: string;
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        apiKey: string;
     }>;
 }

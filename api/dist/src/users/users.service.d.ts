@@ -4,20 +4,20 @@ export declare class UsersService {
     constructor(prisma: PrismaService);
     findAll(storeId: string): Promise<{
         id: string;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
         email: string;
         password: string;
         role: import(".prisma/client").$Enums.Role;
-        storeId: string;
     }[]>;
     findOne(id: string, storeId: string): Promise<{
         id: string;
+        storeId: string;
         createdAt: Date;
         updatedAt: Date;
         email: string;
         password: string;
         role: import(".prisma/client").$Enums.Role;
-        storeId: string;
     } | null>;
 }

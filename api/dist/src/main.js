@@ -40,7 +40,7 @@ async function bootstrap() {
     swagger_1.SwaggerModule.setup('api', app, document);
     const httpAdapter = app.getHttpAdapter();
     httpAdapter.get('/', (req, res) => {
-        res.send({ status: 'ok', message: 'TCG Backend is running' });
+        res.send({ status: 'ok', message: 'TCG Backend is running (v1.2 - Filters Enabled)' });
     });
     const port = process.env.PORT || 3001;
     await app.listen(port, '0.0.0.0');

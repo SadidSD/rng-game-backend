@@ -5,16 +5,16 @@ export declare class StoreService {
     constructor(prisma: PrismaService);
     findOne(id: string): Promise<{
         id: string;
-        apiKey: string;
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        apiKey: string;
     }>;
     update(id: string, dto: UpdateStoreDto): Promise<{
         id: string;
-        apiKey: string;
         name: string;
         createdAt: Date;
         updatedAt: Date;
+        apiKey: string;
     }>;
 }

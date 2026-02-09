@@ -6,11 +6,11 @@ export declare class EventsService {
     create(storeId: string, dto: CreateEventDto): Promise<{
         id: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        storeId: string;
         description: string | null;
         game: string;
+        storeId: string;
+        createdAt: Date;
+        updatedAt: Date;
         image: string | null;
         location: string | null;
         status: import(".prisma/client").$Enums.EventStatus;
@@ -27,11 +27,11 @@ export declare class EventsService {
     } & {
         id: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        storeId: string;
         description: string | null;
         game: string;
+        storeId: string;
+        createdAt: Date;
+        updatedAt: Date;
         image: string | null;
         location: string | null;
         status: import(".prisma/client").$Enums.EventStatus;
@@ -48,11 +48,11 @@ export declare class EventsService {
     } & {
         id: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        storeId: string;
         description: string | null;
         game: string;
+        storeId: string;
+        createdAt: Date;
+        updatedAt: Date;
         image: string | null;
         location: string | null;
         status: import(".prisma/client").$Enums.EventStatus;
@@ -77,11 +77,11 @@ export declare class EventsService {
     } & {
         id: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        storeId: string;
         description: string | null;
         game: string;
+        storeId: string;
+        createdAt: Date;
+        updatedAt: Date;
         image: string | null;
         location: string | null;
         status: import(".prisma/client").$Enums.EventStatus;
@@ -94,11 +94,11 @@ export declare class EventsService {
     update(storeId: string, id: string, dto: Partial<CreateEventDto>): Promise<{
         id: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        storeId: string;
         description: string | null;
         game: string;
+        storeId: string;
+        createdAt: Date;
+        updatedAt: Date;
         image: string | null;
         location: string | null;
         status: import(".prisma/client").$Enums.EventStatus;
@@ -111,11 +111,11 @@ export declare class EventsService {
     remove(storeId: string, id: string): Promise<{
         id: string;
         name: string;
-        createdAt: Date;
-        updatedAt: Date;
-        storeId: string;
         description: string | null;
         game: string;
+        storeId: string;
+        createdAt: Date;
+        updatedAt: Date;
         image: string | null;
         location: string | null;
         status: import(".prisma/client").$Enums.EventStatus;

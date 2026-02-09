@@ -19,10 +19,10 @@ export declare class AnalyticsController {
         recentOrders: ({
             customer: {
                 id: string;
+                storeId: string;
                 createdAt: Date;
                 updatedAt: Date;
                 email: string;
-                storeId: string;
                 firstName: string | null;
                 lastName: string | null;
                 phone: string | null;
@@ -31,9 +31,9 @@ export declare class AnalyticsController {
             } | null;
         } & {
             id: string;
+            storeId: string;
             createdAt: Date;
             updatedAt: Date;
-            storeId: string;
             orderNumber: number;
             status: import(".prisma/client").$Enums.OrderStatus;
             total: import("@prisma/client/runtime/library").Decimal;
