@@ -1,10 +1,49 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
+import { CreateProductDto, UpdateProductDto, ProductVariantDto } from './dto/product.dto';
+import { Condition } from '@prisma/client';
 
 @Injectable()
 export class ProductsService {
     constructor(private prisma: PrismaService) { }
+
+    // Helper: Generate SKU
+    // Format: GAME-SET-COLLECTOR-SLUG-COND-LANG-FINISH
+    private generateSku(
+        game: string,
+        set: string,
+        collectorNumber: string,
+        name: string,
+        condition: Condition,
+        language: string,
+        isFoil: boolean
+    ): string {
+        const gameCode = (game || 'MTG').toUpperCase().substring(0, 3);
+        const setCode = (set || 'UNK').toUpperCase().replace(/ /g, '');
+        const collector = (collectorNumber || '000').padStart(3, '0');
+
+        // Slugify Name: UPPERCASE, Remove Spaces/SpecialChars
+        const slug = name.toUpperCase()
+            .replace(/[^A-Z0-9]/g, '')
+            .substring(0, 25); // Cap length
+
+        const condMap: Record<string, string> = {
+            'NM': 'NM',
+            'LP': 'LP',
+            'MP': 'MP',
+            'HP': 'HP',
+            'DAMAGED': 'DMG',
+            'SEALED': 'SEALED'
+        };
+        const condCode = condMap[condition] || condition;
+
+        const langCode = (language || 'EN').toUpperCase().substring(0, 2);
+
+        // Finish: NF (Non-foil), F (Foil), EF (Etched - logical handling needs more data, defaulting to F if foil)
+        const finishCode = isFoil ? 'F' : 'NF';
+
+        return `${gameCode}-${setCode}-${collector}-${slug}-${condCode}-${langCode}-${finishCode}`;
+    }
 
     async create(storeId: string, dto: CreateProductDto) {
         // Generate a simple slug
@@ -67,25 +106,36 @@ export class ProductsService {
                     // oracleId: dto.oracleId, 
                     // legalities: dto.legalities,
                     cardId: cardId, // Link to Card
-
                     price: dto.price, // Save root price
                     slug: slug,
                     images: dto.images || [],
                     storeId,
                     variants: {
-                        create: dto.variants?.map(v => ({
-                            condition: v.condition,
-                            isFoil: v.isFoil || false,
-                            language: v.language || 'English',
-                            price: v.price,
-                            storeId,
-                            inventory: {
-                                create: {
-                                    quantity: v.quantity,
-                                    storeId
+                        create: dto.variants?.map(v => {
+                            const sku = this.generateSku(
+                                dto.game || 'MTG',
+                                dto.set || 'UNK',
+                                dto.collectorNumber || '000',
+                                dto.name,
+                                v.condition,
+                                v.language || 'English',
+                                v.isFoil || false
+                            );
+                            return {
+                                sku: sku,
+                                condition: v.condition,
+                                isFoil: v.isFoil || false,
+                                language: v.language || 'English',
+                                price: v.price,
+                                storeId,
+                                inventory: {
+                                    create: {
+                                        quantity: v.quantity,
+                                        storeId
+                                    }
                                 }
-                            }
-                        })),
+                            };
+                        }),
                     },
                 },
                 include: {
@@ -241,8 +291,21 @@ export class ProductsService {
                         if (!v.condition || v.price === undefined || v.quantity === undefined) {
                             throw new Error("Condition, Price, and Quantity are required for new variants");
                         }
+
+                        // Generate SKU for new variant
+                        const sku = this.generateSku(
+                            updatedProduct.game || 'MTG',
+                            updatedProduct.set || 'UNK',
+                            updatedProduct.collectorNumber || '000',
+                            updatedProduct.name,
+                            v.condition,
+                            v.language || 'English',
+                            v.isFoil || false
+                        );
+
                         await tx.productVariant.create({
                             data: {
+                                sku: sku,
                                 productId: id,
                                 condition: v.condition,
                                 isFoil: v.isFoil || false,
