@@ -23,9 +23,10 @@ export class PublicProductsController {
         }
 
         if (query.colors) {
-            // "Blue,Red" -> hasSome: ['Blue', 'Red']
+            // "W,U" -> hasSome: ['W', 'U']
+            // Use colorIdentity for Commander-friendly filtering
             const colors = (query.colors as string).split(',');
-            cardWhere.colors = { hasSome: colors };
+            cardWhere.colorIdentity = { hasSome: colors };
             hasCardFilters = true;
         }
 
