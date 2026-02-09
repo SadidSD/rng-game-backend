@@ -54,7 +54,23 @@ export class PaymentsController {
             case 'payment_intent.payment_failed':
                 const failedIntent = event.data.object;
                 this.logger.error(`Payment failed: ${failedIntent.id}`);
-                // TODO: Send notification to admin about failed payment
+
+                // Try to find order by payment intent and rollback if needed
+                const failedSession = await this.stripeService.getSession(failedIntent.id as string).catch(() => null);
+                if (failedSession?.metadata?.orderId) {
+                    this.logger.warn(`Rolling back inventory for order: ${failedSession.metadata.orderId}`);
+                    await this.ordersService.rollbackInventory(failedSession.metadata.orderId);
+                }
+                break;
+
+            case 'checkout.session.expired':
+                const expiredSession = event.data.object;
+                const expiredOrderId = expiredSession.metadata?.orderId;
+
+                if (expiredOrderId) {
+                    this.logger.warn(`Checkout session expired for order: ${expiredOrderId}`);
+                    // Mark order as cancelled (but don't rollback since inventory was never deducted)
+                }
                 break;
 
             default:

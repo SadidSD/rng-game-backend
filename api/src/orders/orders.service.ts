@@ -180,6 +180,60 @@ export class OrdersService {
         });
     }
 
+    /**
+     * Rollback inventory - called when payment fails
+     * This method restores inventory if it was mistakenly deducted
+     */
+    async rollbackInventory(orderId: string) {
+        return this.prisma.$transaction(async (tx) => {
+            const order = await tx.order.findUnique({
+                where: { id: orderId },
+                include: { items: true }
+            });
+
+            if (!order) {
+                this.logger.warn(`Cannot rollback - order ${orderId} not found`);
+                return null;
+            }
+
+            // Only rollback if payment was marked as PAID (mistakenly)
+            if (order.paymentStatus !== 'PAID') {
+                this.logger.info(`No rollback needed for order ${orderId} - status: ${order.paymentStatus}`);
+                return order;
+            }
+
+            // Restore inventory for each item
+            for (const item of order.items) {
+                if (!item.variantId) continue;
+
+                const variant = await tx.productVariant.findUnique({
+                    where: { id: item.variantId },
+                    include: { inventory: true }
+                });
+
+                if (variant && variant.inventory) {
+                    await tx.inventoryItem.update({
+                        where: { variantId: variant.id },
+                        data: { quantity: { increment: item.quantity } }
+                    });
+                    this.logger.info(`Restored ${item.quantity} units of variant ${variant.id}`);
+                }
+            }
+
+            // Mark order as FAILED
+            const updatedOrder = await tx.order.update({
+                where: { id: orderId },
+                data: {
+                    status: 'CANCELLED',
+                    paymentStatus: 'FAILED',
+                }
+            });
+
+            this.logger.info(`Inventory rolled back for order ${orderId}`);
+            return updatedOrder;
+        });
+    }
+
     async findAll(storeId: string) {
         return this.prisma.order.findMany({
             where: { storeId },

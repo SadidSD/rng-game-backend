@@ -22,17 +22,30 @@ async function bootstrap() {
     transform: true,
   }));
 
-  // Enable CORS for Frontend
-  app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'https://rng-game-backend-production.up.railway.app',
-      'https://rng-game-backend.vercel.app',
+  // Enable CORS with production whitelist
+  const allowedOrigins = process.env.NODE_ENV === 'production'
+    ? [
       'https://rng-gamez-shop.vercel.app',
+      'https://rng-game-backend.onrender.com',
+    ]
+    : [
+      'http://localhost:3000',
       'http://localhost:3002',
-      /https:\/\/.*\.onrender\.com/,
-      /https:\/\/.*\.vercel\.app/
-    ],
+      'http://localhost:3001',
+    ];
+
+  app.enableCors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or Postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Accept, Authorization, x-api-key',

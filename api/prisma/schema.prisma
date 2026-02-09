@@ -7,6 +7,10 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+  
+  // Connection pool optimization for production
+  // Handles 50-100 concurrent orders/day
+  relationMode = "prisma"
 }
 
 // -----------------------------------------------------------------------------

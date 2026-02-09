@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -23,6 +23,8 @@ import { PokemonTcgModule } from './integrations/pokemon-tcg/pokemon-tcg.module'
 import { PaymentsModule } from './payments/payments.module';
 import { SentryModule } from './sentry/sentry.module';
 import { LoggerModule } from './logger/logger.module';
+import { SanitizationMiddleware } from './middleware/sanitization.middleware';
+import { HttpsRedirectMiddleware } from './middleware/https-redirect.middleware';
 
 @Module({
   imports: [
@@ -46,4 +48,10 @@ import { LoggerModule } from './logger/logger.module';
     },
   ],
 })
-export class AppModule { }
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(HttpsRedirectMiddleware, SanitizationMiddleware)
+      .forRoutes('*'); // Apply to all routes
+  }
+}
