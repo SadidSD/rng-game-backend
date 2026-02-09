@@ -21,6 +21,8 @@ import { CategoriesModule } from './categories/categories.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PokemonTcgModule } from './integrations/pokemon-tcg/pokemon-tcg.module';
 import { PaymentsModule } from './payments/payments.module';
+import { SentryModule } from './sentry/sentry.module';
+import { LoggerModule } from './logger/logger.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { PaymentsModule } from './payments/payments.module';
       ttl: 60000, // 60 seconds
       limit: 100, // 100 requests per minute (global default)
     }]),
+    SentryModule,
+    LoggerModule,
     AuthModule, UsersModule, StoreModule, PublicModule, ProductsModule, InventoryModule, BuylistModule, OrdersModule, CustomersModule, EventsModule, AnalyticsModule, IntegrationsModule, UploadsModule, CategoriesModule, PrismaModule, PokemonTcgModule, PaymentsModule],
   controllers: [AppController],
   providers: [

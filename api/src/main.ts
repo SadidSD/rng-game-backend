@@ -3,17 +3,18 @@ import { ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
-
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { LoggerService } from './logger/logger.service';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // DEBUG: Check Environment Variables
-  console.log('--- ENV DEBUG ---');
-  console.log('MANAPOOL_ACCESS_TOKEN:', process.env.MANAPOOL_ACCESS_TOKEN ? 'DEFINED (Masked)' : 'MISSING');
-  console.log('Available Env Keys:', Object.keys(process.env).sort().join(', '));
-  console.log('--- ENV DEBUG ---');
+  // Use custom logger
+  const logger = app.get(LoggerService);
+  logger.setContext('Bootstrap');
+  app.useLogger(logger);
+
+  logger.info('Starting TCG Backend...');
 
   // 1. Global Validation
   app.useGlobalPipes(new ValidationPipe({
@@ -26,8 +27,8 @@ async function bootstrap() {
     origin: [
       'http://localhost:3000',
       'https://rng-game-backend-production.up.railway.app',
-      'https://rng-game-backend.vercel.app', // Explicit Add
-      'https://rng-gamez-shop.vercel.app',   // Explicit Add
+      'https://rng-game-backend.vercel.app',
+      'https://rng-gamez-shop.vercel.app',
       'http://localhost:3002',
       /https:\/\/.*\.onrender\.com/,
       /https:\/\/.*\.vercel\.app/
@@ -50,10 +51,11 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
+
   // Add Health Check at Root (/) to satisfy Railway/LoadBalancers
   const httpAdapter = app.getHttpAdapter();
   httpAdapter.get('/', (req: any, res: any) => {
-    res.send({ status: 'ok', message: 'TCG Backend is running (v1.2 - Filters Enabled)' });
+    res.send({ status: 'ok', message: 'TCG Backend is running (v1.3 - Production Ready)' });
   });
 
   const port = process.env.PORT || 3001;
@@ -61,7 +63,7 @@ async function bootstrap() {
 
   const server = app.getHttpServer();
   const address = server.address();
-  console.log(`Application is running on: ${await app.getUrl()}`);
-  console.log(`Server bound to:`, address);
+  logger.info(`Application is running on: ${await app.getUrl()}`);
+  logger.info(`Server bound to: ${JSON.stringify(address)}`);
 }
 bootstrap();

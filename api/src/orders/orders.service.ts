@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { StripeService } from '../payments/stripe.service';
 import { CreateOrderDto, UpdateOrderStatusDto } from './dto/orders.dto';
 import { ConfigService } from '@nestjs/config';
+import { LoggerService } from '../logger/logger.service';
 
 @Injectable()
 export class OrdersService {
@@ -10,7 +11,10 @@ export class OrdersService {
         private prisma: PrismaService,
         private stripeService: StripeService,
         private configService: ConfigService,
-    ) { }
+        private logger: LoggerService,
+    ) {
+        this.logger.setContext('OrdersService');
+    }
 
     /**
      * Create an order and initiate Stripe payment
@@ -129,7 +133,7 @@ export class OrdersService {
 
             if (!order) throw new NotFoundException('Order not found');
             if (order.paymentStatus === 'PAID') {
-                console.log(`[Orders] Order ${orderId} already paid`);
+                this.logger.info(`Order ${orderId} already paid`);
                 return order;
             }
 
@@ -143,7 +147,7 @@ export class OrdersService {
                 });
 
                 if (!variant) {
-                    console.warn(`[Orders] Variant ${item.variantId} not found, skipping inventory deduction`);
+                    this.logger.warn(`Variant ${item.variantId} not found, skipping inventory deduction`);
                     continue;
                 }
 
@@ -151,7 +155,7 @@ export class OrdersService {
                 if (currentStock < item.quantity) {
                     // Stock insufficient - this shouldn't happen if we validated earlier
                     // Log warning but don't fail the payment
-                    console.error(`[Orders] Insufficient stock for ${variant.id}: requested ${item.quantity}, available ${currentStock}`);
+                    this.logger.error(`Insufficient stock for ${variant.id}: requested ${item.quantity}, available ${currentStock}`);
                     continue;
                 }
 
@@ -171,7 +175,7 @@ export class OrdersService {
                 }
             });
 
-            console.log(`[Orders] Payment completed for order ${orderId}`);
+            this.logger.info(`Payment completed for order ${orderId}`);
             return updatedOrder;
         });
     }

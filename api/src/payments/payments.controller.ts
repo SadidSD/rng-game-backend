@@ -2,6 +2,7 @@ import { Controller, Post, Body, Headers, RawBodyRequest, Req } from '@nestjs/co
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { StripeService } from './stripe.service';
 import { OrdersService } from '../orders/orders.service';
+import { LoggerService } from '../logger/logger.service';
 import { Request } from 'express';
 
 @ApiTags('payments')
@@ -10,7 +11,10 @@ export class PaymentsController {
     constructor(
         private stripeService: StripeService,
         private ordersService: OrdersService,
-    ) { }
+        private logger: LoggerService,
+    ) {
+        this.logger.setContext('PaymentsController');
+    }
 
     @Post('webhook')
     @ApiOperation({ summary: 'Stripe webhook endpoint' })
@@ -34,27 +38,27 @@ export class PaymentsController {
                 const orderId = session.metadata?.orderId;
 
                 if (orderId) {
-                    console.log(`[Stripe] Payment successful for order: ${orderId}`);
+                    this.logger.info(`Payment successful for order: ${orderId}`);
                     // Complete the order - deduct inventory
                     await this.ordersService.completePayment(orderId);
                 } else {
-                    console.warn('[Stripe] No orderId in session metadata');
+                    this.logger.warn('No orderId in session metadata');
                 }
                 break;
 
             case 'payment_intent.succeeded':
                 const paymentIntent = event.data.object;
-                console.log(`[Stripe] PaymentIntent ${paymentIntent.id} succeeded`);
+                this.logger.info(`PaymentIntent ${paymentIntent.id} succeeded`);
                 break;
 
             case 'payment_intent.payment_failed':
                 const failedIntent = event.data.object;
-                console.log(`[Stripe] Payment failed: ${failedIntent.id}`);
+                this.logger.error(`Payment failed: ${failedIntent.id}`);
                 // TODO: Send notification to admin about failed payment
                 break;
 
             default:
-                console.log(`[Stripe] Unhandled event type: ${event.type}`);
+                this.logger.debug(`Unhandled event type: ${event.type}`);
         }
 
         return { received: true };
