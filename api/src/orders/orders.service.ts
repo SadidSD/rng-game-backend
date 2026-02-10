@@ -130,7 +130,7 @@ export class OrdersService {
         return this.prisma.$transaction(async (tx) => {
             const order = await tx.order.findUnique({
                 where: { id: orderId },
-                include: { items: true }
+                include: { items: true, customer: true }
             });
 
             if (!order) throw new NotFoundException('Order not found');

@@ -63,7 +63,7 @@ export class InventoryService {
         });
 
         // 4. Check for low stock alert
-        const threshold = updated.lowStockThreshold || 5;
+        const threshold = updated.lowStock || 5;
         if (newQuantity <= threshold && newQuantity > 0) {
             this.logger.warn(`Low stock alert: Variant ${variantId} has ${newQuantity} units (threshold: ${threshold})`);
         } else if (newQuantity === 0) {
@@ -80,7 +80,9 @@ export class InventoryService {
         const items = await this.prisma.inventoryItem.findMany({
             where: {
                 storeId,
-                quantity: { lte: this.prisma.inventoryItem.fields.lowStockThreshold }
+                OR: [
+                    { quantity: { lte: 5 } }, // Default threshold
+                ]
             },
             include: {
                 variant: {
@@ -95,7 +97,7 @@ export class InventoryService {
             productName: item.variant.product.name,
             sku: item.variant.sku,
             quantity: item.quantity,
-            threshold: item.lowStockThreshold,
+            threshold: item.lowStock,
         }));
     }
 }

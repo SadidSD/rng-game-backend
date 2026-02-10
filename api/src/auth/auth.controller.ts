@@ -45,6 +45,6 @@ export class AuthController {
     @Patch('change-password')
     @UseGuards(JwtAuthGuard)
     async changePassword(@Request() req, @Body() body: { currentPassword: string, newPassword: string }) {
-        return this.authService.changePassword(req.user.email, body.currentPassword, body.newPassword);
+        return this.authService.changePassword(req.user.sub, { oldPassword: body.currentPassword, newPassword: body.newPassword });
     }
 }
