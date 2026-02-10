@@ -39,6 +39,11 @@ async function bootstrap() {
       // Allow requests with no origin (like mobile apps or Postman)
       if (!origin) return callback(null, true);
 
+      // In development, allow all localhost origins (any port)
+      if (process.env.NODE_ENV !== 'production' && origin.startsWith('http://localhost:')) {
+        return callback(null, true);
+      }
+
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
