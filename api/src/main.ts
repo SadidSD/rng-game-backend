@@ -26,6 +26,7 @@ async function bootstrap() {
   const allowedOrigins = process.env.NODE_ENV === 'production'
     ? [
       'https://rng-gamez-shop.vercel.app',
+      'https://rng-game-backend.vercel.app',
       'https://rng-game-backend.onrender.com',
     ]
     : [
