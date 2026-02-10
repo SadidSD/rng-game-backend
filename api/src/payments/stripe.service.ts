@@ -4,16 +4,22 @@ import Stripe from 'stripe';
 
 @Injectable()
 export class StripeService {
-    private stripe: Stripe;
+    private stripe: Stripe | null = null;
+    private isConfigured: boolean = false;
 
     constructor(private configService: ConfigService) {
         const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
-        if (!secretKey) {
-            throw new Error('STRIPE_SECRET_KEY is not configured');
+
+        if (!secretKey || secretKey.includes('REPLACE')) {
+            console.warn('[StripeService] STRIPE_SECRET_KEY not configured - payment features disabled');
+            this.isConfigured = false;
+        } else {
+            this.stripe = new Stripe(secretKey, {
+                apiVersion: '2026-01-28.clover',
+            });
+            this.isConfigured = true;
+            console.log('[StripeService] Initialized successfully');
         }
-        this.stripe = new Stripe(secretKey, {
-            apiVersion: '2026-01-28.clover',
-        });
     }
 
     /**
@@ -31,6 +37,10 @@ export class StripeService {
         successUrl: string;
         cancelUrl: string;
     }): Promise<{ sessionId: string; url: string }> {
+        if (!this.isConfigured || !this.stripe) {
+            throw new Error('Stripe is not configured. Please add STRIPE_SECRET_KEY to environment variables.');
+        }
+
         const lineItems = params.items.map(item => ({
             price_data: {
                 currency: 'usd',
@@ -64,8 +74,12 @@ export class StripeService {
      * Verify webhook signature from Stripe
      */
     verifyWebhookSignature(payload: Buffer, signature: string): Stripe.Event {
+        if (!this.isConfigured || !this.stripe) {
+            throw new Error('Stripe is not configured');
+        }
+
         const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
-        if (!webhookSecret) {
+        if (!webhookSecret || webhookSecret.includes('REPLACE')) {
             throw new Error('STRIPE_WEBHOOK_SECRET is not configured');
         }
 
@@ -80,6 +94,9 @@ export class StripeService {
      * Retrieve a checkout session by ID
      */
     async getSession(sessionId: string): Promise<Stripe.Checkout.Session> {
+        if (!this.isConfigured || !this.stripe) {
+            throw new Error('Stripe is not configured');
+        }
         return this.stripe.checkout.sessions.retrieve(sessionId);
     }
 
@@ -87,6 +104,9 @@ export class StripeService {
      * Retrieve a payment intent
      */
     async getPaymentIntent(paymentIntentId: string): Promise<Stripe.PaymentIntent> {
+        if (!this.isConfigured || !this.stripe) {
+            throw new Error('Stripe is not configured');
+        }
         return this.stripe.paymentIntents.retrieve(paymentIntentId);
     }
 }
