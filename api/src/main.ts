@@ -65,7 +65,7 @@ async function bootstrap() {
   // Set Global Prefix to /api (e.g. localhost:3001/api/products)
   app.setGlobalPrefix('api');
 
-  // 2. Swagger Docs
+  // 2. Swagger Docs at /docs (not /api to avoid route conflict)
   const config = new DocumentBuilder()
     .setTitle('TCG SaaS API')
     .setDescription('Multi-tenant TCG shop backend')
@@ -73,9 +73,8 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
 
-
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('docs', app, document);
 
 
   const port = parseInt(process.env.PORT || '3001', 10);
