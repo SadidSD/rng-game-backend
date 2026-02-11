@@ -7,7 +7,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { LoggerService } from './logger/logger.service';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    rawBody: true, // Fix for Node.js v22+ query property error
+  });
 
   // Use custom logger
   const logger = app.get(LoggerService);
