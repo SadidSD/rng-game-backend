@@ -23,9 +23,13 @@ export class PublicProductsController {
         }
 
         if (query.colors) {
-            // "W,U" -> hasSome: ['W', 'U']
-            // Use colorIdentity for Commander-friendly filtering
-            const colors = (query.colors as string).split(',');
+            // Handle color filtering: "W,U" -> match cards with those colors
+            // colorIdentity is String[], use hasEvery or hasSome based on requirement
+            const colors = (query.colors as string).split(',').map(c => c.trim()).filter(Boolean);
+
+            // Use hasEvery for exact color match (card must have ALL specified colors)
+            // Use hasSome for inclusive match (card has AT LEAST ONE of the colors)
+            // For MTG filtering, hasSome is more intuitive (show me white OR blue cards)
             cardWhere.colorIdentity = { hasSome: colors };
             hasCardFilters = true;
         }
