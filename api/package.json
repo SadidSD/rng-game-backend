@@ -9,7 +9,7 @@
     "node": "18.x"
   },
   "scripts": {
-    "build": "npx prisma generate && nest build",
+    "build": "npm install --legacy-peer-deps && npx prisma generate && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
