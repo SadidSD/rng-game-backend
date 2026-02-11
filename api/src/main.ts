@@ -73,14 +73,10 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
 
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  // Add Health Check at Root (/) to satisfy Railway/LoadBalancers
-  const instance = app.getHttpAdapter().getInstance();
-  instance.get('/', async (request, reply) => {
-    return { status: 'ok', message: 'TCG Backend is running (v1.3 - Production Ready)' };
-  });
 
   const port = parseInt(process.env.PORT || '3001', 10);
   await app.listen(port, '0.0.0.0');
