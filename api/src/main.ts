@@ -8,8 +8,11 @@ import { LoggerService } from './logger/logger.service';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    rawBody: true, // Fix for Node.js v22+ query property error
+    rawBody: true,
   });
+
+  // CRITICAL FIX: Disable Express query parser (causes Node v22 error)
+  app.set('query parser', false);
 
   // Use custom logger
   const logger = app.get(LoggerService);
