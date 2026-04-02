@@ -31,7 +31,8 @@ export class AuthService {
         });
         if (existingUser) throw new ConflictException('User already exists');
 
-        const storeId = process.env.SINGLE_TENANT_STORE_ID || 'd02dbcba-81b5-4f9d-831c-54fe9a803081';
+        const storeId = process.env.SINGLE_TENANT_STORE_ID;
+        if (!storeId) throw new Error('SINGLE_TENANT_STORE_ID environment variable is required');
         let store = await this.prisma.store.findUnique({ where: { id: storeId } });
         let role: Role = Role.STAFF;
 
@@ -67,7 +68,8 @@ export class AuthService {
         });
         if (existingUser) throw new ConflictException('User already exists');
 
-        const storeId = process.env.SINGLE_TENANT_STORE_ID || 'd02dbcba-81b5-4f9d-831c-54fe9a803081';
+        const storeId = process.env.SINGLE_TENANT_STORE_ID;
+        if (!storeId) throw new Error('SINGLE_TENANT_STORE_ID environment variable is required');
 
         // Ensure store exists (it should)
         const store = await this.prisma.store.findUnique({ where: { id: storeId } });
@@ -116,7 +118,7 @@ export class AuthService {
     private async signToken(userId: string, email: string, role: Role, storeId: string) {
         const payload = { sub: userId, email, role, storeId };
         const token = await this.jwtService.signAsync(payload, {
-            secret: process.env.JWT_SECRET || 'super-secret',
+            secret: process.env.JWT_SECRET,
             expiresIn: '1d',
         });
 

@@ -46,7 +46,7 @@ export class ManapoolService {
         }
 
         const accessToken = this.configService.get<string>('MANAPOOL_ACCESS_TOKEN');
-        console.log(`[Manapool] Token available: ${accessToken ? 'YES' : 'NO'} (${accessToken ? accessToken.substring(0, 5) + '...' : ''})`);
+        console.log(`[Manapool] Token available: ${accessToken ? 'YES' : 'NO'}`);
 
         if (!accessToken) throw new HttpException('Manapool Token Missing in Environment', HttpStatus.INTERNAL_SERVER_ERROR);
 

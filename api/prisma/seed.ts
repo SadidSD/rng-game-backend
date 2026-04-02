@@ -6,7 +6,17 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('🌱 Starting Seed...');
 
-    const storeId = process.env.SINGLE_TENANT_STORE_ID || 'd02dbcba-81b5-4f9d-831c-54fe9a803081';
+    const storeId = process.env.SINGLE_TENANT_STORE_ID;
+    if (!storeId) {
+        console.error('❌ SINGLE_TENANT_STORE_ID environment variable is required');
+        process.exit(1);
+    }
+
+    const frontendApiKey = process.env.FRONTEND_API_KEY;
+    if (!frontendApiKey) {
+        console.error('❌ FRONTEND_API_KEY environment variable is required');
+        process.exit(1);
+    }
 
     // 1. Ensure Default Store Exists
     const store = await prisma.store.upsert({
@@ -15,14 +25,15 @@ async function main() {
         create: {
             id: storeId,
             name: 'TCG Default Store',
-            apiKey: 'tcg-frontend-secret-key', // Matching the guard fallback
+            apiKey: frontendApiKey,
         },
     });
     console.log(`✅ Store ensured: ${store.name} (${store.id})`);
 
     // 2. Ensure Admin User Exists
-    const adminEmail = 'admin@tcg.com';
-    const adminPassword = await bcrypt.hash('password123', 10);
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@tcg.com';
+    const adminPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'password123', 10);
+    console.log(`📧 Admin email: ${adminEmail}`);
 
     const admin = await prisma.user.upsert({
         where: { email: adminEmail },
