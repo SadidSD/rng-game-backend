@@ -121,9 +121,7 @@ export async function ProductsTable({ tab = 'all' }: { tab?: 'all' | 'singles' |
                                         {new Date(product.createdAt).toLocaleDateString()}
                                     </TableCell>
                                     <TableCell>
-                                        <TableCell>
-                                            <ProductActions product={product} />
-                                        </TableCell>
+                                        <ProductActions product={product} />
                                     </TableCell>
                                 </TableRow>
                             ))

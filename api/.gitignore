@@ -1,5 +1,42 @@
-# node_modules
-# # Keep environment variables out of version control
-# .env
+node_modules
+# Keep environment variables out of version control
+.env
+.env.*
 
-# /generated/prisma
+/generated/prisma
+dist
+coverage
+*.log
+*.txt
+inspect-images.js
+test-image-urls.js
+test-prod-api.js
+check-*.js
+db-test.log
+clear-orders-temp.js
+create-cryparion.js
+debug-*.js
+debug_controller.js
+data-diagnostics.js
+diagnose-*.js
+find-cryparion.js
+get-store.js
+proof.js
+query_*.js
+quick-check.js
+replenish-stock.js
+reset-password.js
+scan-regions.js
+seed-past-orders.js
+verify-*.js
+verify.js
+ultimate-test.js
+test_*.js
+test-*.js
+tmp-*.js
+tmp-*.json
+output.json
+manapool-dump.json
+git-status.txt
+nextjs-dashboard/.next/
+nextjs-dashboard/dev.log

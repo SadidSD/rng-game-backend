@@ -114,57 +114,6 @@ export default function ImportPage() {
         fetchCategories();
     }, []);
 
-    const [manapoolPrices, setManapoolPrices] = useState<any[]>([]);
-
-    const fetchManapoolPrices = async (query: string) => {
-        // [REFINE] Manapool is MTG Only. Do not fetch for Pokemon.
-        if (selectedGame !== 'mtg') {
-            setManapoolPrices([]);
-            return;
-        }
-
-        try {
-            console.log('[Manapool] Fetching directly from Backend to avoid Vercel Timeout...');
-            // Fetch relevant prices directly from Backend Service (Bypass Proxy)
-            const token = Cookies.get('tcg-auth-token');
-            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/integrations/manapool/search`, {
-                params: { query, game: 'mtg' },
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setManapoolPrices(res.data.data || []);
-        } catch (error) {
-            console.error('Failed to fetch Manapool prices', error);
-        }
-    };
-
-    const getManapoolPrice = (card: CardData, finish: string = 'usd') => {
-        if (selectedGame !== 'mtg') return null;
-        if (manapoolPrices.length === 0) return null;
-
-        // Find ALL matches, not just the first one
-        // Strategy 1: Exact Scryfall ID Match
-        let matches = manapoolPrices.filter(p => p.scryfall_id === card.id);
-
-        // Strategy 2: Fallback Name + Set Code match
-        if (matches.length === 0) {
-            matches = manapoolPrices.filter(p => {
-                const nameMatch = p.name.toLowerCase() === card.name.toLowerCase();
-                const setMatch = p.set_code?.toLowerCase() === card.setId?.toLowerCase();
-                return nameMatch && setMatch;
-            });
-        }
-
-        if (matches.length > 0) {
-            // Scan all matches for the requested price type
-            for (const match of matches) {
-                if (finish === 'usd_foil' && match.price_foil) return match.price_foil;
-                if (finish === 'usd_etched' && match.price_etched) return match.price_etched;
-                if (finish === 'usd' && match.price) return match.price;
-            }
-        }
-
-        return null;
-    };
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -173,10 +122,7 @@ export default function ImportPage() {
         setLoading(true);
         setCards([]); // Clear previous results
         setAvailableSets([]); // Clear sets
-        setManapoolPrices([]); // Clear old prices
 
-        // Trigger Manapool Fetch in parallel
-        fetchManapoolPrices(query);
         console.log(`[Import] Searching for: ${query}`);
 
         try {
@@ -187,17 +133,41 @@ export default function ImportPage() {
                     params: { query }
                 });
 
-                mappedCards = res.data.data.map((card: any) => ({
-                    id: card.id,
-                    name: card.name,
-                    set: card.set.name,
-                    setId: card.set.id,
-                    rarity: card.rarity,
-                    image: card.images.small,
-                    imageLarge: card.images.large,
-                    price: card.cardmarket?.prices?.averageSellPrice,
-                    tcgplayerUrl: card.tcgplayer?.url
-                }));
+                const rawData = res.data.data || [];
+                mappedCards = rawData.map((card: any) => {
+                    // Pokemon Metadata Mapping
+                    const oracleText = [
+                        ...(card.rules || []).map((r: string) => r),
+                        ...(card.abilities || []).map((a: any) => `[Ability] ${a.name}: ${a.text}`),
+                        ...(card.attacks || []).map((a: any) => `[Attack] ${a.name} (${a.cost.join(', ')}): ${a.text}`)
+                    ].join('\n\n');
+
+                    const typeLine = [
+                        card.supertype,
+                        ...(card.subtypes || []),
+                        card.types ? `(${card.types.join('/')})` : ''
+                    ].filter(Boolean).join(' ');
+
+                    return {
+                        id: card.id,
+                        name: card.name,
+                        set: card.set.name,
+                        setId: card.set.id,
+                        rarity: card.rarity,
+                        collectorNumber: card.number,
+                        image: card.images.small,
+                        imageLarge: card.images.large,
+                        price: card.cardmarket?.prices?.averageSellPrice,
+                        tcgplayerUrl: card.tcgplayer?.url,
+
+                        // Identity Mappings
+                        oracleId: card.id, // Pokémon TCG uses ID as unique across sets for exact printing
+                        oracleText: oracleText,
+                        typeLine: typeLine,
+                        manaValue: card.hp ? parseInt(card.hp) : 0, // Mapping HP to ManaValue for sorting/display
+                        colors: card.types || []
+                    };
+                });
             } else {
                 // MTG / Scryfall Search
                 const res = await axios.get(`/api/proxy/mtg`, {
@@ -352,7 +322,10 @@ export default function ImportPage() {
             }
         }
 
-        if (!targetCategoryId) return; // Should be handled above
+        if (!targetCategoryId) {
+            alert('Please select or create a category (e.g., Magic: The Gathering) before importing.');
+            return;
+        }
 
         setImporting(card.id);
 
@@ -368,15 +341,14 @@ export default function ImportPage() {
             const productData = {
                 name: name,
                 description: `Game: ${selectedGame.toUpperCase()} | Set: ${card.set} | Rarity: ${card.rarity || 'Unknown'} | Finish: ${finish} | Num: ${card.collectorNumber}`,
-                game: selectedGame === 'pokemon' ? 'Pokemon' : 'MTG', // Map to Backend expected values
-                categoryId: selectedCategoryId,
+                game: selectedGame === 'pokemon' ? 'Pokemon' : 'MTG',
+                categoryId: targetCategoryId,
                 set: card.set,
                 rarity: card.rarity,
                 collectorNumber: card.collectorNumber,
                 oracleId: card.oracleId,
                 oracleText: card.oracleText,
                 legalities: card.legalities,
-                // Pass full identity data
                 manaCost: card.manaCost,
                 manaValue: card.manaValue,
                 colors: card.colors,
@@ -386,27 +358,31 @@ export default function ImportPage() {
                 toughness: card.toughness,
                 loyalty: card.loyalty,
 
-                price: getManapoolPrice(card, finish) ?? selectedPrice ?? 0, // Root price for display
+                price: selectedPrice ?? 0,
                 images: [card.imageLarge || card.image],
                 variants: [
                     {
-                        condition: 'NM', // Default to Near Mint for imports
-                        price: getManapoolPrice(card, finish) ?? selectedPrice ?? 0,
-                        quantity: quantity, // Use selected quantity
+                        condition: 'NM',
+                        price: selectedPrice ?? 0,
+                        quantity: quantity,
                         isFoil: finish === 'usd_foil' || finish === 'usd_etched',
                         language: 'English'
                     }
                 ]
             };
 
+            console.log('[Import] Sending Product Data:', productData);
+
             const token = Cookies.get('tcg-auth-token');
-            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/products`, productData, {
+            const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/products`, productData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            console.log('[Import] Success:', res.data);
             alert(`[${selectedGame.toUpperCase()}] Product imported successfully!`);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Import failed', error);
-            alert('Import failed. See console for details.');
+            const errMsg = error.response?.data?.message || error.message;
+            alert(`Import failed: ${errMsg}. Check console for full details.`);
         } finally {
             setImporting(null);
         }
@@ -416,7 +392,7 @@ export default function ImportPage() {
         <div className="flex flex-col gap-6 p-6">
             <div className="text-center space-y-2">
                 <h1 className="text-3xl font-bold tracking-tight">Import Products</h1>
-                <p className="text-muted-foreground">Search and import cards from Scryfall (MTG) with Manapool Pricing.</p>
+                <p className="text-muted-foreground">Search and import cards from Scryfall (MTG).</p>
             </div>
 
             {/* <div className="flex gap-2">
@@ -468,11 +444,9 @@ export default function ImportPage() {
             {/* Cards Grid */}
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {cards
-                    // Simple client-side set filtering if a set is selected
                     .filter(card => !selectedSet || card.set === selectedSet)
                     .map((card) => {
                         const selectedFinish = getSelectedFinish(card);
-                        const mpPrice = getManapoolPrice(card, selectedFinish);
                         const currentPrice = getPriceForFinish(card, selectedFinish);
 
                         // Check availability for dropdown
@@ -523,10 +497,6 @@ export default function ImportPage() {
                                         <div className="flex justify-between">
                                             <span className="text-muted-foreground">TCG/Market:</span>
                                             <span>${currentPrice?.toFixed(2) || 'N/A'}</span>
-                                        </div>
-                                        <div className="flex justify-between text-blue-600">
-                                            <span>Manapool:</span>
-                                            <span>{mpPrice ? `$${mpPrice.toFixed(2)}` : 'N/A'}</span>
                                         </div>
                                     </div>
                                     {/* Quantity Selector */}

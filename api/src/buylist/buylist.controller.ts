@@ -35,6 +35,12 @@ export class BuylistController {
         return this.buylistService.getOffers(req.user.storeId);
     }
 
+    @Get('offers/me')
+    @UseGuards(JwtAuthGuard)
+    getMyOffers(@Request() req) {
+        return this.buylistService.findMyOffers(req.user.userId);
+    }
+
     @Patch('offers/:id')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN, Role.STAFF)

@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
-import { EbayService } from './ebay.service';
 import { TcgPlayerService } from './tcgplayer.service';
 import { WebhooksController } from './webhooks.controller';
 import { IntegrationsController } from './integrations.controller';
-import { ManapoolModule } from './manapool/manapool.module';
+import { EasypostModule } from './easypost/easypost.module';
 
 @Module({
-    imports: [ManapoolModule],
+    imports: [EasypostModule],
     controllers: [WebhooksController, IntegrationsController],
-    providers: [EbayService, TcgPlayerService],
+    providers: [TcgPlayerService],
+    exports: [EasypostModule]
 })
 export class IntegrationsModule { }

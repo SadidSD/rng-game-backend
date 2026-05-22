@@ -127,6 +127,36 @@ export class AuthService {
         };
     }
 
+    async getProfile(userId: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                email: true,
+                role: true,
+                storeId: true,
+            }
+        });
+        if (!user) throw new UnauthorizedException('User not found');
+
+        // Fetch associated customer record to get creditBalance, etc.
+        const customer = await this.prisma.customer.findUnique({
+            where: { storeId_email: { storeId: user.storeId, email: user.email } },
+            select: {
+                firstName: true,
+                lastName: true,
+                creditBalance: true
+            }
+        });
+
+        return {
+            ...user,
+            ...customer,
+            // ensure creditBalance is a number, not Decimal object for frontend
+            creditBalance: customer?.creditBalance ? Number(customer.creditBalance) : 0
+        };
+    }
+
     async changePassword(userId: string, dto: any) {
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         if (!user) throw new UnauthorizedException('User not found');

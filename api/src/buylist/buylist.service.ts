@@ -22,29 +22,51 @@ export class BuylistService {
     }
 
     async getFeaturedCards(storeId: string) {
-        return this.prisma.buylistFeaturedCard.findMany({
-            where: { storeId },
+        const products = await this.prisma.product.findMany({
+            where: { 
+                storeId,
+                cardId: { not: null }
+            },
+            take: 50,
             orderBy: { createdAt: 'desc' }
         });
+
+        return products.map(p => ({
+            id: p.id,
+            name: p.name,
+            set: p.set || 'Unknown Set',
+            game: p.game || 'TCG',
+            image: p.images[0] || '',
+            basePrice: p.price ? Number(p.price) * 0.5 : 0 // Mock buy price at 50% of retail
+        }));
     }
 
     async searchBuylist(storeId: string, query: string) {
-        // 1. Search Local "Featured" Cards
-        const localResults = await this.prisma.buylistFeaturedCard.findMany({
+        // 1. Search Local Products (Singles only)
+        const localResults = await this.prisma.product.findMany({
             where: {
                 storeId,
+                cardId: { not: null },
                 name: { contains: query, mode: 'insensitive' }
-            }
+            },
+            take: 20
         });
 
+        const mappedLocal = localResults.map(p => ({
+            id: p.id,
+            name: p.name,
+            set: p.set || 'Unknown Set',
+            game: p.game || 'TCG',
+            image: p.images[0] || '',
+            basePrice: p.price ? Number(p.price) * 0.5 : 0 // Mock buy price at 50% of retail
+        }));
+
         // 2. Search Remote (Pokemon TCG) if local results are insufficient (e.g. < 5) OR always?
-        // Let's do ALWAYS for now to give broad results, but mark them differently.
-        // We need to inject PokemonTcgService. It might not be available yet in this module.
         // Returning local for now, will add remote in next step after wiring Module.
 
         return {
             source: 'hybrid',
-            local: localResults,
+            local: mappedLocal,
             remote: [] // Placeholder
         };
     }
@@ -134,5 +156,18 @@ export class BuylistService {
         });
 
         console.log(`[Buylist] Issued $${offer.totalCredit} credit to ${offer.customerEmail}`);
+    }
+
+    async findMyOffers(userId: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId }
+        });
+        if (!user) throw new NotFoundException('User not found');
+
+        return this.prisma.buylistOffer.findMany({
+            where: { storeId: user.storeId, customerEmail: user.email },
+            include: { items: true },
+            orderBy: { createdAt: 'desc' }
+        });
     }
 }

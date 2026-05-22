@@ -5,6 +5,7 @@ import { CreateOrderDto, UpdateOrderStatusDto } from './dto/orders.dto';
 import { ConfigService } from '@nestjs/config';
 import { LoggerService } from '../logger/logger.service';
 import { NotificationService } from '../notifications/notification.service';
+import { EasypostService } from '../integrations/easypost/easypost.service';
 
 @Injectable()
 export class OrdersService {
@@ -14,6 +15,7 @@ export class OrdersService {
         private configService: ConfigService,
         private logger: LoggerService,
         private notificationService: NotificationService,
+        private easypostService: EasypostService,
     ) {
         this.logger.setContext('OrdersService');
     }
@@ -22,9 +24,14 @@ export class OrdersService {
      * Create an order and initiate Stripe payment
      * Returns Stripe Checkout Session URL
      */
+    /**
+     * Create an order and initiate Stripe payment
+     * Returns Stripe Checkout Session URL
+     */
     async create(storeId: string, dto: CreateOrderDto) {
-        return this.prisma.$transaction(async (tx) => {
-            // 1. Validate Stock and Calculate Total
+        // 1. Transactional Part: Gather data and create order record
+        // We move external API calls (Stripe) outside this block to avoid timeouts.
+        const { order, stripeLineItems } = await this.prisma.$transaction(async (tx) => {
             let total = 0;
             const orderItemsData: any[] = [];
             const stripeLineItems: any[] = [];
@@ -38,7 +45,7 @@ export class OrdersService {
                 if (!variant) throw new NotFoundException(`Variant ${itemDto.variantId} not found`);
                 if (variant.product.storeId !== storeId) throw new BadRequestException('Product does not belong to this store');
 
-                // Check stock (don't deduct yet - wait for payment)
+                // Check stock (don't deduct yet - wait for payment webhook)
                 const currentStock = variant.inventory?.quantity || 0;
                 if (currentStock < itemDto.quantity) {
                     throw new BadRequestException(`Insufficient stock for ${variant.product.name} (Requested: ${itemDto.quantity}, Available: ${currentStock})`);
@@ -79,8 +86,8 @@ export class OrdersService {
                 });
             }
 
-            // 3. Create Order (PENDING status, no inventory deduction yet)
-            const order = await tx.order.create({
+            // 3. Create Order (PENDING status)
+            const newOrder = await tx.order.create({
                 data: {
                     storeId,
                     customerId: customer.id,
@@ -98,7 +105,13 @@ export class OrdersService {
                 include: { items: true }
             });
 
-            // 4. Create Stripe Checkout Session
+            return { order: newOrder, stripeLineItems };
+        }, {
+            timeout: 15000 // Increase timeout to 15s to handle database latency
+        });
+
+        // 4. External Part: Create Stripe Checkout Session (Outside DB Transaction)
+        try {
             const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
             const checkoutSession = await this.stripeService.createCheckoutSession({
                 items: stripeLineItems,
@@ -108,8 +121,8 @@ export class OrdersService {
                 cancelUrl: `${frontendUrl}/checkout?cancelled=true`,
             });
 
-            // 5. Update order with Stripe session ID
-            await tx.order.update({
+            // 5. Update order with Stripe session ID (Separate DB call)
+            await this.prisma.order.update({
                 where: { id: order.id },
                 data: { stripeSessionId: checkoutSession.sessionId }
             });
@@ -117,9 +130,13 @@ export class OrdersService {
             return {
                 orderId: order.id,
                 stripeSessionUrl: checkoutSession.url,
-                total: total,
+                total: Number(order.total),
             };
-        });
+        } catch (error) {
+            this.logger.error(`Failed to create Stripe session for order ${order.id}: ${error.message}`);
+            // Note: The PENDING order exists in DB but user sees an error and can retry.
+            throw new BadRequestException('Failed to initialize payment gateway. Please try again.');
+        }
     }
 
     /**
@@ -270,5 +287,54 @@ export class OrdersService {
 
         if (count === 0) throw new NotFoundException('Order not found');
         return this.findOne(storeId, id);
+    }
+
+    /**
+     * Complete Order Fulfillment using EasyPost
+     * Buys a label and triggers shipment notification to customer
+     */
+    async fulfillOrder(storeId: string, orderId: string, easypostRateId: string, easypostShipmentId: string) {
+        const order = await this.findOne(storeId, orderId);
+        if (!order) throw new NotFoundException('Order not found');
+
+        // Buy label
+        const labelData = await this.easypostService.buyLabel(easypostShipmentId, easypostRateId);
+
+        // Update database with tracking info
+        const updatedOrder = await this.prisma.order.update({
+            where: { id: orderId },
+            data: {
+                status: 'SHIPPED',
+                trackingNumber: labelData.trackingCode,
+                labelUrl: labelData.labelUrl,
+                easypostShipmentId: easypostShipmentId
+            }
+        });
+
+        this.logger.info(`Order ${orderId} officially fulfilled - Tracking: ${labelData.trackingCode}`);
+
+        // TODO: Could send an email to the customer here letting them know order shipped!
+        // await this.notificationService.sendTrackingEmail(order.customer.email, labelData.trackingUrl);
+
+        return updatedOrder;
+    }
+
+    async findMyOrders(userId: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId }
+        });
+        if (!user) throw new NotFoundException('User not found');
+
+        const customer = await this.prisma.customer.findUnique({
+            where: { storeId_email: { storeId: user.storeId, email: user.email } }
+        });
+
+        if (!customer) return [];
+
+        return this.prisma.order.findMany({
+            where: { customerId: customer.id },
+            include: { items: true },
+            orderBy: { createdAt: 'desc' }
+        });
     }
 }

@@ -16,7 +16,7 @@ export default function CreateProductChoicePage() {
                             </div>
                             <CardTitle className="text-xl">Import from Catalog</CardTitle>
                             <CardDescription>
-                                Search the Manapool database for standard cards. Best for Pokemon, Magic, and other TCG singles.
+                                Search the Scryfall database for standard cards. Best for Pokemon, Magic, and other TCG singles.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="text-center">

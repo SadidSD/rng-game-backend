@@ -9,11 +9,14 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { LoggerService } from './logger/logger.service';
 
 async function bootstrap() {
+  const fastifyAdapter = new FastifyAdapter({
+    querystringParser: str => ({ ...require('querystring').parse(str) })
+  });
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter(),
+    fastifyAdapter,
   );
-
   // Use custom logger
   const logger = app.get(LoggerService);
   logger.setContext('Bootstrap');

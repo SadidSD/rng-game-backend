@@ -9,10 +9,4 @@ export class WebhooksController {
         // TODO: Verify signature and handle event (payment_intent.succeeded)
         return { received: true };
     }
-
-    @Post('ebay')
-    handleEbayWebhook(@Body() payload: any) {
-        console.log('[Webhook] Received eBay Event');
-        return { received: true };
-    }
 }

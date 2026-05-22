@@ -50,102 +50,115 @@ export class ProductsService {
         const slug = dto.name.toLowerCase().replace(/ /g, '-') + '-' + Date.now();
 
         return this.prisma.$transaction(async (tx) => {
-            let cardId: string | null = null;
+            try {
+                let cardId: string | null = null;
 
-            // 1. Handle Card Identity (Oracle)
-            if (dto.oracleId) {
-                const card = await tx.card.upsert({
-                    where: { oracleId: dto.oracleId },
-                    update: {
-                        // Update details if they changed (optional, could just keep existing)
-                        legalities: dto.legalities,
-                        // oracleText: dto.oracleText,
-                        manaCost: dto.manaCost,
-                        manaValue: dto.manaValue,
-                        colors: dto.colors,
-                        colorIdentity: dto.colorIdentity,
-                        typeLine: dto.typeLine,
-                        supertypes: dto.supertypes,
-                        subtypes: dto.subtypes,
-                        power: dto.power,
-                        toughness: dto.toughness,
-                        loyalty: dto.loyalty
-                    },
-                    create: {
-                        oracleId: dto.oracleId,
-                        name: dto.name, // Use the product name as the card name
-                        oracleText: dto.oracleText || '',
-                        legalities: dto.legalities,
-                        // Advanced Filtering
-                        manaCost: dto.manaCost,
-                        manaValue: dto.manaValue,
-                        colors: dto.colors,
-                        colorIdentity: dto.colorIdentity,
-                        typeLine: dto.typeLine,
-                        supertypes: dto.supertypes,
-                        subtypes: dto.subtypes,
-                        power: dto.power,
-                        toughness: dto.toughness,
-                        loyalty: dto.loyalty
+                // 1. Handle Card Identity (Oracle) - GLOBAL
+                if (dto.oracleId) {
+                    const card = await tx.card.upsert({
+                        where: { oracleId: dto.oracleId },
+                        update: {
+                            legalities: dto.legalities,
+                            manaCost: dto.manaCost,
+                            manaValue: dto.manaValue,
+                            colors: dto.colors,
+                            colorIdentity: dto.colorIdentity,
+                            typeLine: dto.typeLine,
+                            supertypes: dto.supertypes,
+                            subtypes: dto.subtypes,
+                            power: dto.power,
+                            toughness: dto.toughness,
+                            loyalty: dto.loyalty,
+                            oracleText: dto.oracleText || ''
+                        },
+                        create: {
+                            oracleId: dto.oracleId,
+                            name: dto.name,
+                            oracleText: dto.oracleText || '',
+                            legalities: dto.legalities,
+                            manaCost: dto.manaCost,
+                            manaValue: dto.manaValue,
+                            colors: dto.colors,
+                            colorIdentity: dto.colorIdentity,
+                            typeLine: dto.typeLine,
+                            supertypes: dto.supertypes,
+                            subtypes: dto.subtypes,
+                            power: dto.power,
+                            toughness: dto.toughness,
+                            loyalty: dto.loyalty
+                        }
+                    });
+                    cardId = card.id;
+                }
+
+                // 2. Validate Category exists for this store
+                if (dto.categoryId) {
+                    const category = await tx.category.findFirst({
+                        where: { id: dto.categoryId, storeId }
+                    });
+                    if (!category) {
+                        throw new Error(`Category ${dto.categoryId} not found for this store.`);
                     }
-                });
-                cardId = card.id;
-            }
+                }
 
-            // 2. Create Product (Printing)
-            return tx.product.create({
-                data: {
-                    name: dto.name,
-                    description: dto.description,
-                    game: dto.game,
-                    categoryId: dto.categoryId,
-                    set: dto.set,
-                    rarity: dto.rarity,
-                    collectorNumber: dto.collectorNumber,
-                    // Remove fields that moved to Card
-                    // oracleId: dto.oracleId, 
-                    // legalities: dto.legalities,
-                    cardId: cardId, // Link to Card
-                    price: dto.price, // Save root price
-                    slug: slug,
-                    images: dto.images || [],
-                    storeId,
-                    variants: {
-                        create: dto.variants?.map(v => {
-                            const sku = this.generateSku(
-                                dto.game || 'MTG',
-                                dto.set || 'UNK',
-                                dto.collectorNumber || '000',
-                                dto.name,
-                                v.condition,
-                                v.language || 'English',
-                                v.isFoil || false
-                            );
-                            return {
-                                sku: sku,
-                                condition: v.condition,
-                                isFoil: v.isFoil || false,
-                                language: v.language || 'English',
-                                price: v.price,
-                                storeId,
-                                inventory: {
-                                    create: {
-                                        quantity: v.quantity,
-                                        storeId
+                // 3. Create Product (Printing)
+                return await tx.product.create({
+                    data: {
+                        name: dto.name,
+                        description: dto.description,
+                        game: dto.game,
+                        categoryId: dto.categoryId || null,
+                        set: dto.set,
+                        rarity: dto.rarity,
+                        collectorNumber: dto.collectorNumber,
+                        cardId: cardId,
+                        price: dto.price,
+                        slug: slug,
+                        images: dto.images || [],
+                        storeId,
+                        variants: {
+                            create: dto.variants?.map(v => {
+                                const sku = this.generateSku(
+                                    dto.game || 'MTG',
+                                    dto.set || 'UNK',
+                                    dto.collectorNumber || '000',
+                                    dto.name,
+                                    v.condition,
+                                    v.language || 'English',
+                                    v.isFoil || false
+                                );
+                                return {
+                                    sku: sku,
+                                    condition: v.condition,
+                                    isFoil: v.isFoil || false,
+                                    language: v.language || 'English',
+                                    price: v.price,
+                                    storeId,
+                                    inventory: {
+                                        create: {
+                                            quantity: v.quantity,
+                                            storeId
+                                        }
                                     }
-                                }
-                            };
-                        }),
+                                };
+                            }),
+                        },
                     },
-                },
-                include: {
-                    variants: {
-                        include: { inventory: true }
+                    include: {
+                        variants: {
+                            include: { inventory: true }
+                        },
+                        card: true
                     },
-                    card: true // Return card details
-                },
-            });
-        });
+                });
+            } catch (error) {
+                console.error(' [ProductsService] Transaction Failed:', error);
+                throw error;
+            }
+        }, { timeout: 30000 });
+
+
+
     }
 
     async findAll(storeId: string, query: { game?: string; search?: string }) {
@@ -197,12 +210,13 @@ export class ProductsService {
             }
         });
 
-        // Attach totalSales to each product
+        // Attach totalSales and virtual 'image' field to each product
         return products.map(p => {
             const productSales = p.variants.reduce((sum, v) => sum + (salesMap.get(v.id) || 0), 0);
             return {
                 ...p,
-                totalSales: productSales
+                totalSales: productSales,
+                image: p.images?.[0] || null // Virtual field for frontend compatibility
             };
         });
     }
@@ -213,11 +227,16 @@ export class ProductsService {
             include: {
                 variants: {
                     include: { inventory: true }
-                }
+                },
+                card: true, // IMPORTANT: Include card metadata
+                category: true
             }
         });
         if (!product) throw new NotFoundException('Product not found');
-        return product;
+        return {
+            ...product,
+            image: product.images?.[0] || null // Virtual field for frontend compatibility
+        };
     }
 
     async remove(storeId: string, id: string) {
@@ -227,6 +246,7 @@ export class ProductsService {
             where: { id }
         });
     }
+
     async update(storeId: string, id: string, dto: UpdateProductDto) {
         // Ensure product exists
         const product = await this.findOne(storeId, id);
@@ -245,7 +265,6 @@ export class ProductsService {
                     collectorNumber: dto.collectorNumber,
                     price: dto.price,
                     images: dto.images,
-                    // Slug update logic could go here if needed, but risky for SEO
                 }
             });
 
@@ -325,6 +344,8 @@ export class ProductsService {
             }
 
             return updatedProduct;
-        });
+        }, { timeout: 30000 });
+
+
     }
 }

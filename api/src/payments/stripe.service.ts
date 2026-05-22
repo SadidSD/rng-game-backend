@@ -37,8 +37,21 @@ export class StripeService {
         successUrl: string;
         cancelUrl: string;
     }): Promise<{ sessionId: string; url: string }> {
+        // --- DEVELOPER MOCK MODE ---
+        // If Stripe isn't configured, return a simulated success URL for testing
         if (!this.isConfigured || !this.stripe) {
-            throw new Error('Stripe is not configured. Please add STRIPE_SECRET_KEY to environment variables.');
+            console.warn(`[StripeService] MOCK MODE: Simulating checkout for order ${params.orderId}`);
+            
+            // Generate a fake session ID
+            const fakeSessionId = `mock_session_${Date.now()}`;
+            
+            // Redirect to the success URL but replaced the placeholder
+            const mockUrl = params.successUrl.replace('{CHECKOUT_SESSION_ID}', fakeSessionId);
+            
+            return {
+                sessionId: fakeSessionId,
+                url: mockUrl,
+            };
         }
 
         const lineItems = params.items.map(item => ({

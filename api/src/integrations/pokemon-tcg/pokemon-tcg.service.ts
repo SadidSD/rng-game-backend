@@ -30,8 +30,8 @@ export class PokemonTcgService {
                 headers['X-Api-Key'] = apiKey;
             }
 
-            // Using select to minimize data transfer
-            const url = `${this.baseUrl}/cards?q=${encodeURIComponent(luceneQuery)}&pageSize=15&select=id,name,images,set,rarity,tcgplayer,cardmarket`;
+            // Using select to minimize data transfer but including all essential metadata
+            const url = `${this.baseUrl}/cards?q=${encodeURIComponent(luceneQuery)}&pageSize=15&select=id,name,images,set,rarity,tcgplayer,cardmarket,abilities,attacks,rules,supertype,subtypes,types,number`;
             console.log(`PokemonTCG Request: ${url}`);
 
             const response = await axios.get(url, {
@@ -52,7 +52,15 @@ export class PokemonTcgService {
                     image: card.images.small,
                     imageLarge: card.images.large,
                     tcgplayerUrl: card.tcgplayer?.url,
-                    price: card.cardmarket?.prices?.averageSellPrice // simplified price/market data
+                    price: card.cardmarket?.prices?.averageSellPrice,
+
+                    // Extended Metadata for Card Identity
+                    abilities: card.abilities || [],
+                    attacks: card.attacks || [],
+                    rules: card.rules || [],
+                    supertype: card.supertype,
+                    subtypes: card.subtypes || [],
+                    types: card.types || []
                 }))
             };
         } catch (error) {

@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { LoggerService } from '../logger/logger.service';
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 @Injectable()
 export class NotificationService {
-    private transporter: nodemailer.Transporter;
+    private resend: Resend;
 
     constructor(
         private configService: ConfigService,
@@ -13,25 +13,13 @@ export class NotificationService {
     ) {
         this.logger.setContext('NotificationService');
 
-        // Initialize email transporter (optional - only if email vars are set)
-        const smtpHost = this.configService.get('SMTP_HOST');
-        const smtpPort = this.configService.get('SMTP_PORT');
-        const smtpUser = this.configService.get('SMTP_USER');
-        const smtpPass = this.configService.get('SMTP_PASS');
+        const resendApiKey = this.configService.get('RESEND_API_KEY');
 
-        if (smtpHost && smtpPort && smtpUser && smtpPass) {
-            this.transporter = nodemailer.createTransport({
-                host: smtpHost,
-                port: parseInt(smtpPort, 10),
-                secure: parseInt(smtpPort, 10) === 465, // true for 465, false for others
-                auth: {
-                    user: smtpUser,
-                    pass: smtpPass,
-                },
-            });
-            this.logger.info('Email transporter initialized');
+        if (resendApiKey) {
+            this.resend = new Resend(resendApiKey);
+            this.logger.info('Resend client initialized');
         } else {
-            this.logger.warn('Email not configured - notifications will be logged only');
+            this.logger.warn('RESEND_API_KEY not configured - notifications will be logged only');
         }
     }
 
@@ -63,19 +51,18 @@ export class NotificationService {
     `;
 
         try {
-            if (this.transporter) {
-                await this.transporter.sendMail({
-                    from: this.configService.get('SMTP_USER'),
+            if (this.resend) {
+                await this.resend.emails.send({
+                    from: this.configService.get('RESEND_FROM_EMAIL') || 'store@yourdomain.com',
                     to: adminEmail,
                     subject,
                     html,
                 });
                 this.logger.info(`Order notification email sent to ${adminEmail}`);
             } else {
-                // Log notification if email not configured
                 this.logger.info(`Order notification (email not configured): ${subject}`);
             }
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to send order notification email: ${error.message}`);
         }
     }
@@ -104,9 +91,9 @@ export class NotificationService {
     `;
 
         try {
-            if (this.transporter) {
-                await this.transporter.sendMail({
-                    from: this.configService.get('SMTP_USER'),
+            if (this.resend) {
+                await this.resend.emails.send({
+                    from: this.configService.get('RESEND_FROM_EMAIL') || 'store@yourdomain.com',
                     to: adminEmail,
                     subject,
                     html,
@@ -115,7 +102,7 @@ export class NotificationService {
             } else {
                 this.logger.warn(`Low stock alert (email not configured): ${items.length} items low`);
             }
-        } catch (error) {
+        } catch (error: any) {
             this.logger.error(`Failed to send low stock alert email: ${error.message}`);
         }
     }

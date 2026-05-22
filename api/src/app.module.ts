@@ -2,6 +2,7 @@ import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -38,6 +39,7 @@ import { NotificationModule } from './notifications/notification.module';
       ttl: 60000, // 60 seconds
       limit: 100, // 100 requests per minute (global default)
     }]),
+    ScheduleModule.forRoot(),
     SentryModule,
     LoggerModule,
     NotificationModule,

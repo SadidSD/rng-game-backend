@@ -28,6 +28,13 @@ export class OrdersController {
         return this.ordersService.findAll(req.user.storeId);
     }
 
+    // --- Customer Routes (JWT) ---
+    @Get('me')
+    @UseGuards(JwtAuthGuard)
+    findMyOrders(@Request() req) {
+        return this.ordersService.findMyOrders(req.user.userId);
+    }
+
     @Get(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN, Role.STAFF)

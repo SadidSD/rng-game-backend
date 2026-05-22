@@ -231,6 +231,8 @@ model Order {
   shippingCity    String?
   shippingZip     String?
   trackingNumber  String?
+  easypostShipmentId String?
+  labelUrl          String?
 
   items       OrderItem[]
   
