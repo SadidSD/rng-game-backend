@@ -58,7 +58,7 @@ export default function OrdersPage() {
         const fetchOrders = async () => {
             try {
                 const token = Cookies.get('tcg-auth-token');
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://rng-game-backend.onrender.com/api';
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://rng-game-backend-cx6f.onrender.com/api';
                 const res = await axios.get(`${apiUrl}/orders`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
