@@ -27,15 +27,6 @@ export class AuthController {
         return this.authService.login(dto);
     }
 
-    @Get('debug')
-    debug(@Request() req) {
-        // Usage: /api/auth/debug?email=admin@tcg.com&password=password123
-        const email = req.query.email;
-        const password = req.query.password;
-
-        return this.authService.debugLogin(email, password);
-    }
-
     @Get('profile')
     @UseGuards(JwtAuthGuard)
     getProfile(@Request() req) {

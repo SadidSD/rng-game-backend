@@ -172,24 +172,4 @@ export class AuthService {
 
         return { message: 'Password updated successfully' };
     }
-    async debugLogin(email: string, password?: string) {
-        const user = await this.prisma.user.findUnique({ where: { email } });
-        if (!user) return { status: 'User Not Found', email };
-
-        let passwordMatch = false;
-        if (password) {
-            passwordMatch = await bcrypt.compare(password, user.password);
-        }
-
-        return {
-            status: 'User Found',
-            id: user.id,
-            email: user.email,
-            role: user.role,
-            storeId: user.storeId,
-            passwordProvided: !!password,
-            passwordMatch,
-            storedHashPrefix: user.password.substring(0, 10)
-        };
-    }
 }
