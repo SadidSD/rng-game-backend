@@ -95,7 +95,9 @@ export class BuylistService {
                         condition: item.condition,
                         isFoil: item.isFoil,
                         offerPrice: item.offerPrice,
-                        quantity: item.quantity
+                        quantity: item.quantity,
+                        imageUrl: item.imageUrl,
+                        setName: item.setName
                     }))
                 },
                 images: dto.images && dto.images.length > 0 ? {
