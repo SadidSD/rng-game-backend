@@ -34,6 +34,7 @@ async function bootstrap() {
   const allowedOrigins = process.env.NODE_ENV === 'production'
     ? [
       process.env.FRONTEND_URL || 'https://rng-gamez-shop.vercel.app',
+      process.env.ADMIN_DASHBOARD_URL || 'https://rng-game-backend-six.vercel.app',
     ].filter(Boolean)
     : [
       'http://localhost:3000',
