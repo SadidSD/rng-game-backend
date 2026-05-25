@@ -1,0 +1,10 @@
+﻿ M api/prisma/seed.ts
+ M api/src/auth/auth.module.ts
+ M api/src/auth/auth.service.ts
+ M api/src/auth/guards/api-key.guard.ts
+ M api/src/auth/jwt.strategy.ts
+ M api/src/integrations/manapool/manapool.service.ts
+ M api/src/main.ts
+?? api/.env.production
+?? api/production-secrets.txt
+?? git-status.txt

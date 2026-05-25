@@ -41,6 +41,13 @@ export class BuylistController {
         return this.buylistService.findMyOffers(req.user.userId);
     }
 
+    @Get('offers/:id/images')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    getOfferImages(@Request() req, @Param('id') id: string) {
+        return this.buylistService.getOfferImages(req.user.storeId, id);
+    }
+
     @Patch('offers/:id')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN, Role.STAFF)

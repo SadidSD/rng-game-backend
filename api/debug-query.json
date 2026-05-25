@@ -1,0 +1,8 @@
+{
+  "query": {},
+  "andConditions": [
+    {
+      "storeId": "d02dbcba-81b5-4f9d-831c-54fe9a803081"
+    }
+  ]
+}

@@ -97,7 +97,10 @@ export class BuylistService {
                         offerPrice: item.offerPrice,
                         quantity: item.quantity
                     }))
-                }
+                },
+                images: dto.images && dto.images.length > 0 ? {
+                    create: dto.images.map(base64 => ({ base64 }))
+                } : undefined
             },
             include: { items: true }
         });
@@ -130,7 +133,26 @@ export class BuylistService {
             await this.finalizeOfferCredit(storeId, offer);
         }
 
+        // Delete images when offer is finalized to save space
+        if (dto.status === 'COMPLETED' || dto.status === 'REJECTED' || dto.status === 'CANCELLED') {
+            await this.prisma.buylistOfferImage.deleteMany({
+                where: { offerId }
+            });
+        }
+
         return updated;
+    }
+
+    async getOfferImages(storeId: string, offerId: string) {
+        const offer = await this.prisma.buylistOffer.findUnique({
+            where: { id: offerId, storeId }
+        });
+        if (!offer) throw new NotFoundException('Offer not found');
+
+        return this.prisma.buylistOfferImage.findMany({
+            where: { offerId },
+            select: { id: true, base64: true }
+        });
     }
 
     // Helper: Issue Store Credit

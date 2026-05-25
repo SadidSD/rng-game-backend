@@ -63,6 +63,11 @@ export class CreateBuylistOfferDto {
     @ValidateNested({ each: true })
     @Type(() => BuylistItemDto)
     items: BuylistItemDto[];
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    images?: string[];
 }
 
 export class UpdateOfferStatusDto {

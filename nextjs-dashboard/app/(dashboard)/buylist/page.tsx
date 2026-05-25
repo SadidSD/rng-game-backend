@@ -26,7 +26,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, CheckCircle, XCircle, Clock, DollarSign, Package } from "lucide-react"
+import { Search, CheckCircle, XCircle, Clock, DollarSign, Package, Image as ImageIcon } from "lucide-react"
 
 interface BuylistOffer {
     id: string;
@@ -47,6 +47,8 @@ export default function BuylistPage() {
     const [offers, setOffers] = useState<BuylistOffer[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [viewingImages, setViewingImages] = useState<{ id: string, base64: string }[] | null>(null);
+    const [isFetchingImages, setIsFetchingImages] = useState(false);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -80,6 +82,22 @@ export default function BuylistPage() {
         } catch (error) {
             console.error("Failed to update status:", error);
             alert("Failed to update status");
+        }
+    };
+
+    const handleViewImages = async (offerId: string) => {
+        setIsFetchingImages(true);
+        try {
+            const token = Cookies.get('tcg-auth-token');
+            const res = await axios.get(`${API_URL}/buylist/offers/${offerId}/images`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setViewingImages(res.data);
+        } catch (e) {
+            console.error(e);
+            alert("Failed to load images");
+        } finally {
+            setIsFetchingImages(false);
         }
     };
 
@@ -208,6 +226,9 @@ export default function BuylistPage() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex gap-2">
+                                                <Button size="sm" variant="outline" onClick={() => handleViewImages(offer.id)}>
+                                                    <ImageIcon className="w-4 h-4 mr-1" /> Images
+                                                </Button>
                                                 {offer.status === 'PENDING' && (
                                                     <>
                                                         <Button size="sm" onClick={() => updateStatus(offer.id, 'APPROVED_TO_SEND')}>
@@ -242,6 +263,30 @@ export default function BuylistPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            {/* Image Viewer Modal */}
+            {viewingImages && (
+                <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4">
+                    <div className="w-full max-w-4xl bg-white rounded-lg overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                            <h3 className="text-lg font-bold">Customer Images</h3>
+                            <Button variant="ghost" size="sm" onClick={() => setViewingImages(null)}>Close</Button>
+                        </div>
+                        <div className="p-4 overflow-y-auto flex-1 flex flex-col gap-6">
+                            {viewingImages.length === 0 ? (
+                                <p className="text-center text-muted-foreground py-10">No images were attached to this offer.</p>
+                            ) : (
+                                viewingImages.map((img, i) => (
+                                    <div key={img.id} className="border p-2 rounded-lg bg-gray-50">
+                                        <p className="text-sm text-gray-500 mb-2 font-medium">Image {i + 1}</p>
+                                        <img src={img.base64} alt="Buylist Item" className="w-full max-w-2xl mx-auto rounded border shadow-sm" />
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
