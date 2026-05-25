@@ -10,7 +10,8 @@ import { LoggerService } from './logger/logger.service';
 
 async function bootstrap() {
   const fastifyAdapter = new FastifyAdapter({
-    querystringParser: str => ({ ...require('querystring').parse(str) })
+    querystringParser: str => ({ ...require('querystring').parse(str) }),
+    bodyLimit: 50 * 1024 * 1024, // 50MB for image uploads
   });
 
   const app = await NestFactory.create<NestFastifyApplication>(
