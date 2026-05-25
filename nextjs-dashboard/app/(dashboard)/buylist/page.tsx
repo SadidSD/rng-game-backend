@@ -280,28 +280,29 @@ export default function BuylistPage() {
                             {(!viewingItems || viewingItems.length === 0) ? (
                                 <p className="text-center text-muted-foreground py-10">No items found.</p>
                             ) : (
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow>
-                                      <TableHead>Card Name</TableHead>
-                                      <TableHead>Condition</TableHead>
-                                      <TableHead>Foil</TableHead>
-                                      <TableHead>Qty</TableHead>
-                                      <TableHead>Price</TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
+                                <div className="flex flex-col gap-4">
                                     {viewingItems.map((item, idx) => (
-                                      <TableRow key={idx}>
-                                        <TableCell className="font-medium">{item.cardName}</TableCell>
-                                        <TableCell><Badge variant="outline">{item.condition}</Badge></TableCell>
-                                        <TableCell>{item.isFoil ? 'Yes' : 'No'}</TableCell>
-                                        <TableCell>{item.quantity}</TableCell>
-                                        <TableCell className="font-bold text-green-600">${Number(item.offerPrice).toFixed(2)}</TableCell>
-                                      </TableRow>
+                                        <div key={idx} className="flex gap-4 p-4 rounded-xl border bg-gray-50/50 items-center hover:bg-white transition-colors">
+                                            {item.imageUrl ? (
+                                                <img src={item.imageUrl} alt={item.cardName} className="w-16 h-[88px] object-cover rounded-md shadow-sm bg-white border" />
+                                            ) : (
+                                                <div className="w-16 h-[88px] bg-gray-100 border border-gray-200 rounded-md shadow-sm flex items-center justify-center text-xs text-gray-400 text-center p-1">No Image</div>
+                                            )}
+                                            <div className="flex-1 flex flex-col gap-1">
+                                                <h4 className="font-bold text-gray-900 text-base">{item.cardName}</h4>
+                                                {item.setName && <p className="text-sm text-gray-500">{item.setName}</p>}
+                                                <div className="flex gap-2 mt-1">
+                                                    <Badge variant="outline" className="bg-white">{item.condition}</Badge>
+                                                    {item.isFoil && <Badge className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white border-0">Foil</Badge>}
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col items-end gap-1 text-right min-w-[80px]">
+                                                <div className="text-sm text-gray-500 font-medium">Qty: {item.quantity}</div>
+                                                <div className="font-bold text-lg text-purple-600">${Number(item.offerPrice).toFixed(2)}</div>
+                                            </div>
+                                        </div>
                                     ))}
-                                  </TableBody>
-                                </Table>
+                                </div>
                             )}
                         </div>
                     </div>

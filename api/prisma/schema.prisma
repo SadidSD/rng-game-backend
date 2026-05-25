@@ -345,6 +345,8 @@ model BuylistItem {
   isFoil      Boolean
   offerPrice  Decimal  @db.Decimal(10, 2)
   quantity    Int
+  imageUrl    String?
+  setName     String?
 }
 
 model BuylistFeaturedCard {

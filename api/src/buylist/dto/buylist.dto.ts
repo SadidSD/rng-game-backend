@@ -49,6 +49,14 @@ export class BuylistItemDto {
     @IsNumber()
     @Min(1)
     quantity: number;
+
+    @IsString()
+    @IsOptional()
+    imageUrl?: string;
+
+    @IsString()
+    @IsOptional()
+    setName?: string;
 }
 
 export class CreateBuylistOfferDto {
