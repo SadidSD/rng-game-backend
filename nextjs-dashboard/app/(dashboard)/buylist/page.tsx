@@ -26,7 +26,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, CheckCircle, XCircle, Clock, DollarSign, Package, Image as ImageIcon } from "lucide-react"
+import { Search, CheckCircle, XCircle, Clock, DollarSign, Package, Image as ImageIcon, Eye } from "lucide-react"
 
 interface BuylistOffer {
     id: string;
@@ -215,11 +215,7 @@ export default function BuylistPage() {
                                             <div className="font-medium">{offer.customerName}</div>
                                             <div className="text-xs text-muted-foreground">{offer.customerEmail}</div>
                                         </TableCell>
-                                        <TableCell>
-                                            <Button variant="ghost" size="sm" onClick={() => setViewingItems(offer.items)} className="underline hover:bg-transparent p-0 h-auto font-medium text-purple-600 hover:text-purple-800">
-                                                {offer.items?.length || 0} cards
-                                            </Button>
-                                        </TableCell>
+                                        <TableCell>{offer.items?.length || 0} cards</TableCell>
                                         <TableCell className="font-bold text-purple-600">
                                             ${Number(offer.totalCredit).toFixed(2)}
                                         </TableCell>
@@ -231,6 +227,9 @@ export default function BuylistPage() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex gap-2">
+                                                <Button size="sm" variant="outline" onClick={() => setViewingItems(offer.items)}>
+                                                    <Eye className="w-4 h-4 mr-1" /> View Cards
+                                                </Button>
                                                 <Button size="sm" variant="outline" onClick={() => handleViewImages(offer.id)}>
                                                     <ImageIcon className="w-4 h-4 mr-1" /> Images
                                                 </Button>
