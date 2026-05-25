@@ -48,6 +48,7 @@ export default function BuylistPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [viewingImages, setViewingImages] = useState<{ id: string, base64: string }[] | null>(null);
+    const [viewingItems, setViewingItems] = useState<any[] | null>(null);
     const [isFetchingImages, setIsFetchingImages] = useState(false);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -214,7 +215,11 @@ export default function BuylistPage() {
                                             <div className="font-medium">{offer.customerName}</div>
                                             <div className="text-xs text-muted-foreground">{offer.customerEmail}</div>
                                         </TableCell>
-                                        <TableCell>{offer.items?.length || 0} cards</TableCell>
+                                        <TableCell>
+                                            <Button variant="ghost" size="sm" onClick={() => setViewingItems(offer.items)} className="underline hover:bg-transparent p-0 h-auto font-medium text-purple-600 hover:text-purple-800">
+                                                {offer.items?.length || 0} cards
+                                            </Button>
+                                        </TableCell>
                                         <TableCell className="font-bold text-purple-600">
                                             ${Number(offer.totalCredit).toFixed(2)}
                                         </TableCell>
@@ -263,6 +268,46 @@ export default function BuylistPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            {/* Items Viewer Modal */}
+            {viewingItems && (
+                <div className="fixed inset-0 z-[60] bg-black/80 flex flex-col items-center justify-center p-4">
+                    <div className="w-full max-w-2xl bg-white rounded-lg overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                            <h3 className="text-lg font-bold">Offer Items</h3>
+                            <Button variant="ghost" size="sm" onClick={() => setViewingItems(null)}>Close</Button>
+                        </div>
+                        <div className="p-4 overflow-y-auto flex-1">
+                            {(!viewingItems || viewingItems.length === 0) ? (
+                                <p className="text-center text-muted-foreground py-10">No items found.</p>
+                            ) : (
+                                <Table>
+                                  <TableHeader>
+                                    <TableRow>
+                                      <TableHead>Card Name</TableHead>
+                                      <TableHead>Condition</TableHead>
+                                      <TableHead>Foil</TableHead>
+                                      <TableHead>Qty</TableHead>
+                                      <TableHead>Price</TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {viewingItems.map((item, idx) => (
+                                      <TableRow key={idx}>
+                                        <TableCell className="font-medium">{item.cardName}</TableCell>
+                                        <TableCell><Badge variant="outline">{item.condition}</Badge></TableCell>
+                                        <TableCell>{item.isFoil ? 'Yes' : 'No'}</TableCell>
+                                        <TableCell>{item.quantity}</TableCell>
+                                        <TableCell className="font-bold text-green-600">${Number(item.offerPrice).toFixed(2)}</TableCell>
+                                      </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Image Viewer Modal */}
             {viewingImages && (
