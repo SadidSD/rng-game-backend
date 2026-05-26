@@ -313,8 +313,14 @@ export class OrdersService {
 
         this.logger.info(`Order ${orderId} officially fulfilled - Tracking: ${labelData.trackingCode}`);
 
-        // TODO: Could send an email to the customer here letting them know order shipped!
-        // await this.notificationService.sendTrackingEmail(order.customer.email, labelData.trackingUrl);
+        // Send tracking email to customer
+        if (order.customer?.email) {
+            await this.notificationService.sendShippingNotification(
+                order.customer.email,
+                labelData.trackingCode,
+                labelData.labelUrl,
+            ).catch(err => this.logger.error(`Failed to send shipping notification: ${err.message}`));
+        }
 
         return updatedOrder;
     }
