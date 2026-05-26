@@ -48,6 +48,35 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
         collectorNumber: initialData?.collectorNumber || "",
     });
 
+    const selectedCategory = categories.find(c => c.id === formData.categoryId);
+    const categoryNameLower = (selectedCategory?.name || "").toLowerCase();
+    const categorySlugLower = (selectedCategory?.slug || "").toLowerCase();
+    
+    const isSealedType = categoryNameLower.includes("box") ||
+                         categoryNameLower.includes("pack") ||
+                         categoryNameLower.includes("bundle") ||
+                         categoryNameLower.includes("deck") ||
+                         categoryNameLower.includes("sealed") ||
+                         categorySlugLower.includes("box") ||
+                         categorySlugLower.includes("pack") ||
+                         categorySlugLower.includes("bundle") ||
+                         categorySlugLower.includes("deck") ||
+                         categorySlugLower.includes("sealed");
+
+    const labelName = isSealedType ? "Product Name" : "Card Name";
+    const placeholderName = isSealedType ? "e.g. Modern Horizons 3 Booster Box" : "e.g. Charizard ex";
+    const labelSet = isSealedType ? "Set/Release Name" : "Set Name";
+    const placeholderSet = isSealedType ? "e.g. Modern Horizons 3" : "e.g. Obsidian Flames";
+    const labelNumber = isSealedType ? "Product Number (Optional)" : "Card Number";
+    const placeholderNumber = isSealedType ? "e.g. Box #1, Serial #" : "e.g. 125/197";
+    const labelRarity = isSealedType ? "Edition/Rarity (Optional)" : "Rarity";
+    const labelIdentityHeader = isSealedType ? "Product Identity" : "Card Identity";
+    const labelIdentityDesc = isSealedType ? "Static details about the sealed product." : "Static details about the card itself (Set, Rarity, Number).";
+    const labelImageHeader = isSealedType ? "Product Image" : "Card Image";
+    const labelImageDesc = isSealedType ? "Upload the main product or box art image." : "Upload the main card image.";
+    const labelUploadBtn = isSealedType ? "Upload Image" : "Upload Card";
+    const labelSaveBtn = isSealedType ? "Save Product" : "Save Card";
+
     // Variants State
     // Map initial variants to our UI model if they exist
     const [variants, setVariants] = useState<Variant[]>(
@@ -168,18 +197,18 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
                 {/* 1. Card Identity Section */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Card Identity</CardTitle>
+                        <CardTitle>{labelIdentityHeader}</CardTitle>
                         <CardDescription>
-                            Static details about the card itself (Set, Rarity, Number).
+                            {labelIdentityDesc}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="grid gap-6">
                             <div className="grid gap-3">
-                                <Label htmlFor="name">Card Name</Label>
+                                <Label htmlFor="name">{labelName}</Label>
                                 <Input
                                     id="name"
-                                    placeholder="e.g. Charizard ex"
+                                    placeholder={placeholderName}
                                     type="text"
                                     className="w-full"
                                     required
@@ -190,20 +219,20 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-3">
-                                    <Label htmlFor="set">Set Name</Label>
+                                    <Label htmlFor="set">{labelSet}</Label>
                                     <Input
                                         id="set"
-                                        placeholder="e.g. Obsidian Flames"
+                                        placeholder={placeholderSet}
                                         type="text"
                                         value={formData.set}
                                         onChange={e => setFormData({ ...formData, set: e.target.value })}
                                     />
                                 </div>
                                 <div className="grid gap-3">
-                                    <Label htmlFor="number">Card Number</Label>
+                                    <Label htmlFor="number">{labelNumber}</Label>
                                     <Input
                                         id="number"
-                                        placeholder="e.g. 125/197"
+                                        placeholder={placeholderNumber}
                                         type="text"
                                         value={formData.collectorNumber}
                                         onChange={e => setFormData({ ...formData, collectorNumber: e.target.value })}
@@ -213,7 +242,7 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-3">
-                                    <Label htmlFor="rarity">Rarity</Label>
+                                    <Label htmlFor="rarity">{labelRarity}</Label>
                                     <Input
                                         id="rarity"
                                         placeholder="e.g. Illustration Rare"
@@ -292,9 +321,9 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
             <div className="grid auto-rows-max gap-4">
                 <Card className="overflow-hidden">
                     <CardHeader>
-                        <CardTitle>Card Image</CardTitle>
+                        <CardTitle>{labelImageHeader}</CardTitle>
                         <CardDescription>
-                            Upload the main card image.
+                            {labelImageDesc}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -321,7 +350,7 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
                                 <div className="flex aspect-[2/3] w-full items-center justify-center rounded-md border border-dashed text-gray-400">
                                     <div className="text-center">
                                         <Upload className="h-8 w-8 mx-auto mb-2" />
-                                        <span className="text-sm">Upload Card</span>
+                                        <span className="text-sm">{labelUploadBtn}</span>
                                     </div>
                                 </div>
                             )}
@@ -346,7 +375,7 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
                         Discard
                     </Button>
                     <Button size="sm" type="submit" disabled={loading}>
-                        {loading ? "Saving..." : "Save Card"}
+                        {loading ? "Saving..." : labelSaveBtn}
                     </Button>
                 </div>
             </div>
