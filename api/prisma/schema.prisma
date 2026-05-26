@@ -229,6 +229,8 @@ model Order {
   shippingName    String?
   shippingAddress String?
   shippingCity    String?
+  shippingState   String?
+  shippingCountry String?
   shippingZip     String?
   trackingNumber  String?
   easypostShipmentId String?

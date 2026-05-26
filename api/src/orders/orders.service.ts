@@ -97,6 +97,8 @@ export class OrdersService {
                     shippingName: dto.shippingName,
                     shippingAddress: dto.shippingAddress,
                     shippingCity: dto.shippingCity,
+                    shippingState: dto.shippingState,
+                    shippingCountry: dto.shippingCountry,
                     shippingZip: dto.shippingZip,
                     items: {
                         create: orderItemsData
@@ -342,5 +344,77 @@ export class OrdersService {
             include: { items: true },
             orderBy: { createdAt: 'desc' }
         });
+    }
+
+    async findCustomerOrder(userId: string, orderId: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId }
+        });
+        if (!user) throw new NotFoundException('User not found');
+
+        const customer = await this.prisma.customer.findUnique({
+            where: { storeId_email: { storeId: user.storeId, email: user.email } }
+        });
+        if (!customer) throw new NotFoundException('Customer profile not found');
+
+        const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            include: { items: true, customer: true }
+        });
+
+        if (!order || order.customerId !== customer.id) {
+            throw new NotFoundException('Order not found');
+        }
+
+        return order;
+    }
+
+    async getEasyPostRates(storeId: string, orderId: string) {
+        const order = await this.findOne(storeId, orderId);
+        if (!order) throw new NotFoundException('Order not found');
+
+        const toAddress = {
+            name: order.shippingName || 'Customer',
+            street1: order.shippingAddress || '',
+            city: order.shippingCity || '',
+            state: order.shippingState || 'NY', // Fallback for safety
+            zip: order.shippingZip || '',
+            country: order.shippingCountry || 'US',
+        };
+
+        const fromAddress = {
+            name: this.configService.get<string>('STORE_SHIPPING_NAME') || 'RNG Gamez Shop',
+            street1: this.configService.get<string>('STORE_SHIPPING_STREET') || '123 Main St',
+            city: this.configService.get<string>('STORE_SHIPPING_CITY') || 'Brooklyn',
+            state: this.configService.get<string>('STORE_SHIPPING_STATE') || 'NY',
+            zip: this.configService.get<string>('STORE_SHIPPING_ZIP') || '11201',
+            country: this.configService.get<string>('STORE_SHIPPING_COUNTRY') || 'US',
+            phone: this.configService.get<string>('STORE_SHIPPING_PHONE') || '555-555-5555',
+        };
+
+        const parcel = {
+            length: 8,
+            width: 5,
+            height: 0.5,
+            weight: 3.0, // 3 ounces for a standard card mailer
+        };
+
+        try {
+            const shipment = await this.easypostService.createShipment(toAddress, fromAddress, parcel);
+            return {
+                shipmentId: shipment.id,
+                rates: shipment.rates.map((r: any) => ({
+                    id: r.id,
+                    carrier: r.carrier,
+                    service: r.service,
+                    rate: r.rate,
+                    deliveryDays: r.delivery_days,
+                    estDeliveryDate: r.est_delivery_date,
+                })),
+            };
+        } catch (error: any) {
+            this.logger.error(`Failed to generate EasyPost rates for order ${orderId}: ${error.message}`);
+            throw new BadRequestException(`EasyPost error: ${error.message}`);
+        }
     }
 }

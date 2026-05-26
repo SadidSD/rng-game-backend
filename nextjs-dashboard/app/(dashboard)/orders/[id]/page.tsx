@@ -20,6 +20,7 @@ import { ChevronLeft, Printer, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { cookies } from "next/headers"
 import { format } from "date-fns"
+import FulfillmentManager from "@/components/orders/FulfillmentManager"
 
 async function getOrder(id: string) {
     const cookieStore = cookies()
@@ -134,9 +135,24 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
                         <CardContent>
                             <p className="text-sm">{order.shippingName || (order.customer ? `${order.customer.firstName} ${order.customer.lastName}` : '')}</p>
                             <p className="text-sm">{order.shippingAddress}</p>
-                            <p className="text-sm">{order.shippingCity}, {order.shippingZip}</p>
+                            <p className="text-sm">
+                                {order.shippingCity}
+                                {order.shippingState ? `, ${order.shippingState}` : ""} {order.shippingZip}
+                            </p>
+                            {order.shippingCountry && (
+                                <p className="text-xs text-muted-foreground uppercase mt-1">
+                                    {order.shippingCountry}
+                                </p>
+                            )}
                         </CardContent>
                     </Card>
+
+                    <FulfillmentManager
+                        orderId={order.id}
+                        initialStatus={order.status}
+                        initialTrackingNumber={order.trackingNumber}
+                        initialLabelUrl={order.labelUrl}
+                    />
 
                     <Card>
                         <CardHeader>

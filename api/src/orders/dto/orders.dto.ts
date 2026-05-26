@@ -49,6 +49,14 @@ export class CreateOrderDto {
 
     @IsString()
     @IsOptional()
+    shippingState?: string;
+
+    @IsString()
+    @IsOptional()
+    shippingCountry?: string;
+
+    @IsString()
+    @IsOptional()
     shippingZip?: string;
 
     @IsArray()
@@ -60,4 +68,14 @@ export class CreateOrderDto {
 export class UpdateOrderStatusDto {
     @IsEnum(OrderStatus)
     status: OrderStatus;
+}
+
+export class FulfillOrderDto {
+    @IsString()
+    @IsNotEmpty()
+    easypostRateId: string;
+
+    @IsString()
+    @IsNotEmpty()
+    easypostShipmentId: string;
 }

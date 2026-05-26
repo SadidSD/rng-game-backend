@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { OrdersService } from './orders.service';
-import { CreateOrderDto, UpdateOrderStatusDto } from './dto/orders.dto';
+import { CreateOrderDto, UpdateOrderStatusDto, FulfillOrderDto } from './dto/orders.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiKeyGuard } from '../auth/guards/api-key.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -28,11 +28,40 @@ export class OrdersController {
         return this.ordersService.findAll(req.user.storeId);
     }
 
+    @Get(':id/rates')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    getEasyPostRates(@Request() req, @Param('id') id: string) {
+        return this.ordersService.getEasyPostRates(req.user.storeId, id);
+    }
+
+    @Post(':id/fulfill')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    fulfillOrder(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() dto: FulfillOrderDto
+    ) {
+        return this.ordersService.fulfillOrder(
+            req.user.storeId,
+            id,
+            dto.easypostRateId,
+            dto.easypostShipmentId
+        );
+    }
+
     // --- Customer Routes (JWT) ---
     @Get('me')
     @UseGuards(JwtAuthGuard)
     findMyOrders(@Request() req) {
         return this.ordersService.findMyOrders(req.user.userId);
+    }
+
+    @Get('customer/:id')
+    @UseGuards(JwtAuthGuard)
+    findCustomerOrder(@Request() req, @Param('id') id: string) {
+        return this.ordersService.findCustomerOrder(req.user.userId, id);
     }
 
     @Get(':id')
