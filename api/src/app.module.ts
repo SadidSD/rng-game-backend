@@ -17,7 +17,6 @@ import { CustomersModule } from './customers/customers.module';
 import { EventsModule } from './events/events.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { IntegrationsModule } from './integrations/integrations.module';
-import { UploadsModule } from './uploads/uploads.module';
 import { CategoriesModule } from './categories/categories.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { PokemonTcgModule } from './integrations/pokemon-tcg/pokemon-tcg.module';
@@ -44,7 +43,7 @@ import { NotificationModule } from './notifications/notification.module';
     LoggerModule,
     NotificationModule,
     HealthModule,
-    AuthModule, UsersModule, StoreModule, PublicModule, ProductsModule, InventoryModule, BuylistModule, OrdersModule, CustomersModule, EventsModule, AnalyticsModule, IntegrationsModule, UploadsModule, CategoriesModule, PrismaModule, PokemonTcgModule, PaymentsModule],
+    AuthModule, UsersModule, StoreModule, PublicModule, ProductsModule, InventoryModule, BuylistModule, OrdersModule, CustomersModule, EventsModule, AnalyticsModule, IntegrationsModule, CategoriesModule, PrismaModule, PokemonTcgModule, PaymentsModule],
   controllers: [AppController],
   providers: [
     AppService,

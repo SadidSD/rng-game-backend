@@ -9,7 +9,9 @@ import {
     IsString,
     Min,
     ValidateNested,
-    IsEmail
+    IsEmail,
+    ArrayMaxSize,
+    MaxLength
 } from 'class-validator';
 import { Condition, OfferStatus } from '@prisma/client';
 
@@ -73,7 +75,9 @@ export class CreateBuylistOfferDto {
     items: BuylistItemDto[];
 
     @IsArray()
+    @ArrayMaxSize(5, { message: 'Maximum of 5 images allowed' })
     @IsString({ each: true })
+    @MaxLength(1048576, { each: true, message: 'Each image must be under ~750KB Base64' })
     @IsOptional()
     images?: string[];
 }

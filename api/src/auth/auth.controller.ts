@@ -11,6 +11,8 @@ export class AuthController {
     constructor(private readonly authService: AuthService) { }
 
     @Post('signup')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.OWNER)
     signup(@Body() dto: SignupDto) {
         // Keep this for admin/internal use if needed, or deprecate
         return this.authService.signup(dto);
