@@ -22,7 +22,7 @@ export function InventoryAlerts({ items }: { items?: any[] }) {
             {displayItems.map((item) => (
                 <Link
                     key={item.id}
-                    href={`/inventory?search=${item.name}`}
+                    href={`/products?search=${encodeURIComponent(item.name)}`}
                     className="flex items-center justify-between rounded-lg border p-3 hover:bg-accent transition-colors"
                 >
                     <div className="flex items-center gap-3">

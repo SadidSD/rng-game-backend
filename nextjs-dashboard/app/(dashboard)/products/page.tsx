@@ -32,8 +32,17 @@ import {
     TabsTrigger,
 } from "@/components/ui/tabs"
 import { ProductsTable, ProductsTableSkeleton } from "./products-table"
+import { ProductSearchInput } from "./ProductSearchInput"
 
-export default function ProductsPage() {
+export default function ProductsPage({
+    searchParams,
+}: {
+    searchParams?: {
+        search?: string;
+    };
+}) {
+    const search = searchParams?.search || "";
+
     return (
         <div className="flex flex-col sm:gap-4 sm:py-4">
             <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
@@ -60,14 +69,7 @@ export default function ProductsPage() {
                             <TabsTrigger value="sealed">Sealed</TabsTrigger>
                         </TabsList>
                         <div className="ml-auto flex items-center gap-2">
-                            <div className="relative">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    type="search"
-                                    placeholder="Search products..."
-                                    className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
-                                />
-                            </div>
+                            <ProductSearchInput />
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" size="sm" className="h-7 gap-1">
@@ -107,17 +109,17 @@ export default function ProductsPage() {
                     </div>
                     <TabsContent value="all">
                         <Suspense fallback={<ProductsTableSkeleton />}>
-                            <ProductsTable tab="all" />
+                            <ProductsTable tab="all" search={search} />
                         </Suspense>
                     </TabsContent>
                     <TabsContent value="singles">
                         <Suspense fallback={<ProductsTableSkeleton />}>
-                            <ProductsTable tab="singles" />
+                            <ProductsTable tab="singles" search={search} />
                         </Suspense>
                     </TabsContent>
                     <TabsContent value="sealed">
                         <Suspense fallback={<ProductsTableSkeleton />}>
-                            <ProductsTable tab="sealed" />
+                            <ProductsTable tab="sealed" search={search} />
                         </Suspense>
                     </TabsContent>
                 </Tabs>

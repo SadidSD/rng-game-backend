@@ -43,16 +43,30 @@ async function getProducts() {
     }
 }
 
-export async function ProductsTable({ tab = 'all' }: { tab?: 'all' | 'singles' | 'sealed' }) {
+export async function ProductsTable({ 
+    tab = 'all',
+    search = ''
+}: { 
+    tab?: 'all' | 'singles' | 'sealed';
+    search?: string;
+}) {
     const allProducts = await getProducts();
 
-    const products = allProducts.filter((product: any) => {
+    let products = allProducts.filter((product: any) => {
         if (tab === 'all') return true;
         const isSealed = product.variants?.some((v: any) => v.condition === 'SEALED');
         if (tab === 'sealed') return isSealed;
         if (tab === 'singles') return !isSealed;
         return true;
     });
+
+    if (search) {
+        const query = search.toLowerCase();
+        products = products.filter((product: any) => 
+            product.name.toLowerCase().includes(query) ||
+            product.variants?.some((v: any) => v.sku?.toLowerCase().includes(query))
+        );
+    }
 
     return (
         <Card x-chunk="dashboard-06-chunk-0">
