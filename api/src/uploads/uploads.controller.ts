@@ -7,7 +7,7 @@ export class UploadsController {
     constructor(private readonly uploadsService: UploadsService) { }
 
     @Post()
-    // @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard)
     async uploadFile() {
         // Fastify file upload handling via @fastify/multipart
         // File will be available in request.file()
