@@ -205,6 +205,27 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
                     <CardContent>
                         <div className="grid gap-6">
                             <div className="grid gap-3">
+                                <Label htmlFor="category">Store Category</Label>
+                                <Select
+                                    value={formData.categoryId}
+                                    onValueChange={(val) => {
+                                        setFormData({ ...formData, categoryId: val })
+                                    }}
+                                >
+                                    <SelectTrigger id="category">
+                                        <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {categories.map((cat) => (
+                                            <SelectItem key={cat.id} value={cat.id}>
+                                                {cat.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid gap-3">
                                 <Label htmlFor="name">{labelName}</Label>
                                 <Input
                                     id="name"
@@ -286,35 +307,6 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
 
                 {/* 2. Inventory Matrix */}
                 <VariantManager variants={variants} onChange={setVariants} />
-
-                {/* 3. Category (Hidden/Auto or Explicit) */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Organization</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid gap-3">
-                            <Label htmlFor="category">Store Category</Label>
-                            <Select
-                                value={formData.categoryId}
-                                onValueChange={(val) => {
-                                    setFormData({ ...formData, categoryId: val })
-                                }}
-                            >
-                                <SelectTrigger id="category">
-                                    <SelectValue placeholder="Select category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {categories.map((cat) => (
-                                        <SelectItem key={cat.id} value={cat.id}>
-                                            {cat.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </CardContent>
-                </Card>
             </div>
 
             {/* Right Column: Images & Actions */}
