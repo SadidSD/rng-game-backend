@@ -56,6 +56,7 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
             condition: v.condition,
             isFoil: v.isFoil,
             price: Number(v.price),
+            costPrice: Number(v.costPrice || 0),
             quantity: Number(v.quantity || v.inventory?.quantity || 0)
         })) || []
     );
@@ -121,6 +122,7 @@ export default function ProductForm({ categories, initialData }: ProductFormProp
                 condition: v.condition,
                 isFoil: v.isFoil,
                 price: v.price,
+                costPrice: Number(v.costPrice || 0),
                 quantity: v.quantity
             }))
         };

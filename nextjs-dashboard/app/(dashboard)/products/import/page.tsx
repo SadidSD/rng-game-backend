@@ -284,7 +284,7 @@ export default function ImportPage() {
 
     // ...
 
-    const handleImport = async (card: CardData, quantity: number = 1) => {
+    const handleImport = async (card: CardData, quantity: number = 1, costPrice: number = 0) => {
         // [Refined Logic] Auto-detect category from available list if not already selected
         let targetCategoryId = selectedCategoryId;
 
@@ -364,6 +364,7 @@ export default function ImportPage() {
                     {
                         condition: 'NM',
                         price: selectedPrice ?? 0,
+                        costPrice: costPrice,
                         quantity: quantity,
                         isFoil: finish === 'usd_foil' || finish === 'usd_etched',
                         language: 'English'
@@ -512,13 +513,29 @@ export default function ImportPage() {
                                         />
                                     </div>
 
+                                    {/* Cost/Buying Price Selector */}
+                                    <div className="flex w-full items-center gap-2 mb-2">
+                                        <span className="text-sm font-semibold text-muted-foreground w-16">Cost ($):</span>
+                                        <Input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            defaultValue={currentPrice ? (currentPrice * 0.5).toFixed(2) : "0.00"}
+                                            className="h-8"
+                                            id={`cost-${card.id}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    </div>
+
                                     <Button
                                         className="w-full"
                                         variant="secondary"
                                         onClick={() => {
                                             const qtyInput = document.getElementById(`qty-${card.id}`) as HTMLInputElement;
                                             const qty = qtyInput ? parseInt(qtyInput.value) : 1;
-                                            handleImport(card, qty);
+                                            const costInput = document.getElementById(`cost-${card.id}`) as HTMLInputElement;
+                                            const cost = costInput ? parseFloat(costInput.value) : 0;
+                                            handleImport(card, qty, cost);
                                         }}
                                         disabled={importing === card.id}
                                     >

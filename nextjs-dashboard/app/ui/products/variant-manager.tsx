@@ -28,6 +28,7 @@ export interface Variant {
     condition: string;
     isFoil: boolean;
     price: number;
+    costPrice?: number;
     quantity: number;
 }
 
@@ -43,6 +44,7 @@ export function VariantManager({ variants, onChange }: VariantManagerProps) {
         condition: "NM",
         isFoil: false,
         price: 0,
+        costPrice: 0,
         quantity: 1
     });
 
@@ -52,6 +54,7 @@ export function VariantManager({ variants, onChange }: VariantManagerProps) {
             condition: template.condition || "NM",
             isFoil: template.isFoil || false,
             price: Number(template.price) || 0,
+            costPrice: Number(template.costPrice) || 0,
             quantity: Number(template.quantity) || 1,
         };
         onChange([...variants, newVariant]);
@@ -112,6 +115,17 @@ export function VariantManager({ variants, onChange }: VariantManagerProps) {
                         />
                     </div>
 
+                    <div className="w-24">
+                        <Label className="text-xs mb-1.5 block">Cost ($)</Label>
+                        <Input
+                            type="number"
+                            className="h-8"
+                            step="0.01"
+                            value={template.costPrice}
+                            onChange={(e) => setTemplate({ ...template, costPrice: Number(e.target.value) })}
+                        />
+                    </div>
+
                     <div className="w-20">
                         <Label className="text-xs mb-1.5 block">Qty</Label>
                         <Input
@@ -135,6 +149,7 @@ export function VariantManager({ variants, onChange }: VariantManagerProps) {
                                 <TableHead>Condition</TableHead>
                                 <TableHead>Finish</TableHead>
                                 <TableHead className="w-24">Price</TableHead>
+                                <TableHead className="w-24">Buying Price</TableHead>
                                 <TableHead className="w-20">Stock</TableHead>
                                 <TableHead className="w-12"></TableHead>
                             </TableRow>
@@ -171,6 +186,15 @@ export function VariantManager({ variants, onChange }: VariantManagerProps) {
                                                 value={v.price}
                                                 step="0.01"
                                                 onChange={(e) => updateVariant(v.id, 'price', Number(e.target.value))}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Input
+                                                type="number"
+                                                className="h-7 w-20"
+                                                value={v.costPrice || 0}
+                                                step="0.01"
+                                                onChange={(e) => updateVariant(v.id, 'costPrice', Number(e.target.value))}
                                             />
                                         </TableCell>
                                         <TableCell>

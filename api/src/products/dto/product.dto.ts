@@ -30,6 +30,11 @@ export class CreateProductVariantDto {
 
     @IsNumber()
     @Min(0)
+    @IsOptional()
+    costPrice?: number;
+
+    @IsNumber()
+    @Min(0)
     quantity: number;
 }
 

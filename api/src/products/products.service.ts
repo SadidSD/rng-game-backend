@@ -133,6 +133,7 @@ export class ProductsService {
                                     isFoil: v.isFoil || false,
                                     language: v.language || 'English',
                                     price: v.price,
+                                    costPrice: v.costPrice || null,
                                     storeId,
                                     inventory: {
                                         create: {
@@ -298,6 +299,7 @@ export class ProductsService {
                                 isFoil: v.isFoil,
                                 language: v.language,
                                 price: v.price,
+                                costPrice: v.costPrice !== undefined ? v.costPrice : undefined,
                                 inventory: {
                                     update: {
                                         quantity: v.quantity
@@ -330,6 +332,7 @@ export class ProductsService {
                                 isFoil: v.isFoil || false,
                                 language: v.language || 'English',
                                 price: v.price,
+                                costPrice: v.costPrice || null,
                                 storeId,
                                 inventory: {
                                     create: {
