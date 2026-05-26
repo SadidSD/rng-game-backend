@@ -32,6 +32,7 @@ interface CardData {
     };
     price?: number; // Keep for backward compat / initial sort
     tcgplayerUrl?: string;
+    finishes?: string[];
     // Identity Fields
     oracleId?: string;
     oracleText?: string;
@@ -227,6 +228,7 @@ export default function ImportPage() {
                         price: card.prices?.usd ? parseFloat(card.prices.usd) :
                             (card.prices?.usd_foil ? parseFloat(card.prices.usd_foil) :
                                 (card.prices?.usd_etched ? parseFloat(card.prices.usd_etched) : undefined)),
+                        finishes: card.finishes || [],
                         tcgplayerUrl: card.purchase_uris?.tcgplayer
                     };
                 });
@@ -256,6 +258,10 @@ export default function ImportPage() {
         if (card.prices?.usd) return 'usd';
         if (card.prices?.usd_foil) return 'usd_foil';
         if (card.prices?.usd_etched) return 'usd_etched';
+        // Fallback to finishes array if no price is available
+        if (card.finishes?.includes('nonfoil')) return 'usd';
+        if (card.finishes?.includes('foil')) return 'usd_foil';
+        if (card.finishes?.includes('etched')) return 'usd_etched';
         return 'usd';
     };
 
@@ -284,7 +290,7 @@ export default function ImportPage() {
 
     // ...
 
-    const handleImport = async (card: CardData, quantity: number = 1, costPrice: number = 0) => {
+    const handleImport = async (card: CardData, quantity: number = 1, price: number = 0, costPrice: number = 0) => {
         // [Refined Logic] Auto-detect category from available list if not already selected
         let targetCategoryId = selectedCategoryId;
 
@@ -358,12 +364,12 @@ export default function ImportPage() {
                 toughness: card.toughness,
                 loyalty: card.loyalty,
 
-                price: selectedPrice ?? 0,
+                price: price,
                 images: [card.imageLarge || card.image],
                 variants: [
                     {
                         condition: 'NM',
-                        price: selectedPrice ?? 0,
+                        price: price,
                         costPrice: costPrice,
                         quantity: quantity,
                         isFoil: finish === 'usd_foil' || finish === 'usd_etched',
@@ -450,10 +456,10 @@ export default function ImportPage() {
                         const selectedFinish = getSelectedFinish(card);
                         const currentPrice = getPriceForFinish(card, selectedFinish);
 
-                        // Check availability for dropdown
-                        const hasNonFoil = card.prices?.usd !== undefined;
-                        const hasFoil = card.prices?.usd_foil !== undefined;
-                        const hasEtched = card.prices?.usd_etched !== undefined;
+                        // Check availability for dropdown from finishes array if present, fallback to price presence
+                        const hasNonFoil = card.finishes ? card.finishes.includes('nonfoil') : card.prices?.usd !== undefined;
+                        const hasFoil = card.finishes ? card.finishes.includes('foil') : card.prices?.usd_foil !== undefined;
+                        const hasEtched = card.finishes ? card.finishes.includes('etched') : card.prices?.usd_etched !== undefined;
 
                         return (
                             <Card key={card.id} className="overflow-hidden flex flex-col">
@@ -494,12 +500,43 @@ export default function ImportPage() {
                                         {!hasNonFoil && !hasFoil && !hasEtched && <option value="usd">Unknown</option>}
                                     </select>
 
-                                    <div className="flex w-full flex-col gap-1 text-sm font-semibold">
+                                    <div className="flex w-full flex-col gap-1 text-xs text-muted-foreground mb-2">
                                         <div className="flex justify-between">
-                                            <span className="text-muted-foreground">TCG/Market:</span>
-                                            <span>${currentPrice?.toFixed(2) || 'N/A'}</span>
+                                            <span>TCG/Market Price:</span>
+                                            <span>{currentPrice !== undefined ? `$${currentPrice.toFixed(2)}` : 'N/A'}</span>
                                         </div>
                                     </div>
+
+                                    {/* Price Input */}
+                                    <div className="flex w-full items-center gap-2 mb-2">
+                                        <span className="text-sm font-semibold text-muted-foreground w-16">Price ($):</span>
+                                        <Input
+                                            key={`price-${card.id}-${selectedFinish}`}
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            defaultValue={currentPrice !== undefined ? currentPrice.toFixed(2) : "0.00"}
+                                            className="h-8"
+                                            id={`price-${card.id}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    </div>
+
+                                    {/* Cost/Buying Price Selector */}
+                                    <div className="flex w-full items-center gap-2 mb-2">
+                                        <span className="text-sm font-semibold text-muted-foreground w-16">Cost ($):</span>
+                                        <Input
+                                            key={`cost-${card.id}-${selectedFinish}`}
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            defaultValue={currentPrice !== undefined ? (currentPrice * 0.5).toFixed(2) : "0.00"}
+                                            className="h-8"
+                                            id={`cost-${card.id}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    </div>
+
                                     {/* Quantity Selector */}
                                     <div className="flex w-full items-center gap-2 mb-2">
                                         <span className="text-sm font-semibold text-muted-foreground w-16">Qty:</span>
@@ -513,29 +550,17 @@ export default function ImportPage() {
                                         />
                                     </div>
 
-                                    {/* Cost/Buying Price Selector */}
-                                    <div className="flex w-full items-center gap-2 mb-2">
-                                        <span className="text-sm font-semibold text-muted-foreground w-16">Cost ($):</span>
-                                        <Input
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            defaultValue={currentPrice ? (currentPrice * 0.5).toFixed(2) : "0.00"}
-                                            className="h-8"
-                                            id={`cost-${card.id}`}
-                                            onClick={(e) => e.stopPropagation()}
-                                        />
-                                    </div>
-
                                     <Button
                                         className="w-full"
                                         variant="secondary"
                                         onClick={() => {
                                             const qtyInput = document.getElementById(`qty-${card.id}`) as HTMLInputElement;
                                             const qty = qtyInput ? parseInt(qtyInput.value) : 1;
+                                            const priceInput = document.getElementById(`price-${card.id}`) as HTMLInputElement;
+                                            const price = priceInput ? parseFloat(priceInput.value) : 0;
                                             const costInput = document.getElementById(`cost-${card.id}`) as HTMLInputElement;
                                             const cost = costInput ? parseFloat(costInput.value) : 0;
-                                            handleImport(card, qty, cost);
+                                            handleImport(card, qty, price, cost);
                                         }}
                                         disabled={importing === card.id}
                                     >
