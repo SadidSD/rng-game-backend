@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { StripeService } from './stripe.service';
 import { OrdersService } from '../orders/orders.service';
 import { LoggerService } from '../logger/logger.service';
-import { Request } from 'express';
+import { FastifyRequest } from 'fastify';
 
 @ApiTags('payments')
 @Controller('payments')
@@ -19,7 +19,7 @@ export class PaymentsController {
     @Post('webhook')
     @ApiOperation({ summary: 'Stripe webhook endpoint' })
     async handleWebhook(
-        @Req() req: RawBodyRequest<Request>,
+        @Req() req: RawBodyRequest<FastifyRequest>,
         @Headers('stripe-signature') signature: string,
     ) {
         const payload = req.rawBody;

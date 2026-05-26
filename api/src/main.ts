@@ -17,6 +17,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     fastifyAdapter,
+    { rawBody: true }
   );
   // Use custom logger
   const logger = app.get(LoggerService);
