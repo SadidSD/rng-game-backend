@@ -74,21 +74,26 @@ export class OrdersService {
                 }
             }
 
+            // Enforce guest checkout block at API level
+            const registeredUser = await tx.user.findFirst({
+                where: { storeId, email: dto.customerEmail }
+            });
+            if (!registeredUser) {
+                throw new BadRequestException('Guest checkout is disabled. Please log in or sign up before checking out.');
+            }
+
             // 2. Find or Create Customer
             let customer = await tx.customer.findFirst({
                 where: { storeId, email: dto.customerEmail }
             });
 
             if (!customer) {
-                if (isStoreCredit) {
-                    throw new BadRequestException('Customer profile not found. Cannot checkout with store credit.');
-                }
                 customer = await tx.customer.create({
                     data: {
                         storeId,
                         email: dto.customerEmail,
-                        firstName: dto.customerFirstName,
-                        lastName: dto.customerLastName
+                        firstName: dto.customerFirstName || registeredUser.email.split('@')[0],
+                        lastName: dto.customerLastName || ''
                     }
                 });
             }
