@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
+import AuthWatcher from "@/components/auth/AuthWatcher";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
     children,
-}: Readonly<{
+    }: Readonly<{
     children: React.ReactNode;
 }>) {
     return (
@@ -25,6 +26,7 @@ export default function RootLayout({
                     enableSystem
                     disableTransitionOnChange
                 >
+                    <AuthWatcher />
                     {children}
                 </ThemeProvider>
             </body>

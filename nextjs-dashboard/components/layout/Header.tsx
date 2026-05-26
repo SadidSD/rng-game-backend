@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import Cookies from "js-cookie"
 import {
     CircleUser,
     Home,
@@ -14,13 +18,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { ModeToggle } from "@/components/mode-toggle"
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
-import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -32,6 +29,16 @@ import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 export default function Header() {
+    const router = useRouter();
+
+    const handleLogout = () => {
+        // Clear the token cookie
+        Cookies.remove('tcg-auth-token');
+        // Redirect to login page
+        router.push('/login');
+        router.refresh();
+    };
+
     return (
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
             <Sheet>
@@ -115,10 +122,14 @@ export default function Header() {
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>Settings</DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                        <Link href="/settings" className="cursor-pointer w-full">Settings</Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem>Support</DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>Logout</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
+                        Logout
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
         </header>

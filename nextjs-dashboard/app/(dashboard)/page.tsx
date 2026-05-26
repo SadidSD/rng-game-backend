@@ -20,6 +20,7 @@ import { BestSellingCards } from "@/components/dashboard/BestSellingCards"
 import { InventoryAlerts } from "@/components/dashboard/InventoryAlerts"
 import { RecentActivity } from "@/components/dashboard/RecentActivity"
 import { cookies } from "next/headers"
+import RedirectToLogin from "@/components/auth/RedirectToLogin"
 
 async function getDashboardStats() {
     const cookieStore = cookies()
@@ -54,6 +55,9 @@ export default async function Dashboard() {
     const stats: any = await getDashboardStats()
 
     if (!stats || stats.error) {
+        if (stats?.error?.includes('401') || stats?.error?.includes('Unauthorized')) {
+            return <RedirectToLogin />
+        }
         return (
             <div className="p-8 text-center text-muted-foreground">
                 <p>Unable to load dashboard data.</p>
