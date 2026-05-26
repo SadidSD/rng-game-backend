@@ -49,17 +49,18 @@ export class PaymentsController {
             case 'payment_intent.succeeded':
                 const paymentIntent = event.data.object;
                 this.logger.info(`PaymentIntent ${paymentIntent.id} succeeded`);
+                if (paymentIntent.metadata?.orderId) {
+                    await this.ordersService.completePayment(paymentIntent.metadata.orderId);
+                }
                 break;
 
             case 'payment_intent.payment_failed':
                 const failedIntent = event.data.object;
                 this.logger.error(`Payment failed: ${failedIntent.id}`);
 
-                // Try to find order by payment intent and rollback if needed
-                const failedSession = await this.stripeService.getSession(failedIntent.id as string).catch(() => null);
-                if (failedSession?.metadata?.orderId) {
-                    this.logger.warn(`Rolling back inventory for order: ${failedSession.metadata.orderId}`);
-                    await this.ordersService.rollbackInventory(failedSession.metadata.orderId);
+                if (failedIntent.metadata?.orderId) {
+                    this.logger.warn(`Rolling back inventory for order: ${failedIntent.metadata.orderId}`);
+                    await this.ordersService.rollbackInventory(failedIntent.metadata.orderId);
                 }
                 break;
 

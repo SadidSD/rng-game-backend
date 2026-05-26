@@ -75,6 +75,11 @@ export class StripeService {
             metadata: {
                 orderId: params.orderId,
             },
+            payment_intent_data: {
+                metadata: {
+                    orderId: params.orderId,
+                },
+            },
         });
 
         return {
