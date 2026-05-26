@@ -55,7 +55,7 @@ interface Category {
 }
 
 export default function ImportPage() {
-    const [selectedGame, setSelectedGame] = useState<'pokemon' | 'mtg'>('mtg');
+    const selectedGame: 'pokemon' | 'mtg' = 'mtg';
     const [query, setQuery] = useState('');
     const [cards, setCards] = useState<CardData[]>([]);
     const [loading, setLoading] = useState(false);
@@ -115,43 +115,6 @@ export default function ImportPage() {
         fetchCategories();
     }, []);
 
-    // Auto-select/create corresponding category when selectedGame changes
-    useEffect(() => {
-        if (categories.length === 0) return;
-
-        const targetGameName = selectedGame === 'pokemon' ? 'Pokemon' : 'Magic: The Gathering';
-        const targetSearchTerm = selectedGame === 'pokemon' ? 'pokemon' : 'magic';
-
-        const matchedCat = categories.find((c: Category) =>
-            c.name.toLowerCase() === targetGameName.toLowerCase() ||
-            c.name.toLowerCase().includes(targetSearchTerm)
-        );
-
-        if (matchedCat) {
-            setSelectedCategoryId(matchedCat.id);
-        } else {
-            const autoCreateCategory = async () => {
-                try {
-                    const token = Cookies.get('tcg-auth-token');
-                    console.log(`Auto-creating category for ${targetGameName}...`);
-                    const createRes = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
-                        name: targetGameName,
-                        slug: selectedGame === 'pokemon' ? 'pokemon' : 'magic-the-gathering'
-                    }, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    if (createRes.data && createRes.data.id) {
-                        setCategories(prev => [...prev, createRes.data]);
-                        setSelectedCategoryId(createRes.data.id);
-                    }
-                } catch (e) {
-                    console.error(`Failed to auto-create category for ${targetGameName}`, e);
-                }
-            };
-            autoCreateCategory();
-        }
-    }, [selectedGame, categories]);
-
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -166,125 +129,63 @@ export default function ImportPage() {
         try {
             let mappedCards: CardData[] = [];
 
-            if (selectedGame === 'pokemon') {
-                const res = await axios.get(`/api/proxy/pokemon`, {
-                    params: { query }
-                });
+            // MTG / Scryfall Search
+            const res = await axios.get(`/api/proxy/mtg`, {
+                params: { query }
+            });
 
-                const rawData = res.data.data || [];
-                mappedCards = rawData.map((card: any) => {
-                    // Pokemon Metadata Mapping
-                    const oracleText = [
-                        ...(card.rules || []).map((r: string) => r),
-                        ...(card.abilities || []).map((a: any) => `[Ability] ${a.name}: ${a.text}`),
-                        ...(card.attacks || []).map((a: any) => `[Attack] ${a.name} (${a.cost.join(', ')}): ${a.text}`)
-                    ].join('\n\n');
+            // Scryfall returns object with { object: "list", data: [...] }
+            const rawData = res.data.data || [];
 
-                    const typeLine = [
-                        card.supertype,
-                        ...(card.subtypes || []),
-                        card.types ? `(${card.types.join('/')})` : ''
-                    ].filter(Boolean).join(' ');
+            mappedCards = rawData.map((card: any) => {
+                // Start: Handle Scryfall's image logic (some cards are double-faced)
+                let image = card.image_uris?.normal;
+                let imageLarge = card.image_uris?.large;
+                if (!image && card.card_faces && card.card_faces[0].image_uris) {
+                    image = card.card_faces[0].image_uris.normal;
+                    imageLarge = card.card_faces[0].image_uris.large;
+                }
 
-                    const tcgPrices = card.tcgplayer?.prices || {};
-                    const normalPrice = tcgPrices.normal?.market || tcgPrices.unlimitedNormal?.market || card.cardmarket?.prices?.averageSellPrice;
-                    const foilPrice = tcgPrices.holofoil?.market || tcgPrices.reverseHolofoil?.market || tcgPrices.unlimitedHolofoil?.market;
+                // Handle faces for oracle text/mana cost if split
+                const oracleText = card.oracle_text || card.card_faces?.map((f: any) => f.oracle_text).join('\n//\n') || '';
+                const manaCost = card.mana_cost || card.card_faces?.map((f: any) => f.mana_cost).join(' // ') || '';
+                const typeLine = card.type_line || card.card_faces?.map((f: any) => f.type_line).join(' // ') || '';
 
-                    const finishes: string[] = [];
-                    if (normalPrice !== undefined || tcgPrices.normal || tcgPrices.unlimitedNormal) finishes.push('nonfoil');
-                    if (foilPrice !== undefined || tcgPrices.holofoil || tcgPrices.reverseHolofoil || tcgPrices.unlimitedHolofoil) finishes.push('foil');
-                    if (finishes.length === 0) finishes.push('nonfoil'); // fallback
+                return {
+                    id: card.id,
+                    name: card.name,
+                    set: card.set_name,
+                    setId: card.set,
+                    rarity: card.rarity,
+                    collectorNumber: card.collector_number,
+                    image: image || '/placeholder.png',
+                    imageLarge: imageLarge || image || '/placeholder.png',
 
-                    return {
-                        id: card.id,
-                        name: card.name,
-                        set: card.set.name,
-                        setId: card.set.id,
-                        rarity: card.rarity,
-                        collectorNumber: card.number,
-                        image: card.images.small,
-                        imageLarge: card.images.large,
-                        tcgplayerUrl: card.tcgplayer?.url,
+                    // Identity Mappings
+                    oracleId: card.oracle_id,
+                    oracleText: oracleText,
+                    legalities: card.legalities,
+                    manaCost: manaCost,
+                    manaValue: card.cmc,
+                    colors: card.colors || card.card_faces?.[0]?.colors || [],
+                    colorIdentity: card.color_identity || [],
+                    typeLine: typeLine,
+                    power: card.power,
+                    toughness: card.toughness,
+                    loyalty: card.loyalty,
 
-                        // Identity Mappings
-                        oracleId: card.id, // Pokémon TCG uses ID as unique across sets for exact printing
-                        oracleText: oracleText,
-                        typeLine: typeLine,
-                        manaValue: card.hp ? parseInt(card.hp) : 0, // Mapping HP to ManaValue for sorting/display
-                        colors: card.types || [],
-
-                        prices: {
-                            usd: normalPrice ? parseFloat(normalPrice) : undefined,
-                            usd_foil: foilPrice ? parseFloat(foilPrice) : undefined
-                        },
-                        price: normalPrice ? parseFloat(normalPrice) : (foilPrice ? parseFloat(foilPrice) : undefined),
-                        finishes: finishes
-                    };
-                });
-            } else {
-                // MTG / Scryfall Search
-                const res = await axios.get(`/api/proxy/mtg`, {
-                    params: { query }
-                });
-
-                // Scryfall returns object with { object: "list", data: [...] }
-                const rawData = res.data.data || [];
-
-                mappedCards = rawData.map((card: any) => {
-                    // Start: Handle Scryfall's image logic (some cards are double-faced)
-                    let image = card.image_uris?.normal;
-                    let imageLarge = card.image_uris?.large;
-                    if (!image && card.card_faces && card.card_faces[0].image_uris) {
-                        image = card.card_faces[0].image_uris.normal;
-                        imageLarge = card.card_faces[0].image_uris.large;
-                    }
-
-                    // Handle faces for oracle text/mana cost if split
-                    const oracleText = card.oracle_text || card.card_faces?.map((f: any) => f.oracle_text).join('\n//\n') || '';
-                    const manaCost = card.mana_cost || card.card_faces?.map((f: any) => f.mana_cost).join(' // ') || '';
-                    const typeLine = card.type_line || card.card_faces?.map((f: any) => f.type_line).join(' // ') || '';
-
-                    // Derive supertypes/subtypes roughly from typeLine if needed, or leave empty if backend handles it
-                    // The backend schema expects string arrays.
-                    // For now, let's just pass the raw strings like manaCost, typeLine.
-                    // Colors/ColorIdentity are arrays in Scryfall.
-
-                    return {
-                        id: card.id,
-                        name: card.name,
-                        set: card.set_name,
-                        setId: card.set,
-                        rarity: card.rarity,
-                        collectorNumber: card.collector_number,
-                        image: image || '/placeholder.png',
-                        imageLarge: imageLarge || image || '/placeholder.png',
-
-                        // Identity Mappings
-                        oracleId: card.oracle_id,
-                        oracleText: oracleText,
-                        legalities: card.legalities,
-                        manaCost: manaCost,
-                        manaValue: card.cmc,
-                        colors: card.colors || card.card_faces?.[0]?.colors || [],
-                        colorIdentity: card.color_identity || [],
-                        typeLine: typeLine,
-                        power: card.power,
-                        toughness: card.toughness,
-                        loyalty: card.loyalty,
-
-                        prices: {
-                            usd: card.prices?.usd ? parseFloat(card.prices.usd) : undefined,
-                            usd_foil: card.prices?.usd_foil ? parseFloat(card.prices.usd_foil) : undefined,
-                            usd_etched: card.prices?.usd_etched ? parseFloat(card.prices.usd_etched) : undefined,
-                        },
-                        price: card.prices?.usd ? parseFloat(card.prices.usd) :
-                            (card.prices?.usd_foil ? parseFloat(card.prices.usd_foil) :
-                                (card.prices?.usd_etched ? parseFloat(card.prices.usd_etched) : undefined)),
-                        finishes: card.finishes || [],
-                        tcgplayerUrl: card.purchase_uris?.tcgplayer
-                    };
-                });
-            }
+                    prices: {
+                        usd: card.prices?.usd ? parseFloat(card.prices.usd) : undefined,
+                        usd_foil: card.prices?.usd_foil ? parseFloat(card.prices.usd_foil) : undefined,
+                        usd_etched: card.prices?.usd_etched ? parseFloat(card.prices.usd_etched) : undefined,
+                    },
+                    price: card.prices?.usd ? parseFloat(card.prices.usd) :
+                        (card.prices?.usd_foil ? parseFloat(card.prices.usd_foil) :
+                            (card.prices?.usd_etched ? parseFloat(card.prices.usd_etched) : undefined)),
+                    finishes: card.finishes || [],
+                    tcgplayerUrl: card.purchase_uris?.tcgplayer
+                };
+            });
 
             setCards(mappedCards);
 
@@ -345,17 +246,15 @@ export default function ImportPage() {
     const handleImport = async (card: CardData, quantity: number = 1, price: number = 0, costPrice: number = 0) => {
         // [Refined Logic] Auto-detect category from available list if not already selected
         let targetCategoryId = selectedCategoryId;
-        const targetGameName = selectedGame === 'pokemon' ? 'Pokemon' : 'Magic: The Gathering';
-        const targetSlug = selectedGame === 'pokemon' ? 'pokemon' : 'magic-the-gathering';
 
         if (!targetCategoryId && categories.length > 0) {
-            const matchedCat = categories.find(c =>
-                c.name.toLowerCase() === targetGameName.toLowerCase() ||
-                c.name.toLowerCase().includes(selectedGame === 'pokemon' ? 'pokemon' : 'magic')
+            const mtgCat = categories.find(c =>
+                c.name.toLowerCase() === 'mtg' ||
+                c.name.toLowerCase().includes('magic')
             );
-            if (matchedCat) {
-                targetCategoryId = matchedCat.id;
-                setSelectedCategoryId(matchedCat.id); // Sync state
+            if (mtgCat) {
+                targetCategoryId = mtgCat.id;
+                setSelectedCategoryId(mtgCat.id); // Sync state
             }
         }
 
@@ -364,8 +263,8 @@ export default function ImportPage() {
             try {
                 const token = Cookies.get('tcg-auth-token');
                 const createRes = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
-                    name: targetGameName,
-                    slug: targetSlug
+                    name: 'Magic: The Gathering',
+                    slug: 'magic-the-gathering'
                 }, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -377,7 +276,7 @@ export default function ImportPage() {
                 }
             } catch (e) {
                 console.error('Failed to auto-create category in handleImport', e);
-                alert(`System Error: Could not find or create "${targetGameName}" category. Please check your connection or create it manually.`);
+                alert('System Error: Could not find or create "Magic: The Gathering" category. Please check your connection or create it manually.');
                 return;
             }
         }
@@ -400,8 +299,8 @@ export default function ImportPage() {
         try {
             const productData = {
                 name: name,
-                description: `Game: ${selectedGame.toUpperCase()} | Set: ${card.set} | Rarity: ${card.rarity || 'Unknown'} | Finish: ${finish} | Num: ${card.collectorNumber}`,
-                game: selectedGame === 'pokemon' ? 'Pokemon' : 'MTG',
+                description: `Game: MTG | Set: ${card.set} | Rarity: ${card.rarity || 'Unknown'} | Finish: ${finish} | Num: ${card.collectorNumber}`,
+                game: 'MTG',
                 categoryId: targetCategoryId,
                 set: card.set,
                 rarity: card.rarity,
@@ -456,10 +355,7 @@ export default function ImportPage() {
                 <p className="text-muted-foreground">Search and import cards from Scryfall (MTG).</p>
             </div>
 
-            <div className="flex justify-center gap-2 mb-2">
-                <Button variant={selectedGame === 'pokemon' ? 'default' : 'outline'} onClick={() => setSelectedGame('pokemon')}>Pokemon TCG</Button>
-                <Button variant={selectedGame === 'mtg' ? 'default' : 'outline'} onClick={() => setSelectedGame('mtg')}>Magic: The Gathering</Button>
-            </div>
+            {/* Game switcher disabled since site only sells MTG for singles */}
 
             {/* Search */}
             <div className="w-full max-w-4xl mx-auto">
