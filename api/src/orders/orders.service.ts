@@ -29,9 +29,11 @@ export class OrdersService {
      * Returns Stripe Checkout Session URL
      */
     async create(storeId: string, dto: CreateOrderDto) {
+        const isStoreCredit = dto.paymentMethod === 'store_credit';
+
         // 1. Transactional Part: Gather data and create order record
         // We move external API calls (Stripe) outside this block to avoid timeouts.
-        const { order, stripeLineItems } = await this.prisma.$transaction(async (tx) => {
+        const { order, stripeLineItems, success } = await this.prisma.$transaction(async (tx) => {
             let total = 0;
             const orderItemsData: any[] = [];
             const stripeLineItems: any[] = [];
@@ -45,7 +47,7 @@ export class OrdersService {
                 if (!variant) throw new NotFoundException(`Variant ${itemDto.variantId} not found`);
                 if (variant.product.storeId !== storeId) throw new BadRequestException('Product does not belong to this store');
 
-                // Check stock (don't deduct yet - wait for payment webhook)
+                // Check stock
                 const currentStock = variant.inventory?.quantity || 0;
                 if (currentStock < itemDto.quantity) {
                     throw new BadRequestException(`Insufficient stock for ${variant.product.name} (Requested: ${itemDto.quantity}, Available: ${currentStock})`);
@@ -63,11 +65,13 @@ export class OrdersService {
                     variantId: variant.id
                 });
 
-                stripeLineItems.push({
-                    name: `${variant.product.name} (${variant.condition}${variant.isFoil ? ' - Foil' : ''})`,
-                    price: price,
-                    quantity: itemDto.quantity,
-                });
+                if (!isStoreCredit) {
+                    stripeLineItems.push({
+                        name: `${variant.product.name} (${variant.condition}${variant.isFoil ? ' - Foil' : ''})`,
+                        price: price,
+                        quantity: itemDto.quantity,
+                    });
+                }
             }
 
             // 2. Find or Create Customer
@@ -76,6 +80,9 @@ export class OrdersService {
             });
 
             if (!customer) {
+                if (isStoreCredit) {
+                    throw new BadRequestException('Customer profile not found. Cannot checkout with store credit.');
+                }
                 customer = await tx.customer.create({
                     data: {
                         storeId,
@@ -86,14 +93,36 @@ export class OrdersService {
                 });
             }
 
-            // 3. Create Order (PENDING status)
+            // Handle Store Credit deduction & inventory checkout immediately
+            if (isStoreCredit) {
+                if (Number(customer.creditBalance) < total) {
+                    throw new BadRequestException(`Insufficient store credit. Required: $${total.toFixed(2)}, Available: $${Number(customer.creditBalance).toFixed(2)}`);
+                }
+
+                // Deduct customer credit balance
+                await tx.customer.update({
+                    where: { id: customer.id },
+                    data: { creditBalance: { decrement: total } }
+                });
+
+                // Deduct inventory counts
+                for (const itemDto of dto.items) {
+                    await tx.inventoryItem.update({
+                        where: { variantId: itemDto.variantId },
+                        data: { quantity: { decrement: itemDto.quantity } }
+                    });
+                }
+            }
+
+            // 3. Create Order
             const newOrder = await tx.order.create({
                 data: {
                     storeId,
                     customerId: customer.id,
                     total: total,
-                    status: 'PENDING',
-                    paymentStatus: 'PENDING',
+                    status: isStoreCredit ? 'PAID' : 'PENDING',
+                    paymentStatus: isStoreCredit ? 'PAID' : 'PENDING',
+                    paidAt: isStoreCredit ? new Date() : null,
                     shippingName: dto.shippingName,
                     shippingAddress: dto.shippingAddress,
                     shippingCity: dto.shippingCity,
@@ -107,10 +136,26 @@ export class OrdersService {
                 include: { items: true }
             });
 
-            return { order: newOrder, stripeLineItems };
+            return { order: newOrder, stripeLineItems, success: isStoreCredit };
         }, {
             timeout: 15000 // Increase timeout to 15s to handle database latency
         });
+
+        // If paid with store credit, complete order immediately and skip Stripe creation
+        if (success) {
+            await this.notificationService.sendOrderNotification({
+                orderId: order.id,
+                customerEmail: dto.customerEmail,
+                total: Number(order.total),
+                itemCount: order.items.length,
+            }).catch(err => this.logger.error(`Failed to send store credit order notification: ${err.message}`));
+
+            return {
+                orderId: order.id,
+                total: Number(order.total),
+                paidWithCredit: true
+            };
+        }
 
         // 4. External Part: Create Stripe Checkout Session (Outside DB Transaction)
         try {

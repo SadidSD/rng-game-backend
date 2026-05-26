@@ -67,6 +67,7 @@ export async function CustomersTable() {
                             </TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead>Email</TableHead>
+                            <TableHead>Store Credit</TableHead>
                             <TableHead className="hidden md:table-cell">Total Orders</TableHead>
                             <TableHead className="hidden md:table-cell">Joined At</TableHead>
                             <TableHead>
@@ -77,7 +78,7 @@ export async function CustomersTable() {
                     <TableBody>
                         {customers.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                                     No customers found.
                                 </TableCell>
                             </TableRow>
@@ -94,6 +95,9 @@ export async function CustomersTable() {
                                         {!customer.firstName && !customer.lastName && <span className="text-muted-foreground italic">No Name</span>}
                                     </TableCell>
                                     <TableCell>{customer.email}</TableCell>
+                                    <TableCell className="font-mono font-bold text-green-600">
+                                        ${Number(customer.creditBalance || 0).toFixed(2)}
+                                    </TableCell>
                                     <TableCell className="hidden md:table-cell">
                                         <Badge variant="secondary">{customer._count?.orders || 0} Orders</Badge>
                                     </TableCell>
@@ -144,6 +148,7 @@ export function CustomersTableSkeleton() {
                             <TableHead className="hidden w-[50px] sm:table-cell"><span className="sr-only">Avatar</span></TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead>Email</TableHead>
+                            <TableHead>Store Credit</TableHead>
                             <TableHead className="hidden md:table-cell">Total Orders</TableHead>
                             <TableHead className="hidden md:table-cell">Joined At</TableHead>
                             <TableHead><span className="sr-only">Actions</span></TableHead>
@@ -155,6 +160,7 @@ export function CustomersTableSkeleton() {
                                 <TableCell className="hidden sm:table-cell"><Skeleton className="h-10 w-10 rounded-full" /></TableCell>
                                 <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
                                 <TableCell><Skeleton className="h-4 w-[180px]" /></TableCell>
+                                <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
                                 <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[60px]" /></TableCell>
                                 <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-[100px]" /></TableCell>
                                 <TableCell><Skeleton className="h-8 w-8 rounded-full" /></TableCell>

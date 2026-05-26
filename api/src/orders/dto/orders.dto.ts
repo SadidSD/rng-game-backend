@@ -59,6 +59,10 @@ export class CreateOrderDto {
     @IsOptional()
     shippingZip?: string;
 
+    @IsString()
+    @IsOptional()
+    paymentMethod?: string;
+
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => OrderItemDto)
