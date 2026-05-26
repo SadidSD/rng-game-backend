@@ -11,7 +11,7 @@ import { LoggerService } from './logger/logger.service';
 async function bootstrap() {
   const fastifyAdapter = new FastifyAdapter({
     querystringParser: str => ({ ...require('querystring').parse(str) }),
-    bodyLimit: 50 * 1024 * 1024, // 50MB for image uploads
+    bodyLimit: 2 * 1024 * 1024, // Reduced to 2MB to prevent resource exhaustion
   });
 
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -25,6 +25,11 @@ async function bootstrap() {
   app.useLogger(logger);
 
   logger.info('Starting TCG Backend with Fastify...');
+
+  // Global security headers via Helmet
+  await app.register(require('@fastify/helmet'), {
+    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+  });
 
   // 1. Global Validation
   app.useGlobalPipes(new ValidationPipe({

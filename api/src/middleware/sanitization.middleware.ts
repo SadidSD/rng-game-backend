@@ -1,5 +1,6 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
+import * as xss from 'xss';
 
 @Injectable()
 export class SanitizationMiddleware implements NestMiddleware {
@@ -36,13 +37,6 @@ export class SanitizationMiddleware implements NestMiddleware {
     }
 
     private sanitizeString(str: string): string {
-        // Remove potential XSS vectors
-        return str
-            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
-            .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '') // Remove iframe tags
-            .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '') // Remove inline event handlers
-            .replace(/javascript:/gi, '') // Remove javascript: protocol
-            .replace(/<embed\b[^>]*>/gi, '') // Remove embed tags
-            .replace(/<object\b[^>]*>/gi, ''); // Remove object tags
+        return xss.filterXSS(str);
     }
 }
