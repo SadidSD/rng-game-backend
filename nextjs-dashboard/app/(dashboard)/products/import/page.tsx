@@ -555,11 +555,17 @@ export default function ImportPage() {
                                         variant="secondary"
                                         onClick={() => {
                                             const qtyInput = document.getElementById(`qty-${card.id}`) as HTMLInputElement;
-                                            const qty = qtyInput ? parseInt(qtyInput.value) : 1;
+                                            const rawQty = qtyInput ? parseInt(qtyInput.value) : 1;
+                                            const qty = isNaN(rawQty) ? 1 : rawQty;
+
                                             const priceInput = document.getElementById(`price-${card.id}`) as HTMLInputElement;
-                                            const price = priceInput ? parseFloat(priceInput.value) : 0;
+                                            const rawPrice = priceInput ? parseFloat(priceInput.value) : 0;
+                                            const price = isNaN(rawPrice) ? 0 : rawPrice;
+
                                             const costInput = document.getElementById(`cost-${card.id}`) as HTMLInputElement;
-                                            const cost = costInput ? parseFloat(costInput.value) : 0;
+                                            const rawCost = costInput ? parseFloat(costInput.value) : 0;
+                                            const cost = isNaN(rawCost) ? 0 : rawCost;
+
                                             handleImport(card, qty, price, cost);
                                         }}
                                         disabled={importing === card.id}
