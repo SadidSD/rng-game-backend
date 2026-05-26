@@ -54,8 +54,12 @@ export class NotificationService {
      */
     private async sendEmail(to: string, subject: string, html: string): Promise<void> {
         if (this.resend) {
-            await this.resend.emails.send({ from: this.fromEmail, to, subject, html });
-            this.logger.info(`Email sent via Resend to ${to}: ${subject}`);
+            const { data, error } = await this.resend.emails.send({ from: this.fromEmail, to, subject, html });
+            if (error) {
+                this.logger.error(`Resend API failed to send email to ${to}: ${error.message}`);
+                throw new Error(`Resend API error: ${error.message}`);
+            }
+            this.logger.info(`Email sent via Resend to ${to}: ${subject} (ID: ${data?.id})`);
             return;
         }
 
