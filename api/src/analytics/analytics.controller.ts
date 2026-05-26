@@ -20,8 +20,10 @@ export class AnalyticsController {
     getAdvanced(
         @Request() req,
         @Query('startDate') startDate?: string,
-        @Query('endDate') endDate?: string
+        @Query('endDate') endDate?: string,
+        @Query('game') game?: string,
+        @Query('category') category?: string
     ) {
-        return this.analyticsService.getAdvancedStats(req.user.storeId, startDate, endDate);
+        return this.analyticsService.getAdvancedStats(req.user.storeId, startDate, endDate, game, category);
     }
 }
