@@ -70,18 +70,18 @@ interface EventPlayer {
 
 interface AnalyticsStats {
     // Tab 1: Overview
-    grossRevenue: number;
-    orderVolume: number;
-    aov: number;
-    revenueGrowth: number;
-    salesTrend: { date: string; revenue: number; orders: number }[];
-    statusDistribution: { name: string; value: number }[];
-    gameSales: { name: string; value: number }[];
-    categorySales: { name: string; value: number }[];
-    topProducts: TopProduct[];
+    grossRevenue?: number;
+    orderVolume?: number;
+    aov?: number;
+    revenueGrowth?: number;
+    salesTrend?: { date: string; revenue: number; orders: number }[];
+    statusDistribution?: { name: string; value: number }[];
+    gameSales?: { name: string; value: number }[];
+    categorySales?: { name: string; value: number }[];
+    topProducts?: TopProduct[];
 
     // Tab 2: Financial Details
-    financialMetrics: {
+    financialMetrics?: {
         totalCogs: number;
         netProfit: number;
         grossMargin: number;
@@ -91,14 +91,14 @@ interface AnalyticsStats {
     };
 
     // Tab 3: Inventory
-    inventoryValuation: {
+    inventoryValuation?: {
         retailValue: number;
         costBasis: number;
         grossMargin: number;
         stockTurnover: number;
         lowStockCount: number;
     };
-    inventoryMetrics: {
+    inventoryMetrics?: {
         stockoutRisk: StockoutRisk[];
         deadStock: DeadStock[];
         inventoryByGame: { name: string; value: number }[];
@@ -107,7 +107,7 @@ interface AnalyticsStats {
     };
 
     // Tab 4: Customer Metrics
-    customerMetrics: {
+    customerMetrics?: {
         totalStoreCredit: number;
         repeatCustomerRate: number;
         customerLeaderboard: TopCustomer[];
@@ -117,7 +117,7 @@ interface AnalyticsStats {
     };
 
     // Tab 5: Buylist Metrics
-    buylistMetrics: {
+    buylistMetrics?: {
         totalCashPayout: number;
         totalCreditPayout: number;
         totalPayout: number;
@@ -127,7 +127,7 @@ interface AnalyticsStats {
     };
 
     // Tab 6: Event Metrics
-    eventMetrics: {
+    eventMetrics?: {
         totalEventRevenue: number;
         totalRegistrations: number;
         eventOccupancy: number;
@@ -224,9 +224,9 @@ export default function AnalyticsPage() {
     }
 
     // Format buylist payout data for donut chart
-    const buylistPieData = stats ? [
-        { name: "Cash Paid", value: stats.buylistMetrics.totalCashPayout },
-        { name: "Credit Issued", value: stats.buylistMetrics.totalCreditPayout }
+    const buylistPieData = stats?.buylistMetrics ? [
+        { name: "Cash Paid", value: stats.buylistMetrics.totalCashPayout || 0 },
+        { name: "Credit Issued", value: stats.buylistMetrics.totalCreditPayout || 0 }
     ].filter(d => d.value > 0) : [];
 
     return (
@@ -317,12 +317,12 @@ export default function AnalyticsPage() {
                                     <DollarSign className="h-4.5 w-4.5 text-purple-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">${stats.grossRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                    <div className="text-3xl font-extrabold">${(stats.grossRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                     <div className="flex items-center gap-1 mt-1 text-xs">
-                                        {stats.revenueGrowth >= 0 ? (
-                                            <span className="text-green-500 font-bold flex items-center"><ArrowUpRight className="w-3.5 h-3.5" />{stats.revenueGrowth.toFixed(1)}%</span>
+                                        {(stats.revenueGrowth || 0) >= 0 ? (
+                                            <span className="text-green-500 font-bold flex items-center"><ArrowUpRight className="w-3.5 h-3.5" />{(stats.revenueGrowth || 0).toFixed(1)}%</span>
                                         ) : (
-                                            <span className="text-red-500 font-bold flex items-center"><ArrowDownRight className="w-3.5 h-3.5" />{stats.revenueGrowth.toFixed(1)}%</span>
+                                            <span className="text-red-500 font-bold flex items-center"><ArrowDownRight className="w-3.5 h-3.5" />{(stats.revenueGrowth || 0).toFixed(1)}%</span>
                                         )}
                                         <span className="text-muted-foreground">vs last period</span>
                                     </div>
@@ -335,7 +335,7 @@ export default function AnalyticsPage() {
                                     <ShoppingBag className="h-4.5 w-4.5 text-blue-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">{stats.orderVolume}</div>
+                                    <div className="text-3xl font-extrabold">{stats.orderVolume || 0}</div>
                                     <p className="text-xs text-muted-foreground mt-1.5">Completed checkout baskets</p>
                                 </CardContent>
                             </Card>
@@ -346,7 +346,7 @@ export default function AnalyticsPage() {
                                     <TrendingUp className="h-4.5 w-4.5 text-emerald-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">${stats.aov.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                    <div className="text-3xl font-extrabold">${(stats.aov || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                     <p className="text-xs text-muted-foreground mt-1.5">Mean checkout cart value</p>
                                 </CardContent>
                             </Card>
@@ -371,7 +371,7 @@ export default function AnalyticsPage() {
                                     <CardDescription>Daily revenue intake compared against transaction checkout volume</CardDescription>
                                 </CardHeader>
                                 <CardContent className="h-[350px]">
-                                    {stats.salesTrend.length === 0 ? (
+                                    {!stats.salesTrend || stats.salesTrend.length === 0 ? (
                                         <div className="h-full flex items-center justify-center text-muted-foreground">No transaction data in selection range.</div>
                                     ) : (
                                         <ResponsiveContainer width="100%" height="100%">
@@ -383,7 +383,7 @@ export default function AnalyticsPage() {
                                                     </linearGradient>
                                                 </defs>
                                                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                                <XAxis dataKey="date" fontSize={11} stroke="#888" tickFormatter={(v) => v.slice(5)} />
+                                                <XAxis dataKey="date" fontSize={11} stroke="#888" tickFormatter={(v) => v ? v.slice(5) : ""} />
                                                 <YAxis yAxisId="left" fontSize={11} stroke="#888" tickFormatter={(v) => `$${v}`} />
                                                 <YAxis yAxisId="right" orientation="right" fontSize={11} stroke="#888" />
                                                 <Tooltip contentStyle={{ background: "#0c0a09", borderColor: "#27272a" }} />
@@ -402,7 +402,7 @@ export default function AnalyticsPage() {
                                     <CardDescription>Order pipeline fulfillment split</CardDescription>
                                 </CardHeader>
                                 <CardContent className="h-[350px] flex items-center justify-center">
-                                    {stats.statusDistribution.length === 0 ? (
+                                    {!stats.statusDistribution || stats.statusDistribution.length === 0 ? (
                                         <div className="text-muted-foreground text-sm">No statuses found.</div>
                                     ) : (
                                         <ResponsiveContainer width="100%" height="100%">
@@ -416,7 +416,7 @@ export default function AnalyticsPage() {
                                                     innerRadius={50}
                                                     outerRadius={80}
                                                     paddingAngle={3}
-                                                    label={({ name, percent }) => `${name.slice(0,6)} (${(percent * 100).toFixed(0)}%)`}
+                                                    label={({ name, percent }) => `${name ? name.slice(0,6) : ""} (${(percent * 100).toFixed(0)}%)`}
                                                     labelLine={false}
                                                 >
                                                     {stats.statusDistribution.map((entry, index) => (
@@ -449,7 +449,7 @@ export default function AnalyticsPage() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {stats.topProducts.length === 0 ? (
+                                            {!stats.topProducts || stats.topProducts.length === 0 ? (
                                                 <TableRow>
                                                     <TableCell colSpan={4} className="text-center text-muted-foreground py-6">No sales recorded.</TableCell>
                                                 </TableRow>
@@ -478,7 +478,7 @@ export default function AnalyticsPage() {
                                     <div>
                                         <span className="text-xs uppercase font-bold text-muted-foreground tracking-widest">Brand/Franchise Share</span>
                                         <div className="h-[120px] mt-2">
-                                            {stats.gameSales.length === 0 ? (
+                                            {!stats.gameSales || stats.gameSales.length === 0 ? (
                                                 <div className="text-xs text-muted-foreground text-center py-6">No brand statistics.</div>
                                             ) : (
                                                 <ResponsiveContainer width="100%" height="100%">
@@ -501,7 +501,7 @@ export default function AnalyticsPage() {
                                     <div>
                                         <span className="text-xs uppercase font-bold text-muted-foreground tracking-widest">Category Share</span>
                                         <div className="h-[120px] mt-2">
-                                            {stats.categorySales.length === 0 ? (
+                                            {!stats.categorySales || stats.categorySales.length === 0 ? (
                                                 <div className="text-xs text-muted-foreground text-center py-6">No category statistics.</div>
                                             ) : (
                                                 <ResponsiveContainer width="100%" height="100%">
@@ -534,7 +534,7 @@ export default function AnalyticsPage() {
                                     <CreditCard className="h-4.5 w-4.5 text-red-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">${stats.financialMetrics.totalCogs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                    <div className="text-3xl font-extrabold">${(stats.financialMetrics?.totalCogs || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                     <p className="text-xs text-muted-foreground mt-1.5">Capital spent purchasing sold items</p>
                                 </CardContent>
                             </Card>
@@ -545,7 +545,7 @@ export default function AnalyticsPage() {
                                     <DollarSign className="h-4.5 w-4.5 text-green-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">${stats.financialMetrics.netProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                    <div className="text-3xl font-extrabold">${(stats.financialMetrics?.netProfit || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                     <p className="text-xs text-muted-foreground mt-1.5">Gross Revenue minus COGS</p>
                                 </CardContent>
                             </Card>
@@ -556,7 +556,7 @@ export default function AnalyticsPage() {
                                     <Percent className="h-4.5 w-4.5 text-emerald-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">{stats.financialMetrics.grossMargin.toFixed(1)}%</div>
+                                    <div className="text-3xl font-extrabold">{(stats.financialMetrics?.grossMargin || 0).toFixed(1)}%</div>
                                     <p className="text-xs text-muted-foreground mt-1.5">Markup profit margin percentage</p>
                                 </CardContent>
                             </Card>
@@ -567,7 +567,7 @@ export default function AnalyticsPage() {
                                     <Scale className="h-4.5 w-4.5 text-amber-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">${stats.financialMetrics.totalStoreCredit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                    <div className="text-3xl font-extrabold">${(stats.financialMetrics?.totalStoreCredit || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                     <p className="text-xs text-muted-foreground mt-1.5">Total outstanding store credit liability</p>
                                 </CardContent>
                             </Card>
@@ -583,11 +583,11 @@ export default function AnalyticsPage() {
                                 <CardContent className="space-y-4 pt-4">
                                     <div className="p-4 border rounded-lg text-center bg-red-50/5 border-red-500/10">
                                         <span className="text-xs text-muted-foreground font-semibold uppercase">Refund Rate</span>
-                                        <div className="text-2xl font-black text-red-500 mt-1">{stats.financialMetrics.refundRate.toFixed(1)}%</div>
+                                        <div className="text-2xl font-black text-red-500 mt-1">{(stats.financialMetrics?.refundRate || 0).toFixed(1)}%</div>
                                     </div>
                                     <div className="p-4 border rounded-lg text-center">
                                         <span className="text-xs text-muted-foreground font-semibold uppercase">Capital Refunded</span>
-                                        <div className="text-2xl font-black mt-1">${stats.financialMetrics.totalRefundedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                        <div className="text-2xl font-black mt-1">${(stats.financialMetrics?.totalRefundedValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -600,7 +600,7 @@ export default function AnalyticsPage() {
                                 </CardHeader>
                                 <CardContent className="h-[250px]">
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={stats.salesTrend}>
+                                        <BarChart data={stats.salesTrend || []}>
                                             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                                             <XAxis dataKey="date" fontSize={9} stroke="#888" />
                                             <YAxis fontSize={9} stroke="#888" tickFormatter={(v) => `$${v}`} />
@@ -623,7 +623,7 @@ export default function AnalyticsPage() {
                                     <DollarSign className="h-4.5 w-4.5 text-purple-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-extrabold">${stats.inventoryValuation.retailValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                    <div className="text-2xl font-extrabold">${(stats.inventoryValuation?.retailValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                     <p className="text-[10px] text-muted-foreground mt-1.5">Potential revenue at current pricing</p>
                                 </CardContent>
                             </Card>
@@ -634,7 +634,7 @@ export default function AnalyticsPage() {
                                     <CreditCard className="h-4.5 w-4.5 text-blue-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-extrabold">${stats.inventoryValuation.costBasis.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                    <div className="text-2xl font-extrabold">${(stats.inventoryValuation?.costBasis || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                     <p className="text-[10px] text-muted-foreground mt-1.5">Capital tied up in stock items</p>
                                 </CardContent>
                             </Card>
@@ -645,7 +645,7 @@ export default function AnalyticsPage() {
                                     <Percent className="h-4.5 w-4.5 text-emerald-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-extrabold">{stats.inventoryValuation.grossMargin.toFixed(1)}%</div>
+                                    <div className="text-2xl font-extrabold">{(stats.inventoryValuation?.grossMargin || 0).toFixed(1)}%</div>
                                     <p className="text-[10px] text-muted-foreground mt-1.5">Avg markup profit margin ratio</p>
                                 </CardContent>
                             </Card>
@@ -656,7 +656,7 @@ export default function AnalyticsPage() {
                                     <AlertTriangle className="h-4.5 w-4.5 text-amber-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-extrabold">{stats.inventoryValuation.lowStockCount} items</div>
+                                    <div className="text-2xl font-extrabold">{stats.inventoryValuation?.lowStockCount || 0} items</div>
                                     <p className="text-[10px] text-muted-foreground mt-1.5">Under safe stock threshold</p>
                                 </CardContent>
                             </Card>
@@ -667,7 +667,7 @@ export default function AnalyticsPage() {
                                     <Activity className="h-4.5 w-4.5 text-pink-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-extrabold">{stats.inventoryValuation.stockTurnover.toFixed(2)}x</div>
+                                    <div className="text-2xl font-extrabold">{(stats.inventoryValuation?.stockTurnover || 0).toFixed(2)}x</div>
                                     <p className="text-[10px] text-muted-foreground mt-1.5">Ratio of inventory turnover speed</p>
                                 </CardContent>
                             </Card>
@@ -695,7 +695,7 @@ export default function AnalyticsPage() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {stats.inventoryMetrics.stockoutRisk.length === 0 ? (
+                                            {!stats.inventoryMetrics?.stockoutRisk || stats.inventoryMetrics.stockoutRisk.length === 0 ? (
                                                 <TableRow>
                                                     <TableCell colSpan={4} className="text-center text-muted-foreground py-6 text-xs">No items currently at stockout risk.</TableCell>
                                                 </TableRow>
@@ -734,7 +734,7 @@ export default function AnalyticsPage() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {stats.inventoryMetrics.deadStock.length === 0 ? (
+                                            {!stats.inventoryMetrics?.deadStock || stats.inventoryMetrics.deadStock.length === 0 ? (
                                                 <TableRow>
                                                     <TableCell colSpan={4} className="text-center text-muted-foreground py-6 text-xs">No dead stock items detected.</TableCell>
                                                 </TableRow>
@@ -761,7 +761,7 @@ export default function AnalyticsPage() {
                                     <CardTitle className="text-lg font-bold">Valuation by Brand</CardTitle>
                                 </CardHeader>
                                 <CardContent className="h-[200px] flex items-center justify-center">
-                                    {stats.inventoryMetrics.inventoryByGame.length === 0 ? (
+                                    {!stats.inventoryMetrics?.inventoryByGame || stats.inventoryMetrics.inventoryByGame.length === 0 ? (
                                         <div className="text-muted-foreground text-sm">No data.</div>
                                     ) : (
                                         <ResponsiveContainer width="100%" height="100%">
@@ -793,7 +793,7 @@ export default function AnalyticsPage() {
                                     <CardTitle className="text-lg font-bold">Valuation by Category</CardTitle>
                                 </CardHeader>
                                 <CardContent className="h-[200px] flex items-center justify-center">
-                                    {stats.inventoryMetrics.inventoryByCategory.length === 0 ? (
+                                    {!stats.inventoryMetrics?.inventoryByCategory || stats.inventoryMetrics.inventoryByCategory.length === 0 ? (
                                         <div className="text-muted-foreground text-sm">No data.</div>
                                     ) : (
                                         <ResponsiveContainer width="100%" height="100%">
@@ -806,7 +806,7 @@ export default function AnalyticsPage() {
                                                     cy="50%"
                                                     outerRadius={65}
                                                     paddingAngle={2}
-                                                    label={({ name }) => name.slice(0,8)}
+                                                    label={({ name }) => name ? name.slice(0,8) : ""}
                                                     labelLine={false}
                                                 >
                                                     {stats.inventoryMetrics.inventoryByCategory.map((entry, idx) => (
@@ -825,7 +825,7 @@ export default function AnalyticsPage() {
                                     <CardTitle className="text-lg font-bold">Quantity by Card Condition</CardTitle>
                                 </CardHeader>
                                 <CardContent className="h-[200px] flex items-center justify-center">
-                                    {stats.inventoryMetrics.inventoryByCondition.length === 0 ? (
+                                    {!stats.inventoryMetrics?.inventoryByCondition || stats.inventoryMetrics.inventoryByCondition.length === 0 ? (
                                         <div className="text-muted-foreground text-sm">No data.</div>
                                     ) : (
                                         <ResponsiveContainer width="100%" height="100%">
@@ -863,7 +863,7 @@ export default function AnalyticsPage() {
                                     <Users className="h-4.5 w-4.5 text-purple-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">{stats.customerMetrics.activeCustomersCount}</div>
+                                    <div className="text-3xl font-extrabold">{stats.customerMetrics?.activeCustomersCount || 0}</div>
                                     <p className="text-xs text-muted-foreground mt-1.5">Customers purchasing in filter window</p>
                                 </CardContent>
                             </Card>
@@ -874,7 +874,7 @@ export default function AnalyticsPage() {
                                     <RefreshCcw className="h-4.5 w-4.5 text-emerald-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">{stats.customerMetrics.repeatCustomerRate.toFixed(1)}%</div>
+                                    <div className="text-3xl font-extrabold">{(stats.customerMetrics?.repeatCustomerRate || 0).toFixed(1)}%</div>
                                     <p className="text-xs text-muted-foreground mt-1.5">Ratio of customers with &gt;= 2 orders</p>
                                 </CardContent>
                             </Card>
@@ -885,7 +885,7 @@ export default function AnalyticsPage() {
                                     <Award className="h-4.5 w-4.5 text-blue-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">${stats.customerMetrics.averageLtv.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                    <div className="text-3xl font-extrabold">${(stats.customerMetrics?.averageLtv || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                     <p className="text-xs text-muted-foreground mt-1.5">Average checkout value accumulated over lifetime</p>
                                 </CardContent>
                             </Card>
@@ -909,7 +909,7 @@ export default function AnalyticsPage() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {stats.customerMetrics.customerLeaderboard.length === 0 ? (
+                                            {!stats.customerMetrics?.customerLeaderboard || stats.customerMetrics.customerLeaderboard.length === 0 ? (
                                                 <TableRow>
                                                     <TableCell colSpan={3} className="text-center text-muted-foreground py-6 text-sm">No spend records.</TableCell>
                                                 </TableRow>
@@ -946,7 +946,7 @@ export default function AnalyticsPage() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {stats.customerMetrics.slippingCustomers.length === 0 ? (
+                                            {!stats.customerMetrics?.slippingCustomers || stats.customerMetrics.slippingCustomers.length === 0 ? (
                                                 <TableRow>
                                                     <TableCell colSpan={3} className="text-center text-muted-foreground py-6 text-sm">No churnalytics alerts.</TableCell>
                                                 </TableRow>
@@ -980,7 +980,7 @@ export default function AnalyticsPage() {
                                     <CreditCard className="h-4.5 w-4.5 text-purple-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">${stats.buylistMetrics.totalPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                    <div className="text-3xl font-extrabold">${(stats.buylistMetrics?.totalPayout || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                     <p className="text-xs text-muted-foreground mt-1.5">Capital spent acquiring cards</p>
                                 </CardContent>
                             </Card>
@@ -991,7 +991,7 @@ export default function AnalyticsPage() {
                                     <DollarSign className="h-4.5 w-4.5 text-blue-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">${stats.buylistMetrics.totalCashPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                    <div className="text-3xl font-extrabold">${(stats.buylistMetrics?.totalCashPayout || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                     <p className="text-xs text-muted-foreground mt-1.5">Cash/Bank capital outflow</p>
                                 </CardContent>
                             </Card>
@@ -1002,7 +1002,7 @@ export default function AnalyticsPage() {
                                     <Scale className="h-4.5 w-4.5 text-emerald-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">${stats.buylistMetrics.totalCreditPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                    <div className="text-3xl font-extrabold">${(stats.buylistMetrics?.totalCreditPayout || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                     <p className="text-xs text-muted-foreground mt-1.5">Outstanding store credit balance liability</p>
                                 </CardContent>
                             </Card>
@@ -1013,7 +1013,7 @@ export default function AnalyticsPage() {
                                     <Activity className="h-4.5 w-4.5 text-amber-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">{stats.buylistMetrics.buylistConversion.toFixed(1)}%</div>
+                                    <div className="text-3xl font-extrabold">{(stats.buylistMetrics?.buylistConversion || 0).toFixed(1)}%</div>
                                     <p className="text-xs text-muted-foreground mt-1.5">Ratio of completed offers vs submissions</p>
                                 </CardContent>
                             </Card>
@@ -1027,7 +1027,7 @@ export default function AnalyticsPage() {
                                     <CardDescription>Daily value of cards acquired through buylist processing</CardDescription>
                                 </CardHeader>
                                 <CardContent className="h-[280px]">
-                                    {stats.buylistMetrics.buylistTrend.length === 0 ? (
+                                    {!stats.buylistMetrics?.buylistTrend || stats.buylistMetrics.buylistTrend.length === 0 ? (
                                         <div className="h-full flex items-center justify-center text-muted-foreground">No intake trends.</div>
                                     ) : (
                                         <ResponsiveContainer width="100%" height="100%">
@@ -1094,7 +1094,7 @@ export default function AnalyticsPage() {
                                     <DollarSign className="h-4.5 w-4.5 text-purple-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">${stats.eventMetrics.totalEventRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                    <div className="text-3xl font-extrabold">${(stats.eventMetrics?.totalEventRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                     <p className="text-xs text-muted-foreground mt-1.5">Sum of entry ticket fees sold</p>
                                 </CardContent>
                             </Card>
@@ -1105,7 +1105,7 @@ export default function AnalyticsPage() {
                                     <Users className="h-4.5 w-4.5 text-blue-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">{stats.eventMetrics.totalRegistrations} players</div>
+                                    <div className="text-3xl font-extrabold">{stats.eventMetrics?.totalRegistrations || 0} players</div>
                                     <p className="text-xs text-muted-foreground mt-1.5">Total players signed up for events</p>
                                 </CardContent>
                             </Card>
@@ -1116,7 +1116,7 @@ export default function AnalyticsPage() {
                                     <Scale className="h-4.5 w-4.5 text-emerald-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">{stats.eventMetrics.eventOccupancy.toFixed(1)}%</div>
+                                    <div className="text-3xl font-extrabold">{(stats.eventMetrics?.eventOccupancy || 0).toFixed(1)}%</div>
                                     <p className="text-xs text-muted-foreground mt-1.5">Percentage of venue spots occupied</p>
                                 </CardContent>
                             </Card>
@@ -1127,7 +1127,7 @@ export default function AnalyticsPage() {
                                     <Activity className="h-4.5 w-4.5 text-amber-500" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-extrabold">{stats.eventMetrics.checkInRatio.toFixed(1)}%</div>
+                                    <div className="text-3xl font-extrabold">{(stats.eventMetrics?.checkInRatio || 0).toFixed(1)}%</div>
                                     <p className="text-xs text-muted-foreground mt-1.5">Percentage of tickets checked-in at store</p>
                                 </CardContent>
                             </Card>
@@ -1142,7 +1142,7 @@ export default function AnalyticsPage() {
                                     <CardDescription>Popularity of card games hosted at store events</CardDescription>
                                 </CardHeader>
                                 <CardContent className="h-[250px] flex items-center justify-center">
-                                    {stats.eventMetrics.eventsByGame.length === 0 ? (
+                                    {!stats.eventMetrics?.eventsByGame || stats.eventMetrics.eventsByGame.length === 0 ? (
                                         <div className="text-muted-foreground text-sm">No events found in this date window.</div>
                                     ) : (
                                         <ResponsiveContainer width="100%" height="100%">
@@ -1178,7 +1178,7 @@ export default function AnalyticsPage() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {stats.eventMetrics.eventPlayerLeaderboard.length === 0 ? (
+                                            {!stats.eventMetrics?.eventPlayerLeaderboard || stats.eventMetrics.eventPlayerLeaderboard.length === 0 ? (
                                                 <TableRow>
                                                     <TableCell colSpan={3} className="text-center text-muted-foreground py-6 text-sm">No player registries recorded.</TableCell>
                                                 </TableRow>
