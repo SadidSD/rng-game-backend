@@ -3,12 +3,15 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto, SignupDto, Role } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
+import { NotificationService } from '../notifications/notification.service';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
     constructor(
         private prisma: PrismaService,
         private jwtService: JwtService,
+        private notificationService: NotificationService,
     ) { }
 
     async signup(dto: SignupDto) {
@@ -76,6 +79,7 @@ export class AuthService {
         if (!store) throw new ConflictException('Store not configured');
 
         const hashedPassword = await bcrypt.hash(dto.password, 10);
+        const verificationToken = crypto.randomBytes(32).toString('hex');
 
         // Force Role = CUSTOMER
         const user = await this.prisma.user.create({
@@ -84,6 +88,8 @@ export class AuthService {
                 password: hashedPassword,
                 role: Role.CUSTOMER,
                 storeId: store.id,
+                isVerified: false,
+                verificationToken: verificationToken,
             },
         });
 
@@ -100,7 +106,10 @@ export class AuthService {
             }
         });
 
-        return this.signToken(user.id, user.email, user.role, user.storeId);
+        // Send verification email
+        await this.notificationService.sendVerificationEmail(user.email, verificationToken);
+
+        return { message: 'Registration successful. Please check your email to verify your account.' };
     }
 
     async login(dto: LoginDto) {
@@ -108,6 +117,10 @@ export class AuthService {
             where: { email: dto.email },
         });
         if (!user) throw new UnauthorizedException('Invalid credentials');
+
+        if (!user.isVerified) {
+            throw new UnauthorizedException('Please verify your email address before logging in.');
+        }
 
         const isMatch = await bcrypt.compare(dto.password, user.password);
         if (!isMatch) throw new UnauthorizedException('Invalid credentials');
@@ -171,5 +184,25 @@ export class AuthService {
         });
 
         return { message: 'Password updated successfully' };
+    }
+
+    async verifyEmail(token: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { verificationToken: token },
+        });
+
+        if (!user) {
+            throw new UnauthorizedException('Invalid or expired verification token');
+        }
+
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                isVerified: true,
+                verificationToken: null,
+            },
+        });
+
+        return { message: 'Email verified successfully' };
     }
 }

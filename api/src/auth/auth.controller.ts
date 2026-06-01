@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Patch, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, UseGuards, Request, Query, BadRequestException } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto, SignupDto, Role } from './dto/auth.dto';
@@ -39,5 +39,13 @@ export class AuthController {
     @UseGuards(JwtAuthGuard)
     async changePassword(@Request() req, @Body() body: { currentPassword: string, newPassword: string }) {
         return this.authService.changePassword(req.user.sub, { oldPassword: body.currentPassword, newPassword: body.newPassword });
+    }
+
+    @Get('verify-email')
+    verifyEmail(@Query('token') token: string) {
+        if (!token) {
+            throw new BadRequestException('Token is required');
+        }
+        return this.authService.verifyEmail(token);
     }
 }

@@ -198,4 +198,35 @@ export class NotificationService {
             this.logger.error(`Failed to send shipping notification: ${error.message}`);
         }
     }
+
+    /**
+     * Send email verification link
+     */
+    async sendVerificationEmail(customerEmail: string, token: string) {
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+        const verificationLink = `${frontendUrl}/verify-email?token=${token}`;
+        const subject = 'Verify your RNG Gamez account';
+        
+        const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #f9f9f9; border-radius: 12px;">
+            <h2 style="color: #111;">Welcome to RNG Gamez! ✨</h2>
+            <p style="color: #555;">Thank you for creating an account. Please verify your email address to complete your registration.</p>
+            <div style="text-align: center; margin: 32px 0;">
+                <a href="${verificationLink}" style="display: inline-block; padding: 14px 32px; background: #6d28d9; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Verify Email</a>
+            </div>
+            <p style="color: #888; font-size: 0.85em;">Or copy and paste this link into your browser:</p>
+            <p style="font-family: monospace; font-size: 0.85em; color: #555; word-break: break-all;">
+                <a href="${verificationLink}" style="color: #6d28d9;">${verificationLink}</a>
+            </p>
+            <hr style="border: none; border-top: 1px solid #eaeaea; margin: 24px 0;" />
+            <p style="color: #888; font-size: 0.85em; text-align: center;">If you didn't create an account, you can safely ignore this email.</p>
+        </div>
+        `;
+
+        try {
+            await this.sendEmail(customerEmail, subject, html);
+        } catch (error: any) {
+            this.logger.error(`Failed to send verification email to ${customerEmail}: ${error.message}`);
+        }
+    }
 }

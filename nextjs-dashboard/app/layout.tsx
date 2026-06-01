@@ -8,8 +8,8 @@ import AuthWatcher from "@/components/auth/AuthWatcher";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: "TCG SaaS Dashboard",
-    description: "Admin dashboard for TCG store owners",
+    title: "RNG Gamez Admin",
+    description: "Admin dashboard for RNG Gamez",
 };
 
 export default function RootLayout({
