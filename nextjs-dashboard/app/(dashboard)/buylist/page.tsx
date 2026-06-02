@@ -110,8 +110,9 @@ export default function BuylistPage() {
         switch (status) {
             case 'PENDING': return 'secondary';
             case 'APPROVED_TO_SEND': return 'default'; // Blue/Black
-            case 'RECEIVED': return 'outline'; // Yellow/Orange ideally
-            case 'COMPLETED': return 'default'; // Green ideally
+            case 'RECEIVED': return 'outline'; // Yellow/Orange
+            case 'APPROVED': return 'secondary'; // Graded & Recieved
+            case 'COMPLETED': return 'default'; // Paid/Finished
             case 'REJECTED': return 'destructive';
             default: return 'outline';
         }
@@ -137,7 +138,7 @@ export default function BuylistPage() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
                 <Card>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
@@ -165,6 +166,16 @@ export default function BuylistPage() {
                     <CardContent>
                         <div className="text-2xl font-bold">
                             {offers.filter(o => o.status === 'RECEIVED').length}
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">Approved (Unpaid)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">
+                            {offers.filter(o => o.status === 'APPROVED').length}
                         </div>
                     </CardContent>
                 </Card>
@@ -249,8 +260,13 @@ export default function BuylistPage() {
                                                     </Button>
                                                 )}
                                                 {offer.status === 'RECEIVED' && (
-                                                    <Button size="sm" className="bg-purple-600 hover:bg-purple-700" onClick={() => updateStatus(offer.id, 'COMPLETED')}>
-                                                        <DollarSign className="w-4 h-4 mr-1" /> Finalize & Pay
+                                                    <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => updateStatus(offer.id, 'APPROVED')}>
+                                                        <CheckCircle className="w-4 h-4 mr-1" /> Approve & Add to Inventory
+                                                    </Button>
+                                                )}
+                                                {offer.status === 'APPROVED' && (
+                                                    <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => updateStatus(offer.id, 'COMPLETED')}>
+                                                        <DollarSign className="w-4 h-4 mr-1" /> Disburse Store Credit
                                                     </Button>
                                                 )}
                                                 {offer.status === 'COMPLETED' && (

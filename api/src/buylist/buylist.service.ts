@@ -182,6 +182,84 @@ export class BuylistService {
             data: { status: dto.status }
         });
 
+        // Loop: If APPROVED, add items to inventory
+        if (dto.status === 'APPROVED') {
+            const offerWithItems = await this.prisma.buylistOffer.findUnique({
+                where: { id: offerId },
+                include: { items: true }
+            });
+            if (offerWithItems && offerWithItems.items) {
+                for (const item of offerWithItems.items) {
+                    let product = await this.prisma.product.findFirst({
+                        where: {
+                            storeId,
+                            name: item.cardName,
+                            set: item.setName || undefined
+                        }
+                    });
+
+                    if (!product) {
+                        product = await this.prisma.product.findFirst({
+                            where: {
+                                storeId,
+                                name: item.cardName
+                            }
+                        });
+                    }
+
+                    if (!product) {
+                        console.warn(`[Buylist] Product not found in catalog for card: ${item.cardName} (${item.setName})`);
+                        continue;
+                    }
+
+                    const mapConditionToEnum = (cond: string): 'NM' | 'LP' | 'MP' | 'HP' | 'DAMAGED' => {
+                        const clean = cond.trim().toLowerCase();
+                        if (clean === 'near mint' || clean === 'nm') return 'NM';
+                        if (clean === 'lightly played' || clean === 'lp') return 'LP';
+                        if (clean === 'moderately played' || clean === 'mp') return 'MP';
+                        if (clean === 'heavily played' || clean === 'hp') return 'HP';
+                        return 'DAMAGED';
+                    };
+                    const mappedCond = mapConditionToEnum(item.condition);
+
+                    let variant = await this.prisma.productVariant.findFirst({
+                        where: {
+                            productId: product.id,
+                            condition: mappedCond,
+                            isFoil: item.isFoil
+                        }
+                    });
+
+                    if (!variant) {
+                        variant = await this.prisma.productVariant.create({
+                            data: {
+                                productId: product.id,
+                                sku: `SKU-${product.id}-${mappedCond}-${item.isFoil ? 'FOIL' : 'NONFOIL'}`,
+                                condition: mappedCond,
+                                isFoil: item.isFoil,
+                                price: product.price || 0.99,
+                                storeId
+                            }
+                        });
+                    }
+
+                    await this.prisma.inventoryItem.upsert({
+                        where: { variantId: variant.id },
+                        update: {
+                            quantity: { increment: item.quantity }
+                        },
+                        create: {
+                            variantId: variant.id,
+                            quantity: item.quantity,
+                            storeId
+                        }
+                    });
+
+                    console.log(`[Buylist] Inventory updated for ${product.name} (${mappedCond}): +${item.quantity}`);
+                }
+            }
+        }
+
         // Loop: If COMPLETED, issue credit
         if (dto.status === 'COMPLETED') {
             await this.finalizeOfferCredit(storeId, offer);
