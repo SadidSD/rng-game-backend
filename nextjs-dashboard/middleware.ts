@@ -5,17 +5,26 @@ export function middleware(request: NextRequest) {
     const token = request.cookies.get('tcg-auth-token')?.value
 
     // Define protected paths
-    const isLoginPage = request.nextUrl.pathname.startsWith('/login')
-    const isDashboard = !isLoginPage && !request.nextUrl.pathname.startsWith('/_next') && !request.nextUrl.pathname.startsWith('/api') && !request.nextUrl.pathname.startsWith('/static') && !request.nextUrl.pathname.includes('.');
+    const { pathname } = request.nextUrl
+    const isLoginPage = pathname.startsWith('/login')
+    const isDashboard = !isLoginPage && 
+                        !pathname.startsWith('/_next') && 
+                        !pathname.startsWith('/api') && 
+                        !pathname.startsWith('/static') && 
+                        !pathname.includes('.');
 
-    // 1. If trying to access login page while logged in, redirect to dashboard
+    // 1. If trying to access login page while logged in, redirect to dashboard root
     if (isLoginPage && token) {
-        return NextResponse.redirect(new URL('/', request.url))
+        const url = request.nextUrl.clone()
+        url.pathname = '/'
+        return NextResponse.redirect(url)
     }
 
     // 2. If trying to access dashboard/protected pages while logged out, redirect to login
     if (isDashboard && !token) {
-        return NextResponse.redirect(new URL('/login', request.url))
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
+        return NextResponse.redirect(url)
     }
 
     return NextResponse.next()
