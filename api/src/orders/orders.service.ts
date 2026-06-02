@@ -256,6 +256,30 @@ export class OrdersService {
                 itemCount: order.items.length,
             }).catch(err => this.logger.error(`Failed to send notification: ${err.message}`));
 
+            // Send customer confirmation email
+            if (order.customer?.email) {
+                await this.notificationService.sendOrderConfirmationEmail(
+                    order.customer.email,
+                    {
+                        orderId: updatedOrder.id,
+                        total: Number(updatedOrder.total),
+                        items: order.items.map(item => ({
+                            productName: item.productName,
+                            quantity: item.quantity,
+                            price: item.price,
+                        })),
+                        shippingAddress: {
+                            name: updatedOrder.shippingName || ((order.customer.firstName || '') + ' ' + (order.customer.lastName || '')).trim() || 'Valued Customer',
+                            address: updatedOrder.shippingAddress || '',
+                            city: updatedOrder.shippingCity || '',
+                            state: updatedOrder.shippingState || '',
+                            zip: updatedOrder.shippingZip || '',
+                            country: updatedOrder.shippingCountry || '',
+                        }
+                    }
+                ).catch(err => this.logger.error(`Failed to send customer confirmation email: ${err.message}`));
+            }
+
             return updatedOrder;
         });
     }
@@ -311,6 +335,20 @@ export class OrdersService {
 
             this.logger.info(`Inventory rolled back for order ${orderId}`);
             return updatedOrder;
+        });
+    }
+
+    /**
+     * Cancel an order if the Stripe checkout session expired
+     */
+    async cancelExpiredOrder(orderId: string) {
+        this.logger.warn(`Cancelling expired checkout session for order ${orderId}`);
+        return this.prisma.order.update({
+            where: { id: orderId },
+            data: {
+                status: 'CANCELLED',
+                paymentStatus: 'FAILED',
+            }
         });
     }
 

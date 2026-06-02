@@ -70,7 +70,7 @@ export class PaymentsController {
 
                 if (expiredOrderId) {
                     this.logger.warn(`Checkout session expired for order: ${expiredOrderId}`);
-                    // Mark order as cancelled (but don't rollback since inventory was never deducted)
+                    await this.ordersService.cancelExpiredOrder(expiredOrderId);
                 }
                 break;
 
