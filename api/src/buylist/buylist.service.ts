@@ -37,16 +37,11 @@ export class BuylistService {
         });
     }
 
-    async calculateCardBuylistPrice(storeId: string, product: any) {
+    calculateCardBuylistPrice(product: any, rules: any[]) {
         if (!product.price) {
             return { cashPrice: 0, creditPrice: 0 };
         }
         const retailPrice = Number(product.price);
-
-        // Fetch all store rules
-        const rules = await this.prisma.buylistRule.findMany({
-            where: { storeId }
-        });
 
         // Try to find the most specific matching rule
         let bestRule: any = null;
@@ -107,8 +102,10 @@ export class BuylistService {
             orderBy: { createdAt: 'desc' }
         });
 
-        return Promise.all(products.map(async p => {
-            const pricing = await this.calculateCardBuylistPrice(storeId, p);
+        const rules = await this.prisma.buylistRule.findMany({ where: { storeId } });
+
+        return products.map(p => {
+            const pricing = this.calculateCardBuylistPrice(p, rules);
             return {
                 id: p.id,
                 name: p.name,
@@ -117,7 +114,7 @@ export class BuylistService {
                 image: p.images[0] || '',
                 basePrice: pricing.cashPrice
             };
-        }));
+        });
     }
 
     async searchBuylist(storeId: string, query: string) {
@@ -130,8 +127,10 @@ export class BuylistService {
             take: 20
         });
 
-        const mappedLocal = await Promise.all(localResults.map(async p => {
-            const pricing = await this.calculateCardBuylistPrice(storeId, p);
+        const rules = await this.prisma.buylistRule.findMany({ where: { storeId } });
+
+        const mappedLocal = localResults.map(p => {
+            const pricing = this.calculateCardBuylistPrice(p, rules);
             return {
                 id: p.id,
                 name: p.name,
@@ -140,17 +139,17 @@ export class BuylistService {
                 image: p.images[0] || '',
                 basePrice: pricing.cashPrice
             };
-        }));
+        });
 
         // Search Scryfall remote cards
         const remoteResults = await this.scryfallService.searchCards(query);
-        const mappedRemote = await Promise.all(remoteResults.map(async card => {
-            const pricing = await this.calculateCardBuylistPrice(storeId, {
+        const mappedRemote = remoteResults.map(card => {
+            const pricing = this.calculateCardBuylistPrice({
                 price: card.price,
                 game: 'MTG',
                 set: card.set,
                 rarity: card.rarity
-            });
+            }, rules);
 
             return {
                 id: card.id,
@@ -161,7 +160,7 @@ export class BuylistService {
                 basePrice: pricing.cashPrice,
                 isRemote: true
             };
-        }));
+        });
 
         return {
             source: 'hybrid',
@@ -172,6 +171,7 @@ export class BuylistService {
 
     async searchBuylistBulk(storeId: string, cards: { name: string, set?: string }[]) {
         const results: any[] = [];
+        const rules = await this.prisma.buylistRule.findMany({ where: { storeId } });
 
         for (const item of cards) {
             if (!item.name || !item.name.trim()) continue;
@@ -196,7 +196,7 @@ export class BuylistService {
                 });
 
                 const bestProduct = matchedProducts[0];
-                const pricing = await this.calculateCardBuylistPrice(storeId, bestProduct);
+                const pricing = this.calculateCardBuylistPrice(bestProduct, rules);
 
                 results.push({
                     cardName: item.name,
@@ -215,12 +215,12 @@ export class BuylistService {
                 // Not found locally: check Scryfall by card name
                 const sCard = await this.scryfallService.searchCardByName(item.name);
                 if (sCard) {
-                    const pricing = await this.calculateCardBuylistPrice(storeId, {
+                    const pricing = this.calculateCardBuylistPrice({
                         price: sCard.price,
                         game: 'MTG',
                         set: sCard.set,
                         rarity: sCard.rarity
-                    });
+                    }, rules);
 
                     results.push({
                         cardName: item.name,
