@@ -21,6 +21,78 @@ export class BuylistService {
         });
     }
 
+    async deleteRule(storeId: string, ruleId: string) {
+        const rule = await this.prisma.buylistRule.findUnique({
+            where: { id: ruleId }
+        });
+        if (!rule || rule.storeId !== storeId) {
+            throw new NotFoundException('Rule not found');
+        }
+        return this.prisma.buylistRule.delete({
+            where: { id: ruleId }
+        });
+    }
+
+    async calculateCardBuylistPrice(storeId: string, product: any) {
+        if (!product.price) {
+            return { cashPrice: 0, creditPrice: 0 };
+        }
+        const retailPrice = Number(product.price);
+
+        // Fetch all store rules
+        const rules = await this.prisma.buylistRule.findMany({
+            where: { storeId }
+        });
+
+        // Try to find the most specific matching rule
+        let bestRule: any = null;
+        let bestScore = 0; // Precedence score
+
+        for (const rule of rules) {
+            if (rule.game.toLowerCase() !== (product.game || '').toLowerCase()) {
+                continue;
+            }
+
+            let score = 1;
+
+            if (rule.set) {
+                if (product.set && product.set.toLowerCase() === rule.set.toLowerCase()) {
+                    score += 2;
+                } else {
+                    continue;
+                }
+            }
+
+            if (rule.rarity) {
+                if (product.rarity && product.rarity.toLowerCase() === rule.rarity.toLowerCase()) {
+                    score += 1;
+                } else {
+                    continue;
+                }
+            }
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestRule = rule;
+            }
+        }
+
+        let cashPercentage = 0.50; // Default cash is 50%
+        if (bestRule) {
+            cashPercentage = Number(bestRule.buyPercentage) / 100;
+        }
+
+        const creditPercentage = cashPercentage * 1.3;
+
+        const cashPrice = retailPrice * cashPercentage;
+        const creditPrice = retailPrice * creditPercentage;
+
+        return {
+            cashPrice: Number(cashPrice.toFixed(2)),
+            creditPrice: Number(creditPrice.toFixed(2))
+        };
+    }
+
     async getFeaturedCards(storeId: string) {
         const products = await this.prisma.product.findMany({
             where: { 
@@ -31,18 +103,20 @@ export class BuylistService {
             orderBy: { createdAt: 'desc' }
         });
 
-        return products.map(p => ({
-            id: p.id,
-            name: p.name,
-            set: p.set || 'Unknown Set',
-            game: p.game || 'TCG',
-            image: p.images[0] || '',
-            basePrice: p.price ? Number(p.price) * 0.5 : 0 // Mock buy price at 50% of retail
+        return Promise.all(products.map(async p => {
+            const pricing = await this.calculateCardBuylistPrice(storeId, p);
+            return {
+                id: p.id,
+                name: p.name,
+                set: p.set || 'Unknown Set',
+                game: p.game || 'TCG',
+                image: p.images[0] || '',
+                basePrice: pricing.cashPrice
+            };
         }));
     }
 
     async searchBuylist(storeId: string, query: string) {
-        // 1. Search Local Products (Singles only)
         const localResults = await this.prisma.product.findMany({
             where: {
                 storeId,
@@ -52,22 +126,22 @@ export class BuylistService {
             take: 20
         });
 
-        const mappedLocal = localResults.map(p => ({
-            id: p.id,
-            name: p.name,
-            set: p.set || 'Unknown Set',
-            game: p.game || 'TCG',
-            image: p.images[0] || '',
-            basePrice: p.price ? Number(p.price) * 0.5 : 0 // Mock buy price at 50% of retail
+        const mappedLocal = await Promise.all(localResults.map(async p => {
+            const pricing = await this.calculateCardBuylistPrice(storeId, p);
+            return {
+                id: p.id,
+                name: p.name,
+                set: p.set || 'Unknown Set',
+                game: p.game || 'TCG',
+                image: p.images[0] || '',
+                basePrice: pricing.cashPrice
+            };
         }));
-
-        // 2. Search Remote (Pokemon TCG) if local results are insufficient (e.g. < 5) OR always?
-        // Returning local for now, will add remote in next step after wiring Module.
 
         return {
             source: 'hybrid',
             local: mappedLocal,
-            remote: [] // Placeholder
+            remote: []
         };
     }
 
@@ -88,7 +162,6 @@ export class BuylistService {
             });
 
             if (matchedProducts.length > 0) {
-                // Prioritize exact match, then closest length match
                 matchedProducts.sort((a, b) => {
                     const aExact = a.name.toLowerCase() === item.name.toLowerCase();
                     const bExact = b.name.toLowerCase() === item.name.toLowerCase();
@@ -98,6 +171,8 @@ export class BuylistService {
                 });
 
                 const bestProduct = matchedProducts[0];
+                const pricing = await this.calculateCardBuylistPrice(storeId, bestProduct);
+
                 results.push({
                     cardName: item.name,
                     matchedCard: {
@@ -106,8 +181,8 @@ export class BuylistService {
                         set: bestProduct.set || 'Unknown Set',
                         game: bestProduct.game || 'TCG',
                         image: bestProduct.images[0] || '',
-                        cashPrice: bestProduct.price ? Number(bestProduct.price) * 0.5 : 0,
-                        creditPrice: bestProduct.price ? Number(bestProduct.price) * 0.65 : 0
+                        cashPrice: pricing.cashPrice,
+                        creditPrice: pricing.creditPrice
                     },
                     confidence: bestProduct.name.toLowerCase() === item.name.toLowerCase() ? 1.0 : 0.8
                 });

@@ -51,6 +51,11 @@ export default function BuylistPage() {
     const [viewingItems, setViewingItems] = useState<any[] | null>(null);
     const [isFetchingImages, setIsFetchingImages] = useState(false);
 
+    // Pricing Rules State
+    const [rules, setRules] = useState<any[]>([]);
+    const [rulesLoading, setRulesLoading] = useState(true);
+    const [newRule, setNewRule] = useState({ game: 'Pokemon', set: '', rarity: '', buyPercentage: 65 });
+
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
     const fetchOffers = async () => {
@@ -69,6 +74,21 @@ export default function BuylistPage() {
             console.error("Failed to fetch offers:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchRules = async () => {
+        try {
+            const token = Cookies.get('tcg-auth-token');
+            if (!token) return;
+            const res = await axios.get(`${API_URL}/buylist/rules`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setRules(res.data);
+        } catch (error) {
+            console.error("Failed to fetch rules:", error);
+        } finally {
+            setRulesLoading(false);
         }
     };
 
@@ -102,8 +122,43 @@ export default function BuylistPage() {
         }
     };
 
+    const handleAddRule = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const token = Cookies.get('tcg-auth-token');
+            await axios.post(`${API_URL}/buylist/rules`, {
+                game: newRule.game,
+                set: newRule.set || undefined,
+                rarity: newRule.rarity || undefined,
+                buyPercentage: Number(newRule.buyPercentage)
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setNewRule({ game: 'Pokemon', set: '', rarity: '', buyPercentage: 65 });
+            fetchRules();
+        } catch (error) {
+            console.error("Failed to add rule:", error);
+            alert("Failed to add rule");
+        }
+    };
+
+    const handleDeleteRule = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this pricing rule?")) return;
+        try {
+            const token = Cookies.get('tcg-auth-token');
+            await axios.delete(`${API_URL}/buylist/rules/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            fetchRules();
+        } catch (error) {
+            console.error("Failed to delete rule:", error);
+            alert("Failed to delete rule");
+        }
+    };
+
     useEffect(() => {
         fetchOffers();
+        fetchRules();
     }, []);
 
     const getStatusVariant = (status: string) => {
@@ -137,152 +192,270 @@ export default function BuylistPage() {
                 </Button>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid gap-4 md:grid-cols-4">
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {offers.filter(o => o.status === 'PENDING').length}
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Incoming (Approved)</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {offers.filter(o => o.status === 'APPROVED_TO_SEND').length}
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Ready to Grade</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {offers.filter(o => o.status === 'RECEIVED').length}
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Approved (Unpaid)</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {offers.filter(o => o.status === 'APPROVED').length}
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+            <Tabs defaultValue="offers" className="w-full">
+                <TabsList className="mb-4">
+                    <TabsTrigger value="offers">Offers</TabsTrigger>
+                    <TabsTrigger value="rules">Pricing Rules</TabsTrigger>
+                </TabsList>
 
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle>Offers</CardTitle>
-                        <div className="relative w-[300px]">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search by name or ID..."
-                                className="pl-8"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
+                <TabsContent value="offers" className="space-y-6">
+                    {/* KPI Cards */}
+                    <div className="grid gap-4 md:grid-cols-4">
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">
+                                    {offers.filter(o => o.status === 'PENDING').length}
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium">Incoming (Approved)</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">
+                                    {offers.filter(o => o.status === 'APPROVED_TO_SEND').length}
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium">Ready to Grade</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">
+                                    {offers.filter(o => o.status === 'RECEIVED').length}
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium">Approved (Unpaid)</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">
+                                    {offers.filter(o => o.status === 'APPROVED').length}
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>ID</TableHead>
-                                <TableHead>Customer</TableHead>
-                                <TableHead>Items</TableHead>
-                                <TableHead>Credit Value</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {loading ? (
-                                <TableRow>
-                                    <TableCell colSpan={7} className="text-center py-8">Loading...</TableCell>
-                                </TableRow>
-                            ) : filteredOffers.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={7} className="text-center py-8">No offers found.</TableCell>
-                                </TableRow>
-                            ) : (
-                                filteredOffers.map((offer) => (
-                                    <TableRow key={offer.id}>
-                                        <TableCell className="font-mono text-xs">{offer.id.slice(0, 8)}</TableCell>
-                                        <TableCell>
-                                            <div className="font-medium">{offer.customerName}</div>
-                                            <div className="text-xs text-muted-foreground">{offer.customerEmail}</div>
-                                        </TableCell>
-                                        <TableCell>{offer.items?.length || 0} cards</TableCell>
-                                        <TableCell className="font-bold text-purple-600">
-                                            ${Number(offer.totalCredit).toFixed(2)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant={getStatusVariant(offer.status)}>{offer.status}</Badge>
-                                        </TableCell>
-                                        <TableCell className="text-xs text-muted-foreground">
-                                            {new Date(offer.createdAt).toLocaleDateString()}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex gap-2">
-                                                <Button size="sm" variant="outline" onClick={() => setViewingItems(offer.items)}>
-                                                    <Eye className="w-4 h-4 mr-1" /> View Cards
-                                                </Button>
-                                                <Button size="sm" variant="outline" onClick={() => handleViewImages(offer.id)}>
-                                                    <ImageIcon className="w-4 h-4 mr-1" /> Images
-                                                </Button>
-                                                {offer.status === 'PENDING' && (
-                                                    <>
-                                                        <Button size="sm" onClick={() => updateStatus(offer.id, 'APPROVED_TO_SEND')}>
-                                                            <CheckCircle className="w-4 h-4 mr-1" /> Approve
-                                                        </Button>
-                                                        <Button size="sm" variant="destructive" onClick={() => updateStatus(offer.id, 'REJECTED')}>
-                                                            Reject
-                                                        </Button>
-                                                    </>
-                                                )}
-                                                {offer.status === 'APPROVED_TO_SEND' && (
-                                                    <Button size="sm" variant="secondary" onClick={() => updateStatus(offer.id, 'RECEIVED')}>
-                                                        <Package className="w-4 h-4 mr-1" /> Mark Received
-                                                    </Button>
-                                                )}
-                                                {offer.status === 'RECEIVED' && (
-                                                    <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => updateStatus(offer.id, 'APPROVED')}>
-                                                        <CheckCircle className="w-4 h-4 mr-1" /> Approve & Add to Inventory
-                                                    </Button>
-                                                )}
-                                                {offer.status === 'APPROVED' && (
-                                                    <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => updateStatus(offer.id, 'COMPLETED')}>
-                                                        <DollarSign className="w-4 h-4 mr-1" /> Disburse Store Credit
-                                                    </Button>
-                                                )}
-                                                {offer.status === 'COMPLETED' && (
-                                                    <span className="text-xs text-green-600 font-medium flex items-center">
-                                                        <CheckCircle className="w-3 h-3 mr-1" /> Paid
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </TableCell>
+
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <CardTitle>Offers</CardTitle>
+                                <div className="relative w-[300px]">
+                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Search by name or ID..."
+                                        className="pl-8"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>ID</TableHead>
+                                        <TableHead>Customer</TableHead>
+                                        <TableHead>Items</TableHead>
+                                        <TableHead>Credit Value</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Actions</TableHead>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                                </TableHeader>
+                                <TableBody>
+                                    {loading ? (
+                                        <TableRow>
+                                            <TableCell colSpan={7} className="text-center py-8">Loading...</TableCell>
+                                        </TableRow>
+                                    ) : filteredOffers.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={7} className="text-center py-8">No offers found.</TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        filteredOffers.map((offer) => (
+                                            <TableRow key={offer.id}>
+                                                <TableCell className="font-mono text-xs">{offer.id.slice(0, 8)}</TableCell>
+                                                <TableCell>
+                                                    <div className="font-medium">{offer.customerName}</div>
+                                                    <div className="text-xs text-muted-foreground">{offer.customerEmail}</div>
+                                                </TableCell>
+                                                <TableCell>{offer.items?.length || 0} cards</TableCell>
+                                                <TableCell className="font-bold text-purple-600">
+                                                    ${Number(offer.totalCredit).toFixed(2)}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant={getStatusVariant(offer.status)}>{offer.status}</Badge>
+                                                </TableCell>
+                                                <TableCell className="text-xs text-muted-foreground">
+                                                    {new Date(offer.createdAt).toLocaleDateString()}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex gap-2">
+                                                        <Button size="sm" variant="outline" onClick={() => setViewingItems(offer.items)}>
+                                                            <Eye className="w-4 h-4 mr-1" /> View Cards
+                                                        </Button>
+                                                        <Button size="sm" variant="outline" onClick={() => handleViewImages(offer.id)}>
+                                                            <ImageIcon className="w-4 h-4 mr-1" /> Images
+                                                        </Button>
+                                                        {offer.status === 'PENDING' && (
+                                                            <>
+                                                                <Button size="sm" onClick={() => updateStatus(offer.id, 'APPROVED_TO_SEND')}>
+                                                                    <CheckCircle className="w-4 h-4 mr-1" /> Approve
+                                                                </Button>
+                                                                <Button size="sm" variant="destructive" onClick={() => updateStatus(offer.id, 'REJECTED')}>
+                                                                    Reject
+                                                                </Button>
+                                                            </>
+                                                        )}
+                                                        {offer.status === 'APPROVED_TO_SEND' && (
+                                                            <Button size="sm" variant="secondary" onClick={() => updateStatus(offer.id, 'RECEIVED')}>
+                                                                <Package className="w-4 h-4 mr-1" /> Mark Received
+                                                            </Button>
+                                                        )}
+                                                        {offer.status === 'RECEIVED' && (
+                                                            <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => updateStatus(offer.id, 'APPROVED')}>
+                                                                <CheckCircle className="w-4 h-4 mr-1" /> Approve & Add to Inventory
+                                                            </Button>
+                                                        )}
+                                                        {offer.status === 'APPROVED' && (
+                                                            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => updateStatus(offer.id, 'COMPLETED')}>
+                                                                <DollarSign className="w-4 h-4 mr-1" /> Disburse Store Credit
+                                                            </Button>
+                                                        )}
+                                                        {offer.status === 'COMPLETED' && (
+                                                            <span className="text-xs text-green-600 font-medium flex items-center">
+                                                                <CheckCircle className="w-3 h-3 mr-1" /> Paid
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="rules" className="space-y-6">
+                    <div className="grid gap-6 md:grid-cols-3">
+                        <Card className="md:col-span-2">
+                            <CardHeader>
+                                <CardTitle>Active Pricing Rules</CardTitle>
+                                <CardDescription>
+                                    Configured payout percentages. The system uses these to price cards dynamically.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Game</TableHead>
+                                            <TableHead>Set</TableHead>
+                                            <TableHead>Rarity</TableHead>
+                                            <TableHead>Buy %</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {rulesLoading ? (
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="text-center py-8">Loading rules...</TableCell>
+                                            </TableRow>
+                                        ) : rules.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="text-center py-8">No pricing rules configured.</TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            rules.map((rule) => (
+                                                <TableRow key={rule.id}>
+                                                    <TableCell className="font-semibold">{rule.game}</TableCell>
+                                                    <TableCell>{rule.set || 'Any Set'}</TableCell>
+                                                    <TableCell>{rule.rarity || 'Any Rarity'}</TableCell>
+                                                    <TableCell className="font-bold text-purple-600">
+                                                        {rule.buyPercentage}%
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button size="sm" variant="destructive" onClick={() => handleDeleteRule(rule.id)}>
+                                                            Delete
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Create Pricing Rule</CardTitle>
+                                <CardDescription>Define a new card pricing rule.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <form onSubmit={handleAddRule} className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Game</label>
+                                        <select 
+                                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                            value={newRule.game}
+                                            onChange={(e) => setNewRule({ ...newRule, game: e.target.value })}
+                                        >
+                                            <option value="Pokemon">Pokemon</option>
+                                            <option value="MTG">Magic: The Gathering</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Set (Optional)</label>
+                                        <Input
+                                            placeholder="e.g. Base Set, Alpha Edition"
+                                            value={newRule.set}
+                                            onChange={(e) => setNewRule({ ...newRule, set: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Rarity (Optional)</label>
+                                        <Input
+                                            placeholder="e.g. Rare, Common, Holographic"
+                                            value={newRule.rarity}
+                                            onChange={(e) => setNewRule({ ...newRule, rarity: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Buy Percentage (%)</label>
+                                        <Input
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            required
+                                            placeholder="65"
+                                            value={newRule.buyPercentage}
+                                            onChange={(e) => setNewRule({ ...newRule, buyPercentage: Number(e.target.value) })}
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            The cash buy price will be calculated as this % of retail. Store credit will get an additional 30% bonus.
+                                        </p>
+                                    </div>
+                                    <Button type="submit" className="w-full">
+                                        Create Rule
+                                    </Button>
+                                </form>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </TabsContent>
+            </Tabs>
 
             {/* Items Viewer Modal */}
             {viewingItems && (

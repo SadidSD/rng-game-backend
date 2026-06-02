@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query, BadRequestException } from '@nestjs/common';
 import { BuylistService } from './buylist.service';
 import { CreateBuylistRuleDto, CreateBuylistOfferDto, UpdateOfferStatusDto } from './dto/buylist.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -18,6 +18,13 @@ export class BuylistController {
     @Roles(Role.ADMIN)
     createRule(@Request() req, @Body() dto: CreateBuylistRuleDto) {
         return this.buylistService.createRule(req.user.storeId, dto);
+    }
+
+    @Delete('rules/:id')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
+    deleteRule(@Request() req, @Param('id') id: string) {
+        return this.buylistService.deleteRule(req.user.storeId, id);
     }
 
     @Get('rules')
