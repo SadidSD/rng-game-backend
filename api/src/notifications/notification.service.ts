@@ -229,4 +229,32 @@ export class NotificationService {
             this.logger.error(`Failed to send verification email to ${customerEmail}: ${error.message}`);
         }
     }
+
+    /**
+     * Send welcome email after email verification
+     */
+    async sendWelcomeEmail(customerEmail: string, firstName?: string) {
+        const subject = 'Welcome to RNG Gamez!';
+        const nameGreeting = firstName ? `, ${firstName}` : '';
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://www.rng-gamez.com';
+        const loginUrl = `${frontendUrl}/login`;
+        
+        const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #f9f9f9; border-radius: 12px;">
+            <h2 style="color: #111;">Welcome to RNG Gamez${nameGreeting}! 🎉</h2>
+            <p style="color: #555;">Your email has been verified successfully, and your account is now fully active.</p>
+            <p style="color: #555;">You can now log in to your account, purchase trading cards, check store credit, and track your orders.</p>
+            <div style="text-align: center; margin: 32px 0;">
+                <a href="${loginUrl}" style="display: inline-block; padding: 14px 32px; background: #6d28d9; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Go to Login</a>
+            </div>
+            <p style="color: #888; font-size: 0.85em; text-align: center;">Thank you for choosing RNG Gamez!</p>
+        </div>
+        `;
+
+        try {
+            await this.sendEmail(customerEmail, subject, html);
+        } catch (error: any) {
+            this.logger.error(`Failed to send welcome email to ${customerEmail}: ${error.message}`);
+        }
+    }
 }

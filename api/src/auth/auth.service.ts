@@ -203,6 +203,13 @@ export class AuthService {
             },
         });
 
+        // Fetch customer profile to get the user's name for greeting
+        const customer = await this.prisma.customer.findFirst({
+            where: { email: user.email, storeId: user.storeId }
+        });
+        
+        await this.notificationService.sendWelcomeEmail(user.email, customer?.firstName || '');
+
         return { message: 'Email verified successfully' };
     }
 }
