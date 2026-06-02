@@ -6,7 +6,8 @@ export { Role };
 export class SignupDto {
     @IsString()
     @IsNotEmpty()
-    storeName: string;
+    @IsOptional()
+    storeName?: string;
 
     @IsEmail()
     email: string;
