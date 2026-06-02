@@ -55,8 +55,8 @@ export class ScryfallService {
     }
 
     async searchCards(query: string) {
-        // Scryfall search: return a list of matches (capped at 20 for search results speed)
-        const url = `${this.baseUrl}/cards/search?q=${encodeURIComponent(query)}`;
+        // Scryfall search: return a list of matches including all prints (capped at 50)
+        const url = `${this.baseUrl}/cards/search?q=${encodeURIComponent(query)}&unique=prints`;
 
         try {
             console.log(`[Scryfall] Searching query: ${query}`);
@@ -66,7 +66,7 @@ export class ScryfallService {
             });
 
             const cards = response.data.data || [];
-            return cards.slice(0, 20).map((c: any) => this.normalizeCard(c));
+            return cards.slice(0, 50).map((c: any) => this.normalizeCard(c));
         } catch (error) {
             console.error(`[Scryfall] Error searching query "${query}":`, error.message);
             return [];
