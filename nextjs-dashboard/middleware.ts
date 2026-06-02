@@ -13,17 +13,19 @@ export function middleware(request: NextRequest) {
                         !pathname.startsWith('/static') && 
                         !pathname.includes('.');
 
+    // Construct the absolute URL using the request headers to prevent domain translation by Vercel's proxy
+    const host = request.headers.get('host') || request.nextUrl.host
+    const protocol = request.nextUrl.protocol || 'https:'
+
     // 1. If trying to access login page while logged in, redirect to dashboard root
     if (isLoginPage && token) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/'
+        const url = new URL('/', `${protocol}//${host}`)
         return NextResponse.redirect(url)
     }
 
     // 2. If trying to access dashboard/protected pages while logged out, redirect to login
     if (isDashboard && !token) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/login'
+        const url = new URL('/login', `${protocol}//${host}`)
         return NextResponse.redirect(url)
     }
 
