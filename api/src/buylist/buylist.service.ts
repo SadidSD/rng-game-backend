@@ -71,17 +71,18 @@ export class BuylistService {
         };
     }
 
-    async searchBuylistBulk(storeId: string, names: string[]) {
+    async searchBuylistBulk(storeId: string, cards: { name: string, set?: string }[]) {
         const results: any[] = [];
 
-        for (const name of names) {
-            if (!name.trim()) continue;
+        for (const item of cards) {
+            if (!item.name || !item.name.trim()) continue;
 
             const matchedProducts = await this.prisma.product.findMany({
                 where: {
                     storeId,
                     cardId: { not: null },
-                    name: { contains: name, mode: 'insensitive' }
+                    name: { contains: item.name, mode: 'insensitive' },
+                    ...(item.set ? { set: { contains: item.set, mode: 'insensitive' } } : {})
                 },
                 take: 5
             });
@@ -89,16 +90,16 @@ export class BuylistService {
             if (matchedProducts.length > 0) {
                 // Prioritize exact match, then closest length match
                 matchedProducts.sort((a, b) => {
-                    const aExact = a.name.toLowerCase() === name.toLowerCase();
-                    const bExact = b.name.toLowerCase() === name.toLowerCase();
+                    const aExact = a.name.toLowerCase() === item.name.toLowerCase();
+                    const bExact = b.name.toLowerCase() === item.name.toLowerCase();
                     if (aExact && !bExact) return -1;
                     if (!aExact && bExact) return 1;
-                    return Math.abs(a.name.length - name.length) - Math.abs(b.name.length - name.length);
+                    return Math.abs(a.name.length - item.name.length) - Math.abs(b.name.length - item.name.length);
                 });
 
                 const bestProduct = matchedProducts[0];
                 results.push({
-                    cardName: name,
+                    cardName: item.name,
                     matchedCard: {
                         id: bestProduct.id,
                         name: bestProduct.name,
@@ -108,11 +109,11 @@ export class BuylistService {
                         cashPrice: bestProduct.price ? Number(bestProduct.price) * 0.5 : 0,
                         creditPrice: bestProduct.price ? Number(bestProduct.price) * 0.65 : 0
                     },
-                    confidence: bestProduct.name.toLowerCase() === name.toLowerCase() ? 1.0 : 0.8
+                    confidence: bestProduct.name.toLowerCase() === item.name.toLowerCase() ? 1.0 : 0.8
                 });
             } else {
                 results.push({
-                    cardName: name,
+                    cardName: item.name,
                     matchedCard: null,
                     confidence: 0
                 });

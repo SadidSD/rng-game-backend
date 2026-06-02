@@ -80,10 +80,10 @@ export class BuylistController {
 
     @Post('search/bulk')
     @UseGuards(ApiKeyGuard)
-    searchBulk(@Request() req, @Body('names') names: string[]) {
-        if (!names || !Array.isArray(names)) {
-            throw new BadRequestException('Names array is required');
+    searchBulk(@Request() req, @Body('cards') cards: { name: string, set?: string }[]) {
+        if (!cards || !Array.isArray(cards)) {
+            throw new BadRequestException('Cards array is required');
         }
-        return this.buylistService.searchBuylistBulk(req.store.id, names);
+        return this.buylistService.searchBuylistBulk(req.store.id, cards);
     }
 }
