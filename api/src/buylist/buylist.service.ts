@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBuylistRuleDto, CreateBuylistOfferDto, UpdateOfferStatusDto } from './dto/buylist.dto';
+import { ScryfallService } from '../integrations/scryfall.service';
 
 @Injectable()
 export class BuylistService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private scryfallService: ScryfallService
+    ) { }
 
     async createRule(storeId: string, dto: CreateBuylistRuleDto) {
         return this.prisma.buylistRule.create({
@@ -138,10 +142,31 @@ export class BuylistService {
             };
         }));
 
+        // Search Scryfall remote cards
+        const remoteResults = await this.scryfallService.searchCards(query);
+        const mappedRemote = await Promise.all(remoteResults.map(async card => {
+            const pricing = await this.calculateCardBuylistPrice(storeId, {
+                price: card.price,
+                game: 'MTG',
+                set: card.set,
+                rarity: card.rarity
+            });
+
+            return {
+                id: card.id,
+                name: card.name,
+                set: card.set || 'Unknown Set',
+                game: 'MTG',
+                image: card.image || '',
+                basePrice: pricing.cashPrice,
+                isRemote: true
+            };
+        }));
+
         return {
             source: 'hybrid',
             local: mappedLocal,
-            remote: []
+            remote: mappedRemote
         };
     }
 
@@ -187,11 +212,37 @@ export class BuylistService {
                     confidence: bestProduct.name.toLowerCase() === item.name.toLowerCase() ? 1.0 : 0.8
                 });
             } else {
-                results.push({
-                    cardName: item.name,
-                    matchedCard: null,
-                    confidence: 0
-                });
+                // Not found locally: check Scryfall by card name
+                const sCard = await this.scryfallService.searchCardByName(item.name);
+                if (sCard) {
+                    const pricing = await this.calculateCardBuylistPrice(storeId, {
+                        price: sCard.price,
+                        game: 'MTG',
+                        set: sCard.set,
+                        rarity: sCard.rarity
+                    });
+
+                    results.push({
+                        cardName: item.name,
+                        matchedCard: {
+                            id: sCard.id,
+                            name: sCard.name,
+                            set: sCard.set || 'Unknown Set',
+                            game: 'MTG',
+                            image: sCard.image || '',
+                            cashPrice: pricing.cashPrice,
+                            creditPrice: pricing.creditPrice,
+                            isRemote: true
+                        },
+                        confidence: sCard.name.toLowerCase() === item.name.toLowerCase() ? 1.0 : 0.8
+                    });
+                } else {
+                    results.push({
+                        cardName: item.name,
+                        matchedCard: null,
+                        confidence: 0
+                    });
+                }
             }
         }
 
@@ -280,6 +331,58 @@ export class BuylistService {
                                 name: item.cardName
                             }
                         });
+                    }
+
+                    if (!product) {
+                        // Check if the card can be imported from Scryfall
+                        const sCard = await this.scryfallService.searchCardByName(item.cardName);
+                        if (sCard) {
+                            let slug = `${sCard.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${(sCard.setId || 'set').toLowerCase()}`;
+                            const existingSlug = await this.prisma.product.findFirst({
+                                where: { storeId, slug }
+                            });
+                            if (existingSlug) {
+                                slug += `-${Math.random().toString(36).substring(2, 6)}`;
+                            }
+
+                            // Fetch category (or create MTG category if missing)
+                            let category = await this.prisma.category.findFirst({
+                                where: { storeId, name: 'Magic: The Gathering' }
+                            });
+                            if (!category) {
+                                let catSlug = 'magic-the-gathering';
+                                const existingCat = await this.prisma.category.findFirst({
+                                    where: { storeId, slug: catSlug }
+                                });
+                                if (existingCat) {
+                                    catSlug += `-${Math.random().toString(36).substring(2, 6)}`;
+                                }
+                                category = await this.prisma.category.create({
+                                    data: {
+                                        storeId,
+                                        name: 'Magic: The Gathering',
+                                        slug: catSlug
+                                    }
+                                });
+                            }
+
+                            product = await this.prisma.product.create({
+                                data: {
+                                    storeId,
+                                    name: sCard.name,
+                                    description: sCard.oracleText || `Scryfall imported card: ${sCard.name}`,
+                                    price: Number(sCard.price) || 0.99,
+                                    game: 'MTG',
+                                    set: sCard.set,
+                                    rarity: sCard.rarity,
+                                    collectorNumber: sCard.collectorNumber,
+                                    categoryId: category.id,
+                                    slug,
+                                    images: [sCard.image].filter(Boolean),
+                                }
+                            });
+                            console.log(`[Buylist] Dynamic auto-import completed for: ${product.name} (Set: ${product.set})`);
+                        }
                     }
 
                     if (!product) {
