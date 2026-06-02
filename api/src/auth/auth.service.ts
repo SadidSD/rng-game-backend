@@ -212,4 +212,31 @@ export class AuthService {
 
         return { message: 'Email verified successfully' };
     }
+
+    async resendVerification(email: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { email },
+        });
+
+        if (!user) {
+            throw new UnauthorizedException('User not found');
+        }
+
+        if (user.isVerified) {
+            throw new ConflictException('Email is already verified');
+        }
+
+        let token = user.verificationToken;
+        if (!token) {
+            token = crypto.randomBytes(32).toString('hex');
+            await this.prisma.user.update({
+                where: { id: user.id },
+                data: { verificationToken: token },
+            });
+        }
+
+        await this.notificationService.sendVerificationEmail(user.email, token);
+
+        return { message: 'Verification email resent successfully.' };
+    }
 }
