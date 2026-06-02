@@ -55,8 +55,13 @@ export class ScryfallService {
     }
 
     async searchCards(query: string) {
+        const cleanQuery = (query || '').replace(/"/g, '').trim();
+        if (!cleanQuery) {
+            return [];
+        }
         // Scryfall search: return a list of matches including all prints (capped at 50)
-        const url = `${this.baseUrl}/cards/search?q=${encodeURIComponent(query)}&unique=prints`;
+        // We wrap in name:"..." to search names only and prevent rules text/type line false positives
+        const url = `${this.baseUrl}/cards/search?q=name:${encodeURIComponent('"' + cleanQuery + '"')}&unique=prints`;
 
         try {
             console.log(`[Scryfall] Searching query: ${query}`);
