@@ -75,7 +75,7 @@ export default function BuylistPage() {
     const updateStatus = async (id: string, status: string) => {
         try {
             const token = Cookies.get('tcg-auth-token');
-            await axios.patch(`${API_URL}/buylist/offers/${id}/status`, { status }, {
+            await axios.patch(`${API_URL}/buylist/offers/${id}`, { status }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             // Refresh
