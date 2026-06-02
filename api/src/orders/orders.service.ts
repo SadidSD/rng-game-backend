@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StripeService } from '../payments/stripe.service';
-import { CreateOrderDto, UpdateOrderStatusDto } from './dto/orders.dto';
+import { CreateOrderDto, UpdateOrderStatusDto, UpdateOrderItemsDto } from './dto/orders.dto';
 import { ConfigService } from '@nestjs/config';
 import { LoggerService } from '../logger/logger.service';
 import { NotificationService } from '../notifications/notification.service';
@@ -370,13 +370,30 @@ export class OrdersService {
     }
 
     async updateStatus(storeId: string, id: string, dto: UpdateOrderStatusDto) {
-        const { count } = await this.prisma.order.updateMany({
-            where: { id, storeId },
-            data: { status: dto.status }
+        const order = await this.findOne(storeId, id);
+        if (!order) throw new NotFoundException('Order not found');
+
+        const updatedOrder = await this.prisma.order.update({
+            where: { id },
+            data: { 
+                status: dto.status,
+                trackingNumber: dto.trackingNumber || order.trackingNumber
+            },
+            include: { items: true, customer: true }
         });
 
-        if (count === 0) throw new NotFoundException('Order not found');
-        return this.findOne(storeId, id);
+        // Trigger shipping notification if marked SHIPPED and has tracking number
+        if (dto.status === 'SHIPPED' && dto.trackingNumber && order.status !== 'SHIPPED') {
+            if (updatedOrder.customer?.email) {
+                await this.notificationService.sendShippingNotification(
+                    updatedOrder.customer.email,
+                    dto.trackingNumber,
+                    `https://tools.usps.com/go/TrackConfirmAction?tLabels=${dto.trackingNumber}`
+                ).catch(err => this.logger.error(`Failed to send shipping notification: ${err.message}`));
+            }
+        }
+
+        return updatedOrder;
     }
 
     /**
@@ -504,5 +521,215 @@ export class OrdersService {
             this.logger.error(`Failed to generate EasyPost rates for order ${orderId}: ${error.message}`);
             throw new BadRequestException(`EasyPost error: ${error.message}`);
         }
+    }
+
+    async getPullList(storeId: string, orderIds: string[]) {
+        const items = await this.prisma.orderItem.findMany({
+            where: {
+                order: {
+                    id: { in: orderIds },
+                    storeId
+                }
+            }
+        });
+
+        const variantIds = items
+            .map(i => i.variantId)
+            .filter((id): id is string => !!id);
+
+        const variants = await this.prisma.productVariant.findMany({
+            where: {
+                id: { in: variantIds }
+            },
+            include: {
+                product: true,
+                inventory: true
+            }
+        });
+
+        const variantsMap = new Map(variants.map(v => [v.id, v]));
+
+        // Map and aggregate by variantId (and group quantity)
+        const aggregated: Record<string, {
+            variantId: string;
+            productName: string;
+            sku: string;
+            condition: string;
+            isFoil: boolean;
+            language: string;
+            game: string;
+            set: string;
+            quantity: number;
+            location: string;
+        }> = {};
+
+        for (const item of items) {
+            const vId = item.variantId || 'deleted';
+            const variant = item.variantId ? variantsMap.get(item.variantId) : null;
+            const game = variant?.product?.game || 'Unknown Game';
+            const set = variant?.product?.set || 'Unknown Set';
+            const condition = variant?.condition || 'N/A';
+            const isFoil = variant?.isFoil || false;
+            const language = variant?.language || 'English';
+            const sku = item.variantSku || 'N/A';
+            const location = variant?.inventory?.location || 'N/A';
+
+            if (aggregated[vId]) {
+                aggregated[vId].quantity += item.quantity;
+            } else {
+                aggregated[vId] = {
+                    variantId: vId,
+                    productName: item.productName,
+                    sku,
+                    condition,
+                    isFoil,
+                    language,
+                    game,
+                    set,
+                    quantity: item.quantity,
+                    location
+                };
+            }
+        }
+
+        // Sort: Game -> Set -> Name -> Condition -> Foil
+        return Object.values(aggregated).sort((a, b) => {
+            const gameCompare = a.game.localeCompare(b.game);
+            if (gameCompare !== 0) return gameCompare;
+
+            const setCompare = a.set.localeCompare(b.set);
+            if (setCompare !== 0) return setCompare;
+
+            const nameCompare = a.productName.localeCompare(b.productName);
+            if (nameCompare !== 0) return nameCompare;
+
+            const condCompare = a.condition.localeCompare(b.condition);
+            if (condCompare !== 0) return condCompare;
+
+            return (a.isFoil ? 1 : 0) - (b.isFoil ? 1 : 0);
+        });
+    }
+
+    async updateOrderItems(storeId: string, orderId: string, dto: UpdateOrderItemsDto) {
+        return this.prisma.$transaction(async (tx) => {
+            const order = await tx.order.findFirst({
+                where: { id: orderId, storeId },
+                include: { items: true, customer: true }
+            });
+
+            if (!order) throw new NotFoundException('Order not found');
+            
+            // Map old items by variantId for comparison
+            const oldItemsMap = new Map<string, typeof order.items[0]>();
+            for (const item of order.items) {
+                if (item.variantId) {
+                    oldItemsMap.set(item.variantId, item);
+                }
+            }
+
+            let newTotal = 0;
+            const newOrderItemsData: any[] = [];
+
+            // Process new items
+            for (const newItem of dto.items) {
+                const variant = await tx.productVariant.findUnique({
+                    where: { id: newItem.variantId },
+                    include: { product: true, inventory: true }
+                });
+
+                if (!variant) throw new NotFoundException(`Variant ${newItem.variantId} not found`);
+                if (variant.product.storeId !== storeId) throw new BadRequestException('Product does not belong to this store');
+
+                const price = Number(variant.price);
+                newTotal += price * newItem.quantity;
+
+                newOrderItemsData.push({
+                    productName: variant.product.name,
+                    variantSku: variant.sku,
+                    quantity: newItem.quantity,
+                    price: variant.price,
+                    variantId: variant.id
+                });
+
+                // Update inventory based on difference
+                const oldItem = oldItemsMap.get(newItem.variantId);
+                const oldQty = oldItem ? oldItem.quantity : 0;
+                const qtyDiff = newItem.quantity - oldQty;
+
+                if (qtyDiff !== 0) {
+                    // Check stock if increasing quantity
+                    if (qtyDiff > 0) {
+                        const currentStock = variant.inventory?.quantity || 0;
+                        if (currentStock < qtyDiff) {
+                            throw new BadRequestException(`Insufficient stock for ${variant.product.name} (Need: ${qtyDiff}, Available: ${currentStock})`);
+                        }
+                    }
+
+                    // Adjust inventory count (decrement for subtraction from stock, increment for addition)
+                    await tx.inventoryItem.update({
+                        where: { variantId: variant.id },
+                        data: { quantity: { decrement: qtyDiff } }
+                    });
+                }
+
+                // Remove from map to track deleted items
+                oldItemsMap.delete(newItem.variantId);
+            }
+
+            // Restore inventory for any items that were completely removed
+            for (const [removedVariantId, removedItem] of oldItemsMap.entries()) {
+                await tx.inventoryItem.update({
+                    where: { variantId: removedVariantId },
+                    data: { quantity: { increment: removedItem.quantity } }
+                });
+            }
+
+            // If order was paid via Store Credit (no stripeSessionId but paidAt is set), adjust customer credit balance
+            if (!order.stripeSessionId && order.paidAt && order.customerId) {
+                const totalDiff = newTotal - Number(order.total);
+                if (totalDiff !== 0) {
+                    const customer = await tx.customer.findUnique({
+                        where: { id: order.customerId }
+                    });
+                    if (customer) {
+                        if (totalDiff > 0) {
+                            // Charge more store credit
+                            if (Number(customer.creditBalance) < totalDiff) {
+                                throw new BadRequestException(`Insufficient store credit. Additional required: $${totalDiff.toFixed(2)}, Available: $${Number(customer.creditBalance).toFixed(2)}`);
+                            }
+                            await tx.customer.update({
+                                where: { id: customer.id },
+                                data: { creditBalance: { decrement: totalDiff } }
+                            });
+                        } else {
+                            // Refund difference (totalDiff is negative, decrement by negative is increment)
+                            await tx.customer.update({
+                                where: { id: customer.id },
+                                data: { creditBalance: { decrement: totalDiff } }
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Delete old items and insert new ones
+            await tx.orderItem.deleteMany({
+                where: { orderId }
+            });
+
+            const updatedOrder = await tx.order.update({
+                where: { id: orderId },
+                data: {
+                    total: newTotal,
+                    items: {
+                        create: newOrderItemsData
+                    }
+                },
+                include: { items: true, customer: true }
+            });
+
+            this.logger.info(`Order ${orderId} items updated via QC. New total: $${newTotal}`);
+            return updatedOrder;
+        });
     }
 }

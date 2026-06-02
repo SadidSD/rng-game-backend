@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { OrdersService } from './orders.service';
-import { CreateOrderDto, UpdateOrderStatusDto, FulfillOrderDto } from './dto/orders.dto';
+import { CreateOrderDto, UpdateOrderStatusDto, FulfillOrderDto, UpdateOrderItemsDto } from './dto/orders.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiKeyGuard } from '../auth/guards/api-key.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -64,11 +64,30 @@ export class OrdersController {
         return this.ordersService.findCustomerOrder(req.user.userId, id);
     }
 
+    @Get('pull-list')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    getPullList(@Request() req, @Query('ids') ids: string) {
+        const orderIds = ids ? ids.split(',') : [];
+        return this.ordersService.getPullList(req.user.storeId, orderIds);
+    }
+
     @Get(':id')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN, Role.STAFF)
     findOne(@Request() req, @Param('id') id: string) {
         return this.ordersService.findOne(req.user.storeId, id);
+    }
+
+    @Patch(':id/items')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    updateOrderItems(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() dto: UpdateOrderItemsDto
+    ) {
+        return this.ordersService.updateOrderItems(req.user.storeId, id, dto);
     }
 
     @Patch(':id')

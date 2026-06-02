@@ -72,6 +72,10 @@ export class CreateOrderDto {
 export class UpdateOrderStatusDto {
     @IsEnum(OrderStatus)
     status: OrderStatus;
+
+    @IsString()
+    @IsOptional()
+    trackingNumber?: string;
 }
 
 export class FulfillOrderDto {
@@ -82,4 +86,21 @@ export class FulfillOrderDto {
     @IsString()
     @IsNotEmpty()
     easypostShipmentId: string;
+}
+
+export class UpdateOrderItemDto {
+    @IsString()
+    @IsNotEmpty()
+    variantId: string;
+
+    @IsNumber()
+    @Min(0)
+    quantity: number;
+}
+
+export class UpdateOrderItemsDto {
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => UpdateOrderItemDto)
+    items: UpdateOrderItemDto[];
 }
