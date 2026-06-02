@@ -93,26 +93,29 @@ export class BuylistService {
     }
 
     async getFeaturedCards(storeId: string) {
-        const products = await this.prisma.product.findMany({
-            where: { 
-                storeId,
-                cardId: { not: null }
-            },
-            take: 50,
-            orderBy: { createdAt: 'desc' }
+        // Read from BuylistFeaturedCard — completely separate from the shop's Product table
+        const featuredCards = await this.prisma.buylistFeaturedCard.findMany({
+            where: { storeId },
+            orderBy: { createdAt: 'asc' },
+            take: 300,
         });
 
         const rules = await this.prisma.buylistRule.findMany({ where: { storeId } });
 
-        return products.map(p => {
-            const pricing = this.calculateCardBuylistPrice(p, rules);
+        return featuredCards.map(fc => {
+            const pricing = this.calculateCardBuylistPrice({
+                price: fc.basePrice ? Number(fc.basePrice) : 0,
+                game: fc.game,
+                set: fc.set,
+                rarity: null,
+            }, rules);
             return {
-                id: p.id,
-                name: p.name,
-                set: p.set || 'Unknown Set',
-                game: p.game || 'TCG',
-                image: p.images[0] || '',
-                basePrice: pricing.cashPrice
+                id: fc.id,
+                name: fc.name,
+                set: fc.set || 'Unknown Set',
+                game: fc.game,
+                image: fc.image,
+                basePrice: fc.basePrice ? Number(fc.basePrice) : pricing.cashPrice,
             };
         });
     }
