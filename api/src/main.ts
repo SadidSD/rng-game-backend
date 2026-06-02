@@ -40,8 +40,13 @@ async function bootstrap() {
   // Enable CORS with production whitelist
   const allowedOrigins = process.env.NODE_ENV === 'production'
     ? [
-      process.env.FRONTEND_URL || 'https://rng-gamez-shop.vercel.app',
-      process.env.ADMIN_DASHBOARD_URL || 'https://rng-game-backend-six.vercel.app',
+      process.env.FRONTEND_URL,
+      process.env.ADMIN_DASHBOARD_URL,
+      'https://rng-gamez-shop.vercel.app',
+      'https://rng-game-backend-six.vercel.app',
+      'https://rng-gamez.com',
+      'https://www.rng-gamez.com',
+      'https://admin.rng-gamez.com',
     ].filter(Boolean)
     : [
       'http://localhost:3000',
