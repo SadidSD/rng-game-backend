@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request, Query, BadRequestException } from '@nestjs/common';
 import { BuylistService } from './buylist.service';
 import { CreateBuylistRuleDto, CreateBuylistOfferDto, UpdateOfferStatusDto } from './dto/buylist.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -76,5 +76,14 @@ export class BuylistController {
     @UseGuards(ApiKeyGuard)
     search(@Request() req, @Query('query') query: string) {
         return this.buylistService.searchBuylist(req.store.id, query || '');
+    }
+
+    @Post('search/bulk')
+    @UseGuards(ApiKeyGuard)
+    searchBulk(@Request() req, @Body('names') names: string[]) {
+        if (!names || !Array.isArray(names)) {
+            throw new BadRequestException('Names array is required');
+        }
+        return this.buylistService.searchBuylistBulk(req.store.id, names);
     }
 }

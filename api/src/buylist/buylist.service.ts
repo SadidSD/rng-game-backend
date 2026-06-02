@@ -71,6 +71,57 @@ export class BuylistService {
         };
     }
 
+    async searchBuylistBulk(storeId: string, names: string[]) {
+        const results: any[] = [];
+
+        for (const name of names) {
+            if (!name.trim()) continue;
+
+            const matchedProducts = await this.prisma.product.findMany({
+                where: {
+                    storeId,
+                    cardId: { not: null },
+                    name: { contains: name, mode: 'insensitive' }
+                },
+                take: 5
+            });
+
+            if (matchedProducts.length > 0) {
+                // Prioritize exact match, then closest length match
+                matchedProducts.sort((a, b) => {
+                    const aExact = a.name.toLowerCase() === name.toLowerCase();
+                    const bExact = b.name.toLowerCase() === name.toLowerCase();
+                    if (aExact && !bExact) return -1;
+                    if (!aExact && bExact) return 1;
+                    return Math.abs(a.name.length - name.length) - Math.abs(b.name.length - name.length);
+                });
+
+                const bestProduct = matchedProducts[0];
+                results.push({
+                    cardName: name,
+                    matchedCard: {
+                        id: bestProduct.id,
+                        name: bestProduct.name,
+                        set: bestProduct.set || 'Unknown Set',
+                        game: bestProduct.game || 'TCG',
+                        image: bestProduct.images[0] || '',
+                        cashPrice: bestProduct.price ? Number(bestProduct.price) * 0.5 : 0,
+                        creditPrice: bestProduct.price ? Number(bestProduct.price) * 0.65 : 0
+                    },
+                    confidence: bestProduct.name.toLowerCase() === name.toLowerCase() ? 1.0 : 0.8
+                });
+            } else {
+                results.push({
+                    cardName: name,
+                    matchedCard: null,
+                    confidence: 0
+                });
+            }
+        }
+
+        return results;
+    }
+
     async submitOffer(storeId: string, dto: CreateBuylistOfferDto) {
         // Calculate totals
         let totalCash = 0;
