@@ -27,6 +27,7 @@ import { SanitizationMiddleware } from './middleware/sanitization.middleware';
 import { HttpsRedirectMiddleware } from './middleware/https-redirect.middleware';
 import { HealthModule } from './health/health.module';
 import { NotificationModule } from './notifications/notification.module';
+import { TrackingModule } from './tracking/tracking.module';
 
 @Module({
   imports: [
@@ -43,7 +44,7 @@ import { NotificationModule } from './notifications/notification.module';
     LoggerModule,
     NotificationModule,
     HealthModule,
-    AuthModule, UsersModule, StoreModule, PublicModule, ProductsModule, InventoryModule, BuylistModule, OrdersModule, CustomersModule, EventsModule, AnalyticsModule, IntegrationsModule, CategoriesModule, PrismaModule, PokemonTcgModule, PaymentsModule],
+    AuthModule, UsersModule, StoreModule, PublicModule, ProductsModule, InventoryModule, BuylistModule, OrdersModule, CustomersModule, EventsModule, AnalyticsModule, IntegrationsModule, CategoriesModule, PrismaModule, PokemonTcgModule, PaymentsModule, TrackingModule],
   controllers: [AppController],
   providers: [
     AppService,

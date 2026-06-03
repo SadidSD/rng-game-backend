@@ -368,6 +368,47 @@ export class NotificationService {
     }
 
     /**
+     * Send delivery confirmation email to customer (called by TrackingService)
+     */
+    async sendDeliveryConfirmationEmail(
+        customerEmail: string,
+        orderId: string,
+        trackingNumber: string,
+    ) {
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+        const orderLink = `${frontendUrl}/account/orders/${orderId}`;
+        const shortId = orderId.substring(0, 8).toUpperCase();
+
+        const subject = `📦 Order #${shortId} Delivered — RNG Gamez`;
+        const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #f9f9f9; border-radius: 12px; color: #333;">
+            <h2 style="color: #10b981; margin-bottom: 8px;">Your Order Has Been Delivered! 🎉</h2>
+            <p>Great news! Your order <strong>#${shortId}</strong> has arrived at its destination.</p>
+
+            <div style="background: white; border-radius: 8px; padding: 16px; margin: 16px 0; border: 1px solid #d1fae5;">
+                <p style="margin: 0 0 8px; font-weight: bold; color: #555;">Tracking Number</p>
+                <p style="margin: 0; font-family: monospace; font-size: 1.1em; color: #111;">${trackingNumber}</p>
+            </div>
+
+            <p>We hope you enjoy your cards! If anything is missing or not as expected, please contact us and we will make it right.</p>
+
+            <div style="text-align: center; margin: 32px 0;">
+                <a href="${orderLink}" style="display: inline-block; padding: 12px 28px; background: #6d28d9; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">View Order Details</a>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #eaeaea; margin: 24px 0;" />
+            <p style="color: #888; font-size: 0.85em; text-align: center;">Thank you for shopping with RNG Gamez! ✨</p>
+        </div>
+        `;
+
+        try {
+            await this.sendEmail(customerEmail, subject, html);
+        } catch (error: any) {
+            this.logger.error(`Failed to send delivery confirmation to ${customerEmail}: ${error.message}`);
+        }
+    }
+
+    /**
      * Send email verification link
      */
     async sendVerificationEmail(customerEmail: string, token: string) {
