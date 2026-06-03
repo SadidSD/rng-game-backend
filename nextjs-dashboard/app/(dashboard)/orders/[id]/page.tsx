@@ -21,6 +21,7 @@ import Link from "next/link"
 import { cookies } from "next/headers"
 import { format } from "date-fns"
 import FulfillmentManager from "@/components/orders/FulfillmentManager"
+import QcAdjuster from "@/components/orders/QcAdjuster"
 
 async function getOrder(id: string) {
     const cookieStore = cookies()
@@ -69,9 +70,16 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
 
             <div className="grid gap-4 md:grid-cols-3">
                 <Card className="md:col-span-2">
-                    <CardHeader>
-                        <CardTitle>Order Items</CardTitle>
-                        <CardDescription>{order.items?.length || 0} items in this order</CardDescription>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <div className="space-y-1">
+                            <CardTitle>Order Items</CardTitle>
+                            <CardDescription>{order.items?.length || 0} items in this order</CardDescription>
+                        </div>
+                        <QcAdjuster
+                            orderId={order.id}
+                            items={order.items}
+                            orderStatus={order.status}
+                        />
                     </CardHeader>
                     <CardContent>
                         <Table>

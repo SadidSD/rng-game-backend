@@ -4,18 +4,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Truck, ExternalLink, Printer, Check, Copy } from "lucide-react";
 import axios from "axios";
 import Cookies from "js-cookie";
-
-interface Rate {
-    id: string;
-    carrier: string;
-    service: string;
-    rate: string;
-    deliveryDays: number | null;
-    estDeliveryDate: string | null;
-}
+import { useRouter } from "next/navigation";
 
 interface FulfillmentManagerProps {
     orderId: string;
@@ -30,57 +25,29 @@ export default function FulfillmentManager({
     initialTrackingNumber,
     initialLabelUrl
 }: FulfillmentManagerProps) {
+    const router = useRouter();
     const [status, setStatus] = useState(initialStatus);
-    const [trackingNumber, setTrackingNumber] = useState(initialTrackingNumber || null);
-    const [labelUrl, setLabelUrl] = useState(initialLabelUrl || null);
-
-    const [loadingRates, setLoadingRates] = useState(false);
-    const [rates, setRates] = useState<Rate[]>([]);
-    const [shipmentId, setShipmentId] = useState<string | null>(null);
-    const [selectedRateId, setSelectedRateId] = useState<string | null>(null);
+    const [trackingNumber, setTrackingNumber] = useState(initialTrackingNumber || "");
+    const [carrier, setCarrier] = useState("USPS");
     const [fulfilling, setFulfilling] = useState(false);
     const [copied, setCopied] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchRates = async () => {
-        setLoadingRates(true);
-        setError(null);
-        try {
-            const token = Cookies.get("tcg-auth-token");
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rng-game-backend-cx6f.onrender.com/api";
-            const res = await axios.get(`${apiUrl}/orders/${orderId}/rates`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setRates(res.data.rates);
-            setShipmentId(res.data.shipmentId);
-            if (res.data.rates.length > 0) {
-                // Auto-select the cheapest rate
-                const cheapest = res.data.rates.reduce((prev: Rate, curr: Rate) => 
-                    Number(prev.rate) < Number(curr.rate) ? prev : curr
-                );
-                setSelectedRateId(cheapest.id);
-            }
-        } catch (err: any) {
-            console.error("Failed to fetch shipping rates", err);
-            setError(err.response?.data?.message || "Failed to fetch shipping rates.");
-        } finally {
-            setLoadingRates(false);
-        }
-    };
-
-    const handleFulfill = async () => {
-        if (!shipmentId || !selectedRateId) return;
+    const handleFulfill = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!trackingNumber.trim()) return;
 
         setFulfilling(true);
         setError(null);
         try {
             const token = Cookies.get("tcg-auth-token");
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://rng-game-backend-cx6f.onrender.com/api";
-            const res = await axios.post(
-                `${apiUrl}/orders/${orderId}/fulfill`,
+            
+            const res = await axios.patch(
+                `${apiUrl}/orders/${orderId}`,
                 {
-                    easypostRateId: selectedRateId,
-                    easypostShipmentId: shipmentId
+                    status: "SHIPPED",
+                    trackingNumber: trackingNumber.trim()
                 },
                 {
                     headers: { Authorization: `Bearer ${token}` }
@@ -88,11 +55,11 @@ export default function FulfillmentManager({
             );
 
             setStatus(res.data.status);
-            setTrackingNumber(res.data.trackingNumber);
-            setLabelUrl(res.data.labelUrl);
+            setTrackingNumber(res.data.trackingNumber || trackingNumber.trim());
+            router.refresh();
         } catch (err: any) {
-            console.error("Failed to purchase shipping label", err);
-            setError(err.response?.data?.message || "Failed to purchase postage label.");
+            console.error("Failed to fulfill order", err);
+            setError(err.response?.data?.message || "Failed to mark order as shipped.");
         } finally {
             setFulfilling(false);
         }
@@ -106,6 +73,18 @@ export default function FulfillmentManager({
         }
     };
 
+    const getTrackingUrl = () => {
+        if (!trackingNumber) return "";
+        switch (carrier.toUpperCase()) {
+            case "UPS":
+                return `https://www.ups.com/track?tracknum=${trackingNumber}`;
+            case "FEDEX":
+                return `https://www.fedex.com/fedextrack/?trknbr=${trackingNumber}`;
+            default:
+                return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber}`;
+        }
+    };
+
     // FULFILLED OR SHIPPED STATE
     if (status === "SHIPPED" || status === "COMPLETED") {
         return (
@@ -115,12 +94,12 @@ export default function FulfillmentManager({
                         <Truck className="h-5 w-5 text-green-500" />
                         Fulfillment Complete
                     </CardTitle>
-                    <CardDescription>Postage purchased and shipped</CardDescription>
+                    <CardDescription>Order is fulfilled and tracking is recorded</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
                         <div className="space-y-1">
-                            <span className="text-xs text-muted-foreground block">USPS TRACKING NUMBER</span>
+                            <span className="text-[10px] font-bold text-muted-foreground block uppercase">USPS/UPS TRACKING NUMBER</span>
                             <span className="font-mono text-sm font-bold block">{trackingNumber}</span>
                         </div>
                         <Button variant="ghost" size="icon" onClick={copyTracking}>
@@ -129,18 +108,10 @@ export default function FulfillmentManager({
                     </div>
 
                     <div className="flex gap-2">
-                        {labelUrl && (
-                            <Button className="flex-1" variant="outline" asChild>
-                                <a href={labelUrl} target="_blank" rel="noopener noreferrer">
-                                    <Printer className="mr-2 h-4 w-4" />
-                                    Print Label
-                                </a>
-                            </Button>
-                        )}
                         {trackingNumber && (
-                            <Button className="flex-1" variant="outline" asChild>
+                            <Button className="w-full" variant="outline" asChild>
                                 <a 
-                                    href={`https://tools.usps.com/go/TrackConfirmAction?qtc_tcd1=${trackingNumber}`} 
+                                    href={getTrackingUrl()} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                 >
@@ -167,7 +138,7 @@ export default function FulfillmentManager({
                     <CardDescription>Waiting for payment completion</CardDescription>
                 </CardHeader>
                 <CardContent className="py-4 text-center text-sm text-muted-foreground bg-secondary/20 rounded-lg mx-6 mb-6">
-                    Shipping rates can only be calculated once the payment status is PAID.
+                    Fulfillment and tracking entry can only be completed once the order is PAID.
                 </CardContent>
             </Card>
         );
@@ -197,96 +168,61 @@ export default function FulfillmentManager({
             <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                     <Truck className="h-5 w-5 text-purple-500" />
-                    Ship Order
+                    Fulfill Order (Pirate Ship)
                 </CardTitle>
-                <CardDescription>Buy USPS postage via EasyPost</CardDescription>
+                <CardDescription>Mark as shipped by entering Pirate Ship tracking info</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                {rates.length === 0 ? (
+                <form onSubmit={handleFulfill} className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="carrier">Carrier</Label>
+                        <Select value={carrier} onValueChange={setCarrier}>
+                            <SelectTrigger id="carrier">
+                                <SelectValue placeholder="Select carrier" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="USPS">USPS</SelectItem>
+                                <SelectItem value="UPS">UPS</SelectItem>
+                                <SelectItem value="FedEx">FedEx</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="tracking">Tracking Number</Label>
+                        <Input
+                            id="tracking"
+                            placeholder="Enter Pirate Ship tracking number..."
+                            value={trackingNumber}
+                            onChange={(e) => setTrackingNumber(e.target.value)}
+                            required
+                        />
+                    </div>
+
+                    {error && (
+                        <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-lg">
+                            {error}
+                        </div>
+                    )}
+
                     <Button 
-                        className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold"
-                        onClick={fetchRates} 
-                        disabled={loadingRates}
+                        type="submit" 
+                        className="w-full bg-purple-600 hover:bg-purple-750 text-white font-semibold flex items-center justify-center gap-2"
+                        disabled={fulfilling || !trackingNumber.trim()}
                     >
-                        {loadingRates ? (
+                        {fulfilling ? (
                             <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Calculating Rates...
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Fulfilling...
                             </>
                         ) : (
-                            "Calculate USPS Rates"
+                            <>
+                                <Truck className="h-4 w-4" />
+                                Mark as Shipped
+                            </>
                         )}
                     </Button>
-                ) : (
-                    <div className="space-y-4">
-                        <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
-                            {rates.map((rate) => (
-                                <label 
-                                    key={rate.id}
-                                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
-                                        selectedRateId === rate.id 
-                                            ? "border-purple-500 bg-purple-500/5" 
-                                            : "border-border hover:bg-muted/50"
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <input 
-                                            type="radio" 
-                                            name="shipping_rate"
-                                            value={rate.id}
-                                            checked={selectedRateId === rate.id}
-                                            onChange={() => setSelectedRateId(rate.id)}
-                                            className="accent-purple-600"
-                                        />
-                                        <div className="text-left">
-                                            <p className="text-sm font-semibold text-foreground">
-                                                {rate.carrier} {rate.service}
-                                            </p>
-                                            {rate.deliveryDays && (
-                                                <p className="text-xs text-muted-foreground">
-                                                    Est. Delivery: {rate.deliveryDays} days
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <span className="font-mono text-sm font-bold text-foreground">
-                                        ${Number(rate.rate).toFixed(2)}
-                                    </span>
-                                </label>
-                            ))}
-                        </div>
-
-                        <div className="flex gap-2">
-                            <Button 
-                                variant="outline" 
-                                onClick={() => setRates([])}
-                                disabled={fulfilling}
-                            >
-                                Reset
-                            </Button>
-                            <Button 
-                                className="flex-grow bg-purple-600 hover:bg-purple-700 text-white font-semibold"
-                                onClick={handleFulfill}
-                                disabled={fulfilling || !selectedRateId}
-                            >
-                                {fulfilling ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Buying Label...
-                                    </>
-                                ) : (
-                                    "Buy Label & Ship"
-                                )}
-                            </Button>
-                        </div>
-                    </div>
-                )}
-
-                {error && (
-                    <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-lg text-left">
-                        {error}
-                    </div>
-                )}
+                </form>
             </CardContent>
         </Card>
     );
