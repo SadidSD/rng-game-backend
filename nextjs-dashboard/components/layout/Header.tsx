@@ -57,15 +57,17 @@ export default function Header() {
                         <span className="sr-only">Toggle navigation menu</span>
                     </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="flex flex-col">
-                    <nav className="grid gap-2 text-lg font-medium">
+                <SheetContent side="left" className="flex flex-col bg-card/95 backdrop-blur-md border-r border-border/40">
+                    <nav className="grid gap-1 text-lg font-medium">
                         <Link
                             href="/"
                             onClick={() => setOpen(false)}
-                            className="flex items-center gap-2 text-lg font-semibold"
+                            className="flex items-center gap-2 text-lg font-bold text-foreground mb-6"
                         >
-                            <Package2 className="h-6 w-6" />
-                            <span className="sr-only">TCG Admin</span>
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-purple-500/20">
+                                <span className="font-extrabold text-sm tracking-tighter">RG</span>
+                            </div>
+                            <span>RNG Gamez</span>
                         </Link>
                         {[
                             { name: "Dashboard", href: "/", icon: Home },
@@ -76,6 +78,7 @@ export default function Header() {
                             { name: "Buylist", href: "/buylist", icon: ShoppingCart },
                             { name: "Customers", href: "/customers", icon: Users },
                             { name: "Analytics", href: "/analytics", icon: LineChart },
+                            { name: "Settings", href: "/settings", icon: Settings },
                         ].map((item) => {
                             const Icon = item.icon;
                             const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
@@ -84,13 +87,13 @@ export default function Header() {
                                     key={item.name}
                                     href={item.href}
                                     onClick={() => setOpen(false)}
-                                    className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 transition-all ${
+                                    className={`flex items-center gap-4 rounded-xl px-3 py-2.5 transition-all duration-200 text-base ${
                                         isActive
-                                            ? "bg-muted text-foreground"
-                                            : "text-muted-foreground hover:text-foreground"
+                                            ? "bg-primary/10 text-primary font-semibold border-l-2 border-primary"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                                     }`}
                                 >
-                                    <Icon className="h-5 w-5" />
+                                    <Icon className={`h-5 w-5 ${isActive ? "text-primary scale-110" : ""}`} />
                                     {item.name}
                                 </Link>
                             );
