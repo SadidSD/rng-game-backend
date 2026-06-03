@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 import { Condition } from '@prisma/client';
@@ -8,7 +8,7 @@ export class ProductsService {
     constructor(private prisma: PrismaService) { }
 
     // Helper: Generate SKU
-    // Format: GAME-SET-COLLECTOR-SLUG-COND-LANG-FINISH
+    // Format: GAME-SET-COLLECTOR-SLUG-COND-LANG-FINISH-STORE
     private generateSku(
         game: string,
         set: string,
@@ -16,7 +16,8 @@ export class ProductsService {
         name: string,
         condition: Condition,
         language: string,
-        isFoil: boolean
+        isFoil: boolean,
+        storeId?: string
     ): string {
         const gameCode = (game || 'MTG').toUpperCase().substring(0, 3);
         const setCode = (set || 'UNK').toUpperCase().replace(/ /g, '');
@@ -42,7 +43,9 @@ export class ProductsService {
         // Finish: NF (Non-foil), F (Foil), EF (Etched - logical handling needs more data, defaulting to F if foil)
         const finishCode = isFoil ? 'F' : 'NF';
 
-        return `${gameCode}-${setCode}-${collector}-${slug}-${condCode}-${langCode}-${finishCode}`;
+        const storeSuffix = storeId ? `-${storeId.substring(0, 4).toUpperCase()}` : '';
+
+        return `${gameCode}-${setCode}-${collector}-${slug}-${condCode}-${langCode}-${finishCode}${storeSuffix}`;
     }
 
     async create(storeId: string, dto: CreateProductDto) {
@@ -97,11 +100,108 @@ export class ProductsService {
                         where: { id: dto.categoryId, storeId }
                     });
                     if (!category) {
-                        throw new Error(`Category ${dto.categoryId} not found for this store.`);
+                        throw new BadRequestException(`Category ${dto.categoryId} not found for this store.`);
                     }
                 }
 
-                // 3. Create Product (Printing)
+                // 3. Check if Product with same set and collector number already exists for this store
+                const existingProduct = (dto.set && dto.collectorNumber)
+                    ? await tx.product.findFirst({
+                        where: {
+                            storeId,
+                            set: dto.set,
+                            collectorNumber: dto.collectorNumber,
+                            name: dto.name
+                        },
+                        include: {
+                            variants: {
+                                include: { inventory: true }
+                            }
+                        }
+                    })
+                    : null;
+
+                if (existingProduct) {
+                    // Update product price & description if updated info was sent
+                    const updatedProduct = await tx.product.update({
+                        where: { id: existingProduct.id },
+                        data: {
+                            price: dto.price !== undefined ? dto.price : existingProduct.price,
+                            images: dto.images && dto.images.length > 0 ? dto.images : existingProduct.images,
+                            description: dto.description || existingProduct.description
+                        }
+                    });
+
+                    // Upsert variants
+                    const variantsToReturn: any[] = [];
+                    for (const v of dto.variants || []) {
+                        const sku = this.generateSku(
+                            dto.game || 'MTG',
+                            dto.set || 'UNK',
+                            dto.collectorNumber || '000',
+                            dto.name,
+                            v.condition,
+                            v.language || 'English',
+                            v.isFoil || false,
+                            storeId
+                        );
+
+                        // Match existing variant by SKU or structural match
+                        const existingVariant = existingProduct.variants.find(
+                            ev => ev.sku === sku || (ev.condition === v.condition && ev.isFoil === (v.isFoil || false) && ev.language === (v.language || 'English'))
+                        );
+
+                        if (existingVariant) {
+                            // Update price, costPrice and increment inventory quantity
+                            const updatedVariant = await tx.productVariant.update({
+                                where: { id: existingVariant.id },
+                                data: {
+                                    price: v.price,
+                                    costPrice: v.costPrice !== undefined ? v.costPrice : existingVariant.costPrice,
+                                    inventory: {
+                                        update: {
+                                            quantity: {
+                                                increment: v.quantity
+                                            }
+                                        }
+                                    }
+                                },
+                                include: { inventory: true }
+                            });
+                            variantsToReturn.push(updatedVariant);
+                        } else {
+                            // Create variant
+                            const newVariant = await tx.productVariant.create({
+                                data: {
+                                    sku: sku,
+                                    productId: existingProduct.id,
+                                    condition: v.condition,
+                                    isFoil: v.isFoil || false,
+                                    language: v.language || 'English',
+                                    price: v.price,
+                                    costPrice: v.costPrice || null,
+                                    storeId,
+                                    inventory: {
+                                        create: {
+                                            quantity: v.quantity,
+                                            storeId
+                                        }
+                                    }
+                                },
+                                include: { inventory: true }
+                            });
+                            variantsToReturn.push(newVariant);
+                        }
+                    }
+
+                    return {
+                        ...updatedProduct,
+                        variants: variantsToReturn,
+                        card: cardId ? await tx.card.findUnique({ where: { id: cardId } }) : null
+                    };
+                }
+
+                // 4. Create Product (Printing) if it doesn't exist
                 return await tx.product.create({
                     data: {
                         name: dto.name,
@@ -125,7 +225,8 @@ export class ProductsService {
                                     dto.name,
                                     v.condition,
                                     v.language || 'English',
-                                    v.isFoil || false
+                                    v.isFoil || false,
+                                    storeId
                                 );
                                 return {
                                     sku: sku,
@@ -152,14 +253,14 @@ export class ProductsService {
                         card: true
                     },
                 });
-            } catch (error) {
+            } catch (error: any) {
                 console.error(' [ProductsService] Transaction Failed:', error);
+                if (error.code === 'P2002') {
+                    throw new ConflictException(`A product variant with SKU or key attributes already exists in the catalog.`);
+                }
                 throw error;
             }
         }, { timeout: 30000 });
-
-
-
     }
 
     async findAll(storeId: string, query: { game?: string; search?: string }) {
@@ -321,7 +422,8 @@ export class ProductsService {
                             updatedProduct.name,
                             v.condition,
                             v.language || 'English',
-                            v.isFoil || false
+                            v.isFoil || false,
+                            storeId
                         );
 
                         await tx.productVariant.create({
