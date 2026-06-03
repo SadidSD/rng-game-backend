@@ -320,7 +320,7 @@ export default function OrdersPage() {
                         </div>
 
                         {/* Printable Content */}
-                        <div className="p-6 overflow-y-auto flex-1 print:p-0 print:overflow-visible print:text-black">
+                        <div className="p-6 overflow-y-auto flex-1 print:p-8 print:overflow-visible print:text-black">
                             {pullListLoading ? (
                                 <div className="py-20 flex flex-col items-center justify-center text-neutral-400">
                                     <Loader2 className="h-8 w-8 animate-spin text-purple-500 mb-3" />
@@ -376,7 +376,7 @@ export default function OrdersPage() {
                                             </tbody>
                                         </table>
                                     </div>
-                                    <div className="flex justify-between items-center text-xs text-neutral-400 print:text-black pt-4">
+                                    <div className="flex justify-between items-center text-xs text-neutral-450 print:text-black pt-4">
                                         <span>Items pulled match sorting box structure Game → Set → Card Name → Condition → Foil.</span>
                                         <span className="font-bold text-white print:text-black">
                                             Total Cards: {pullListItems.reduce((acc, item) => acc + item.quantity, 0)}
