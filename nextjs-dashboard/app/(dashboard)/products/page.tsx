@@ -66,7 +66,7 @@ export default async function ProductsPage({
                     <BreadcrumbList>
                         <BreadcrumbItem>
                             <BreadcrumbLink asChild>
-                                <Link href="#">Dashboard</Link>
+                                <Link href="/">Dashboard</Link>
                             </BreadcrumbLink>
                         </BreadcrumbItem>
                         <BreadcrumbSeparator />

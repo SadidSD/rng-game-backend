@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import Cookies from "js-cookie"
 import {
     CircleUser,
@@ -13,6 +13,8 @@ import {
     Search,
     ShoppingCart,
     Users,
+    Calendar,
+    Settings,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -30,6 +32,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 export default function Header() {
     const router = useRouter();
+    const pathname = usePathname();
 
     const handleLogout = () => {
         // Clear the token cookie
@@ -55,47 +58,39 @@ export default function Header() {
                 <SheetContent side="left" className="flex flex-col">
                     <nav className="grid gap-2 text-lg font-medium">
                         <Link
-                            href="#"
+                            href="/"
                             className="flex items-center gap-2 text-lg font-semibold"
                         >
                             <Package2 className="h-6 w-6" />
                             <span className="sr-only">TCG Admin</span>
                         </Link>
-                        <Link
-                            href="#"
-                            className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                        >
-                            <Home className="h-5 w-5" />
-                            Dashboard
-                        </Link>
-                        <Link
-                            href="#"
-                            className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground"
-                        >
-                            <ShoppingCart className="h-5 w-5" />
-                            Orders
-                        </Link>
-                        <Link
-                            href="#"
-                            className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                        >
-                            <Package className="h-5 w-5" />
-                            Products
-                        </Link>
-                        <Link
-                            href="#"
-                            className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                        >
-                            <Users className="h-5 w-5" />
-                            Customers
-                        </Link>
-                        <Link
-                            href="#"
-                            className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                        >
-                            <LineChart className="h-5 w-5" />
-                            Analytics
-                        </Link>
+                        {[
+                            { name: "Dashboard", href: "/", icon: Home },
+                            { name: "Orders", href: "/orders", icon: ShoppingCart },
+                            { name: "Products", href: "/products", icon: Package },
+                            { name: "Categories", href: "/categories", icon: Package2 },
+                            { name: "Events", href: "/events", icon: Calendar },
+                            { name: "Buylist", href: "/buylist", icon: ShoppingCart },
+                            { name: "Customers", href: "/customers", icon: Users },
+                            { name: "Analytics", href: "/analytics", icon: LineChart },
+                        ].map((item) => {
+                            const Icon = item.icon;
+                            const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+                            return (
+                                <Link
+                                    key={item.name}
+                                    href={item.href}
+                                    className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 transition-all ${
+                                        isActive
+                                            ? "bg-muted text-foreground"
+                                            : "text-muted-foreground hover:text-foreground"
+                                    }`}
+                                >
+                                    <Icon className="h-5 w-5" />
+                                    {item.name}
+                                </Link>
+                            );
+                        })}
                     </nav>
                 </SheetContent>
             </Sheet>

@@ -38,11 +38,16 @@ export class AnalyticsService {
             where: { storeId, quantity: { lt: 5 } }
         });
 
-        // 5. Buylist Queue (Pending)
+        // 5. Buylist Queue (Active)
         // Check if BuylistOffer model exists on prisma client type (it should)
         // @ts-ignore
         const buylistCount = await this.prisma.buylistOffer.count({
-            where: { storeId, status: 'PENDING' }
+            where: {
+                storeId,
+                status: {
+                    in: ['PENDING', 'APPROVED_TO_SEND', 'RECEIVED', 'APPROVED']
+                }
+            }
         });
 
         // 6. Recent Orders

@@ -288,7 +288,7 @@ export default function BuylistPage() {
                                                     <div className="font-medium">{offer.customerName}</div>
                                                     <div className="text-xs text-muted-foreground">{offer.customerEmail}</div>
                                                 </TableCell>
-                                                <TableCell>{offer.items?.length || 0} cards</TableCell>
+                                                <TableCell>{offer.items?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0} cards</TableCell>
                                                 <TableCell className="font-bold text-purple-600">
                                                     ${Number(offer.totalCredit).toFixed(2)}
                                                 </TableCell>

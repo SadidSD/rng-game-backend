@@ -17,7 +17,7 @@ export default function NewCategoryPage() {
                     <BreadcrumbList>
                         <BreadcrumbItem>
                             <BreadcrumbLink asChild>
-                                <Link href="/dashboard">Dashboard</Link>
+                                <Link href="/">Dashboard</Link>
                             </BreadcrumbLink>
                         </BreadcrumbItem>
                         <BreadcrumbSeparator />
