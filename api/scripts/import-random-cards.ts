@@ -155,14 +155,20 @@ async function importCards() {
                 });
 
                 // 5. Create Variant (Standard NM)
+                const gameCode = "MTG";
+                const setCode = (cardData.set_name || 'UNK').toUpperCase().replace(/[^A-Z0-9]/g, '');
+                const collector = (cardData.collector_number || '000').padStart(3, '0').replace(/[^A-Z0-9]/g, '');
+                const nameSlug = cardData.name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 25);
+                const generatedSku = `${gameCode}-${setCode}-${collector}-${nameSlug}-NM-EN-NF`;
+
                 const variant = await prisma.productVariant.upsert({
-                    where: { sku: `SKU-${product.id}-NM` },
+                    where: { sku: generatedSku },
                     update: {
                         price: product.price || 0.99
                     },
                     create: {
                         productId: product.id,
-                        sku: `SKU-${product.id}-NM`,
+                        sku: generatedSku,
                         condition: "NM",
                         isFoil: false,
                         language: "English",

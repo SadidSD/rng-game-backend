@@ -412,10 +412,18 @@ export class BuylistService {
                     });
 
                     if (!variant) {
+                        const gameCode = (product.game || 'MTG').toUpperCase().substring(0, 3);
+                        const setCode = (product.set || 'UNK').toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        const collector = (product.collectorNumber || '000').padStart(3, '0').replace(/[^A-Z0-9]/g, '');
+                        const slug = product.name.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 25);
+                        const condCode = mappedCond === 'DAMAGED' ? 'DMG' : mappedCond;
+                        const finishCode = item.isFoil ? 'F' : 'NF';
+                        const generatedSku = `${gameCode}-${setCode}-${collector}-${slug}-${condCode}-EN-${finishCode}`;
+
                         variant = await this.prisma.productVariant.create({
                             data: {
                                 productId: product.id,
-                                sku: `SKU-${product.id}-${mappedCond}-${item.isFoil ? 'FOIL' : 'NONFOIL'}`,
+                                sku: generatedSku,
                                 condition: mappedCond,
                                 isFoil: item.isFoil,
                                 price: product.price || 0.99,
