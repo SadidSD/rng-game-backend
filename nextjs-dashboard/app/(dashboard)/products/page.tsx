@@ -3,7 +3,6 @@ import {
     File,
     ListFilter,
     PlusCircle,
-    Search,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -24,13 +23,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import {
-    Tabs,
-    TabsContent,
-    TabsList,
-    TabsTrigger,
-} from "@/components/ui/tabs"
 import { ProductsTable, ProductsTableSkeleton } from "./products-table"
 import { ProductSearchInput } from "./ProductSearchInput"
 import { CategoryFilter } from "./CategoryFilter"
@@ -60,11 +52,11 @@ export default async function ProductsPage({
 }: {
     searchParams?: {
         search?: string;
-        category?: string;
+        tab?: string;
     };
 }) {
     const search = searchParams?.search || "";
-    const category = searchParams?.category || "all";
+    const tab = searchParams?.tab || "all";
     const categories = await getCategories();
 
     return (
@@ -85,19 +77,17 @@ export default async function ProductsPage({
                 </Breadcrumb>
             </header>
             <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-                <Tabs defaultValue="all">
-                    <div className="flex items-center">
-                        <TabsList>
-                            <TabsTrigger value="all">All</TabsTrigger>
-                            <TabsTrigger value="singles">Singles</TabsTrigger>
-                            <TabsTrigger value="sealed">Sealed</TabsTrigger>
-                        </TabsList>
-                        <div className="ml-auto flex items-center gap-2">
+                <div className="flex flex-col gap-4 w-full">
+                    {/* Top Row: Search and Actions */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex-1 max-w-md w-full">
                             <ProductSearchInput />
+                        </div>
+                        <div className="flex items-center gap-2">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" className="h-7 gap-1">
-                                        <ListFilter className="h-3.5 w-3.5" />
+                                    <Button variant="outline" size="sm" className="h-9 gap-1 rounded-lg">
+                                        <ListFilter className="h-4 w-4" />
                                         <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                                             Filter
                                         </span>
@@ -115,15 +105,15 @@ export default async function ProductsPage({
                                     </DropdownMenuCheckboxItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            <Button size="sm" variant="outline" className="h-7 gap-1">
-                                <File className="h-3.5 w-3.5" />
+                            <Button size="sm" variant="outline" className="h-9 gap-1 rounded-lg">
+                                <File className="h-4 w-4" />
                                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                                     Export
                                 </span>
                             </Button>
                             <Link href="/products/create-choice">
-                                <Button size="sm" className="h-7 gap-1">
-                                    <PlusCircle className="h-3.5 w-3.5" />
+                                <Button size="sm" className="h-9 gap-1 rounded-lg">
+                                    <PlusCircle className="h-4 w-4" />
                                     <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                                         Add Product
                                     </span>
@@ -131,7 +121,9 @@ export default async function ProductsPage({
                             </Link>
                         </div>
                     </div>
-                    <div className="mt-3 bg-card p-2 px-3 rounded-lg border shadow-sm flex items-center gap-4">
+
+                    {/* Unified Category Scroll Filter Strip */}
+                    <div className="bg-card p-2 px-3 rounded-lg border shadow-sm flex items-center gap-4">
                         <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/75 border-r pr-3 py-1 whitespace-nowrap">
                             Categories
                         </span>
@@ -139,22 +131,12 @@ export default async function ProductsPage({
                             <CategoryFilter categories={categories} />
                         </div>
                     </div>
-                    <TabsContent value="all">
-                        <Suspense fallback={<ProductsTableSkeleton />}>
-                            <ProductsTable tab="all" search={search} category={category} />
-                        </Suspense>
-                    </TabsContent>
-                    <TabsContent value="singles">
-                        <Suspense fallback={<ProductsTableSkeleton />}>
-                            <ProductsTable tab="singles" search={search} category={category} />
-                        </Suspense>
-                    </TabsContent>
-                    <TabsContent value="sealed">
-                        <Suspense fallback={<ProductsTableSkeleton />}>
-                            <ProductsTable tab="sealed" search={search} category={category} />
-                        </Suspense>
-                    </TabsContent>
-                </Tabs>
+
+                    {/* Table View */}
+                    <Suspense fallback={<ProductsTableSkeleton />} key={tab + search}>
+                        <ProductsTable tab={tab} search={search} />
+                    </Suspense>
+                </div>
             </main>
         </div>
     )
