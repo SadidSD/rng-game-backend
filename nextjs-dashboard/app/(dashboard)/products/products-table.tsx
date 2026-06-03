@@ -47,7 +47,7 @@ export async function ProductsTable({
     tab = 'all',
     search = ''
 }: { 
-    tab?: 'all' | 'singles' | 'sealed';
+    tab?: string;
     search?: string;
 }) {
     const allProducts = await getProducts();
@@ -57,7 +57,8 @@ export async function ProductsTable({
         const isSealed = product.variants?.some((v: any) => v.condition === 'SEALED');
         if (tab === 'sealed') return isSealed;
         if (tab === 'singles') return !isSealed;
-        return true;
+        
+        return product.category?.slug?.toLowerCase() === tab.toLowerCase();
     });
 
     if (search) {

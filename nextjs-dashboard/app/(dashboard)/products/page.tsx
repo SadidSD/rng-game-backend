@@ -33,8 +33,28 @@ import {
 } from "@/components/ui/tabs"
 import { ProductsTable, ProductsTableSkeleton } from "./products-table"
 import { ProductSearchInput } from "./ProductSearchInput"
+import { cookies } from "next/headers"
 
-export default function ProductsPage({
+async function getCategories() {
+    try {
+        const cookieStore = cookies();
+        const token = cookieStore.get('tcg-auth-token');
+
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/categories`, {
+            cache: 'no-store',
+            headers: {
+                Authorization: `Bearer ${token?.value}`,
+                'Content-Type': 'application/json',
+            }
+        });
+        if (!res.ok) return [];
+        return await res.json();
+    } catch (e) {
+        return [];
+    }
+}
+
+export default async function ProductsPage({
     searchParams,
 }: {
     searchParams?: {
@@ -42,6 +62,7 @@ export default function ProductsPage({
     };
 }) {
     const search = searchParams?.search || "";
+    const categories = await getCategories();
 
     return (
         <div className="flex flex-col sm:gap-4 sm:py-4">
@@ -63,10 +84,13 @@ export default function ProductsPage({
             <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                 <Tabs defaultValue="all">
                     <div className="flex items-center">
-                        <TabsList>
+                        <TabsList className="flex-wrap h-auto gap-1">
                             <TabsTrigger value="all">All</TabsTrigger>
                             <TabsTrigger value="singles">Singles</TabsTrigger>
                             <TabsTrigger value="sealed">Sealed</TabsTrigger>
+                            {categories.map((cat: any) => (
+                                <TabsTrigger key={cat.id} value={cat.slug}>{cat.name}</TabsTrigger>
+                            ))}
                         </TabsList>
                         <div className="ml-auto flex items-center gap-2">
                             <ProductSearchInput />
@@ -122,6 +146,13 @@ export default function ProductsPage({
                             <ProductsTable tab="sealed" search={search} />
                         </Suspense>
                     </TabsContent>
+                    {categories.map((cat: any) => (
+                        <TabsContent key={cat.id} value={cat.slug}>
+                            <Suspense fallback={<ProductsTableSkeleton />}>
+                                <ProductsTable tab={cat.slug} search={search} />
+                            </Suspense>
+                        </TabsContent>
+                    ))}
                 </Tabs>
             </main>
         </div>
