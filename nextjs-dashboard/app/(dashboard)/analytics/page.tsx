@@ -230,12 +230,12 @@ export default function AnalyticsPage() {
     ].filter(d => d.value > 0) : [];
 
     return (
-        <div className="flex flex-col gap-6 p-1 md:p-4">
+        <div className="flex flex-col gap-6 p-1 sm:p-4">
             {/* Header and Controls */}
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 pb-2 border-b">
                 <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight">Business Intelligence Dashboard</h1>
-                    <p className="text-muted-foreground mt-1">Unified e-commerce tracking: sales overview, margins, stock valuations, retention cohorts, and event operations.</p>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Business Intelligence Dashboard</h1>
+                    <p className="text-muted-foreground mt-1 text-sm">Unified e-commerce tracking: sales overview, margins, stock valuations, retention cohorts, and event operations.</p>
                 </div>
                 
                 {/* Advanced Filter Control Bar */}
@@ -364,7 +364,7 @@ export default function AnalyticsPage() {
                         </div>
 
                         {/* Overview Charts Grid */}
-                        <div className="grid gap-6 lg:grid-cols-7">
+                        <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
                             <Card className="lg:col-span-5">
                                 <CardHeader>
                                     <CardTitle className="text-lg font-bold">Revenue & Order Trends</CardTitle>
@@ -439,6 +439,7 @@ export default function AnalyticsPage() {
                                     <CardDescription>Highest revenue generators inside selected filters</CardDescription>
                                 </CardHeader>
                                 <CardContent>
+                                    <div className="overflow-x-auto">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
@@ -465,6 +466,7 @@ export default function AnalyticsPage() {
                                             )}
                                         </TableBody>
                                     </Table>
+                                    </div>
                                 </CardContent>
                             </Card>
 
@@ -685,6 +687,7 @@ export default function AnalyticsPage() {
                                     <Badge variant="outline" className="border-amber-500/20 bg-amber-500/10 text-amber-700">Action Required</Badge>
                                 </CardHeader>
                                 <CardContent className="pt-4">
+                                    <div className="overflow-x-auto">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
@@ -711,6 +714,7 @@ export default function AnalyticsPage() {
                                             )}
                                         </TableBody>
                                     </Table>
+                                    </div>
                                 </CardContent>
                             </Card>
 
@@ -724,6 +728,7 @@ export default function AnalyticsPage() {
                                     <Badge variant="outline" className="border-red-500/20 bg-red-500/10 text-red-700">Tied Capital</Badge>
                                 </CardHeader>
                                 <CardContent className="pt-4">
+                                    <div className="overflow-x-auto">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
@@ -750,6 +755,7 @@ export default function AnalyticsPage() {
                                             )}
                                         </TableBody>
                                     </Table>
+                                    </div>
                                 </CardContent>
                             </Card>
                         </div>
@@ -900,6 +906,7 @@ export default function AnalyticsPage() {
                                     <CardDescription>Top spending purchasers sorted by cumulative orders value</CardDescription>
                                 </CardHeader>
                                 <CardContent>
+                                    <div className="overflow-x-auto">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
@@ -927,6 +934,7 @@ export default function AnalyticsPage() {
                                             )}
                                         </TableBody>
                                     </Table>
+                                    </div>
                                 </CardContent>
                             </Card>
 
@@ -937,6 +945,7 @@ export default function AnalyticsPage() {
                                     <CardDescription>VIP spenders with zero purchases in the last 60 days</CardDescription>
                                 </CardHeader>
                                 <CardContent>
+                                    <div className="overflow-x-auto">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
@@ -966,6 +975,7 @@ export default function AnalyticsPage() {
                                             )}
                                         </TableBody>
                                     </Table>
+                                    </div>
                                 </CardContent>
                             </Card>
                         </div>
@@ -1020,7 +1030,7 @@ export default function AnalyticsPage() {
                         </div>
 
                         {/* Buylist charts */}
-                        <div className="grid gap-6 md:grid-cols-7">
+                        <div className="grid gap-6 grid-cols-1 md:grid-cols-7">
                             <Card className="md:col-span-4">
                                 <CardHeader>
                                     <CardTitle className="text-lg font-bold">Completed Buylist Intake Trend</CardTitle>
@@ -1169,6 +1179,7 @@ export default function AnalyticsPage() {
                                     <CardDescription>Players participating in the most local in-store events</CardDescription>
                                 </CardHeader>
                                 <CardContent>
+                                    <div className="overflow-x-auto">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
@@ -1196,6 +1207,7 @@ export default function AnalyticsPage() {
                                             )}
                                         </TableBody>
                                     </Table>
+                                    </div>
                                 </CardContent>
                             </Card>
                         </div>

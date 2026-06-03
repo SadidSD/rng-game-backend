@@ -141,14 +141,14 @@ export default function OrdersPage() {
     return (
         <>
             <div className="flex flex-col gap-4 print:hidden">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
-                        <p className="text-muted-foreground">
+                        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Orders</h1>
+                        <p className="text-muted-foreground text-sm">
                             Manage and track your store orders
                         </p>
                     </div>
-                    <Button>
+                    <Button className="self-start sm:self-auto">
                         <Download className="mr-2 h-4 w-4" />
                         Export
                     </Button>
@@ -184,23 +184,25 @@ export default function OrdersPage() {
                     setActiveTab(val);
                     setSelectedIds([]);
                 }} className="w-full">
-                    <div className="flex items-center justify-between">
-                        <TabsList>
-                            <TabsTrigger value="all">All Orders</TabsTrigger>
-                            <TabsTrigger value="pending">Pending</TabsTrigger>
-                            <TabsTrigger value="processing">Processing</TabsTrigger>
-                            <TabsTrigger value="shipped">Shipped</TabsTrigger>
-                            <TabsTrigger value="completed">Completed</TabsTrigger>
-                        </TabsList>
+                    <div className="flex flex-col gap-3">
+                        <div className="overflow-x-auto">
+                            <TabsList className="flex flex-wrap h-auto">
+                                <TabsTrigger value="all">All Orders</TabsTrigger>
+                                <TabsTrigger value="pending">Pending</TabsTrigger>
+                                <TabsTrigger value="processing">Processing</TabsTrigger>
+                                <TabsTrigger value="shipped">Shipped</TabsTrigger>
+                                <TabsTrigger value="completed">Completed</TabsTrigger>
+                            </TabsList>
+                        </div>
                         <div className="flex items-center gap-2">
-                            <div className="relative">
+                            <div className="relative flex-1">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     type="search"
                                     placeholder="Search orders..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-8 w-[300px]"
+                                    className="pl-8 w-full"
                                 />
                             </div>
                             <Button variant="outline" size="icon">
@@ -219,6 +221,7 @@ export default function OrdersPage() {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
+                                    <div className="overflow-x-auto">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
@@ -230,10 +233,10 @@ export default function OrdersPage() {
                                                 </TableHead>
                                                 <TableHead>Order ID</TableHead>
                                                 <TableHead>Customer</TableHead>
-                                                <TableHead>Items</TableHead>
+                                                <TableHead className="hidden sm:table-cell">Items</TableHead>
                                                 <TableHead>Total</TableHead>
                                                 <TableHead>Status</TableHead>
-                                                <TableHead>Date</TableHead>
+                                                <TableHead className="hidden sm:table-cell">Date</TableHead>
                                                 <TableHead className="text-right">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -264,7 +267,7 @@ export default function OrdersPage() {
                                                             {order.customer?.firstName} {order.customer?.lastName}
                                                             <div className="text-xs text-muted-foreground">{order.customer?.email}</div>
                                                         </TableCell>
-                                                        <TableCell className="max-w-[200px] truncate" title={order.items?.map(i => `${i.productName} (${i.quantity})`).join(', ')}>
+                                                        <TableCell className="hidden sm:table-cell max-w-[200px] truncate" title={order.items?.map(i => `${i.productName} (${i.quantity})`).join(', ')}>
                                                             {order.items?.map(i => `${i.productName} (x${i.quantity})`).join(', ') || 'No Items'}
                                                         </TableCell>
                                                         <TableCell>${Number(order.total).toFixed(2)}</TableCell>
@@ -273,7 +276,7 @@ export default function OrdersPage() {
                                                                 {order.status}
                                                             </Badge>
                                                         </TableCell>
-                                                        <TableCell>{format(new Date(order.createdAt), 'MMM dd, yyyy')}</TableCell>
+                                                        <TableCell className="hidden sm:table-cell">{format(new Date(order.createdAt), 'MMM dd, yyyy')}</TableCell>
                                                         <TableCell className="text-right">
                                                             <Button variant="ghost" size="sm" asChild>
                                                                 <Link href={`/orders/${order.id}`}>View</Link>
@@ -284,6 +287,7 @@ export default function OrdersPage() {
                                             )}
                                         </TableBody>
                                     </Table>
+                                    </div>
                                 </CardContent>
                             </Card>
                         </TabsContent>
@@ -341,8 +345,8 @@ export default function OrdersPage() {
                                         </div>
                                     </div>
 
-                                    <div className="border border-neutral-800 print:border-black rounded-xl overflow-hidden print:rounded-none">
-                                        <table className="w-full text-left text-xs border-collapse">
+                                    <div className="border border-neutral-800 print:border-black rounded-xl overflow-hidden print:rounded-none overflow-x-auto">
+                                        <table className="w-full text-left text-xs border-collapse min-w-[600px]">
                                             <thead>
                                                 <tr className="bg-neutral-950 text-neutral-450 uppercase tracking-wider font-bold text-[10px] border-b border-neutral-800 print:bg-neutral-100 print:text-black print:border-black">
                                                     <th className="py-3 px-4">Game</th>

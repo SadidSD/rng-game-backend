@@ -59,6 +59,7 @@ export async function EventsTable() {
                 </CardDescription>
             </CardHeader>
             <CardContent>
+                <div className="overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -66,10 +67,10 @@ export async function EventsTable() {
                                 <span className="sr-only">Image</span>
                             </TableHead>
                             <TableHead>Name</TableHead>
-                            <TableHead>Game</TableHead>
-                            <TableHead>Date</TableHead>
+                            <TableHead className="hidden sm:table-cell">Game</TableHead>
+                            <TableHead className="hidden sm:table-cell">Date</TableHead>
                             <TableHead>Fee</TableHead>
-                            <TableHead>Players</TableHead>
+                            <TableHead className="hidden sm:table-cell">Players</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>
                                 <span className="sr-only">Actions</span>
@@ -106,10 +107,10 @@ export async function EventsTable() {
                                         {event.name}
                                         <div className="text-xs text-muted-foreground">{event.format}</div>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="hidden sm:table-cell">
                                         <Badge variant="secondary">{event.game}</Badge>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="hidden sm:table-cell">
                                         {new Date(event.date).toLocaleDateString()}
                                         <div className="text-xs text-muted-foreground">
                                             {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -118,7 +119,7 @@ export async function EventsTable() {
                                     <TableCell>
                                         {Number(event.entryFee) === 0 ? 'Free' : `$${Number(event.entryFee).toFixed(2)}`}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="hidden sm:table-cell">
                                         <div className="flex items-center gap-1">
                                             <span>{event._count?.players || 0}</span>
                                             <span className="text-gray-400">/ {event.maxPlayers || '∞'}</span>
@@ -150,6 +151,7 @@ export async function EventsTable() {
                         )}
                     </TableBody>
                 </Table>
+                </div>
             </CardContent>
             <CardFooter>
                 <div className="text-xs text-muted-foreground">

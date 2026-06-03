@@ -50,17 +50,17 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
 
     return (
         <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-4">
-                <Button variant="outline" size="icon" asChild>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <Button variant="outline" size="icon" asChild className="shrink-0">
                     <Link href="/orders">
                         <ChevronLeft className="h-4 w-4" />
                     </Link>
                 </Button>
                 <div className="flex-1">
-                    <h1 className="text-3xl font-bold tracking-tight">Order {orderId.slice(0, 8)}</h1>
-                    <p className="text-muted-foreground">{format(new Date(order.createdAt), 'MMMM d, yyyy @ h:mm a')}</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Order {orderId.slice(0, 8)}</h1>
+                    <p className="text-muted-foreground text-sm">{format(new Date(order.createdAt), 'MMMM d, yyyy @ h:mm a')}</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 self-start sm:self-auto">
                     <Button variant="outline">
                         <Printer className="mr-2 h-4 w-4" />
                         Print Invoice
@@ -68,7 +68,7 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
                 </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
                 <Card className="md:col-span-2">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <div className="space-y-1">
@@ -82,6 +82,7 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
                         />
                     </CardHeader>
                     <CardContent>
+                        <div className="overflow-x-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -104,6 +105,7 @@ export default async function OrderDetailsPage({ params }: { params: { id: strin
                                 ))}
                             </TableBody>
                         </Table>
+                        </div>
                         <Separator className="my-4" />
                         <div className="space-y-2">
                             <div className="flex justify-between text-sm">

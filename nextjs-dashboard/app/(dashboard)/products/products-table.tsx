@@ -78,6 +78,7 @@ export async function ProductsTable({
                 </CardDescription>
             </CardHeader>
             <CardContent>
+                <div className="overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -143,6 +144,7 @@ export async function ProductsTable({
                         )}
                     </TableBody>
                 </Table>
+                </div>
             </CardContent>
             <CardFooter>
                 <div className="text-xs text-muted-foreground">

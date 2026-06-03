@@ -179,15 +179,15 @@ export default function BuylistPage() {
     );
 
     return (
-        <div className="flex flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-6 p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Buylist Management</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Buylist Management</h1>
+                    <p className="text-muted-foreground text-sm">
                         Review customer sell orders and issue store credit.
                     </p>
                 </div>
-                <Button variant="outline" onClick={fetchOffers}>
+                <Button variant="outline" onClick={fetchOffers} className="self-start sm:self-auto">
                     Refresh
                 </Button>
             </div>
@@ -200,7 +200,7 @@ export default function BuylistPage() {
 
                 <TabsContent value="offers" className="space-y-6">
                     {/* KPI Cards */}
-                    <div className="grid gap-4 md:grid-cols-4">
+                    <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
                         <Card>
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
@@ -245,9 +245,9 @@ export default function BuylistPage() {
 
                     <Card>
                         <CardHeader>
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                                 <CardTitle>Offers</CardTitle>
-                                <div className="relative w-[300px]">
+                                <div className="relative w-full sm:w-[300px]">
                                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                     <Input
                                         placeholder="Search by name or ID..."
@@ -259,6 +259,7 @@ export default function BuylistPage() {
                             </div>
                         </CardHeader>
                         <CardContent>
+                            <div className="overflow-x-auto">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -299,7 +300,7 @@ export default function BuylistPage() {
                                                     {new Date(offer.createdAt).toLocaleDateString()}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <div className="flex gap-2">
+                                                    <div className="flex flex-wrap gap-1.5">
                                                         <Button size="sm" variant="outline" onClick={() => setViewingItems(offer.items)}>
                                                             <Eye className="w-4 h-4 mr-1" /> View Cards
                                                         </Button>
@@ -343,12 +344,13 @@ export default function BuylistPage() {
                                     )}
                                 </TableBody>
                             </Table>
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
 
                 <TabsContent value="rules" className="space-y-6">
-                    <div className="grid gap-6 md:grid-cols-3">
+                    <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
                         <Card className="md:col-span-2">
                             <CardHeader>
                                 <CardTitle>Active Pricing Rules</CardTitle>
@@ -357,6 +359,7 @@ export default function BuylistPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
+                                <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -395,6 +398,7 @@ export default function BuylistPage() {
                                         )}
                                     </TableBody>
                                 </Table>
+                                </div>
                             </CardContent>
                         </Card>
 

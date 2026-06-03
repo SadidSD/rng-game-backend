@@ -12,11 +12,11 @@ export default function DashboardLayout({
             <div className="print:hidden">
                 <Sidebar />
             </div>
-            <div className="flex flex-col print:block print:w-full">
+            <div className="flex flex-col print:block print:w-full overflow-x-hidden">
                 <div className="print:hidden">
                     <Header />
                 </div>
-                <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 print:p-0 print:m-0 print:w-full">
+                <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 print:p-0 print:m-0 print:w-full overflow-x-hidden">
                     {children}
                 </main>
             </div>
