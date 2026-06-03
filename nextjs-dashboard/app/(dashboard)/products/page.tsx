@@ -122,14 +122,12 @@ export default async function ProductsPage({
                         </div>
                     </div>
 
-                    {/* Unified Category Scroll Filter Strip */}
-                    <div className="bg-card p-2 px-3 rounded-lg border shadow-sm flex items-center gap-4">
-                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/75 border-r pr-3 py-1 whitespace-nowrap">
+                    {/* Unified Categories Filter Card */}
+                    <div className="bg-card p-3 rounded-lg border shadow-sm flex flex-col gap-2.5">
+                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/75 px-1">
                             Categories
                         </span>
-                        <div className="flex-1 min-w-0">
-                            <CategoryFilter categories={categories} />
-                        </div>
+                        <CategoryFilter categories={categories} />
                     </div>
 
                     {/* Table View */}
