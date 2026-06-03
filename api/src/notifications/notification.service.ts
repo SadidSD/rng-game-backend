@@ -259,6 +259,90 @@ export class NotificationService {
     }
 
     /**
+     * Send order update email to customer after a QC adjustment
+     */
+    async sendOrderUpdateEmail(
+        customerEmail: string,
+        orderData: {
+            orderId: string;
+            total: number;
+            items: Array<{ productName: string; quantity: number; price: any }>;
+            shippingAddress: {
+                name: string;
+                address: string;
+                city: string;
+                state: string;
+                zip: string;
+                country: string;
+            };
+        }
+    ) {
+        const subject = `⚠️ Order Updated — RNG Gamez #${orderData.orderId.substring(0, 8).toUpperCase()}`;
+        const itemsHtml = orderData.items.map(item => 
+            `<tr>
+                <td style="padding: 10px 16px; border-bottom: 1px solid #eaeaea;">${item.productName}</td>
+                <td style="padding: 10px 16px; border-bottom: 1px solid #eaeaea; text-align: center;">${item.quantity}</td>
+                <td style="padding: 10px 16px; border-bottom: 1px solid #eaeaea; text-align: right;">$${Number(item.price).toFixed(2)}</td>
+            </tr>`
+        ).join('');
+
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+        const trackingLink = `${frontendUrl}/account/orders/${orderData.orderId}`;
+
+        const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #f9f9f9; border-radius: 12px; color: #333;">
+            <h2 style="color: #6d28d9; margin-bottom: 8px;">Order Updated!</h2>
+            <p>Your order details have been updated by our staff (e.g., due to quality control card checks or requested item adjustments).</p>
+            
+            <div style="background: white; border-radius: 8px; padding: 16px; margin: 16px 0; border: 1px solid #eaeaea;">
+                <p style="margin: 0 0 8px; font-weight: bold; color: #555;">Order Details</p>
+                <p style="margin: 0; font-family: monospace; font-size: 0.9em;">Order ID: ${orderData.orderId}</p>
+                <p style="margin: 4px 0 0;">Status: <span style="background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-weight: bold;">UPDATED</span></p>
+            </div>
+
+            <h3 style="color: #555; margin-bottom: 8px;">Updated Items List</h3>
+            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; border: 1px solid #eaeaea; margin-bottom: 16px;">
+                <thead>
+                    <tr style="background: #f8fafc;">
+                        <th style="padding: 10px 16px; text-align: left; color: #475569; font-size: 0.9em; border-bottom: 2px solid #eaeaea;">Product</th>
+                        <th style="padding: 10px 16px; text-align: center; color: #475569; font-size: 0.9em; border-bottom: 2px solid #eaeaea;">Qty</th>
+                        <th style="padding: 10px 16px; text-align: right; color: #475569; font-size: 0.9em; border-bottom: 2px solid #eaeaea;">Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${itemsHtml}
+                    <tr style="background: #f8fafc; font-weight: bold;">
+                        <td colspan="2" style="padding: 12px 16px; text-align: right; border-top: 2px solid #eaeaea;">Total</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #6d28d9; font-size: 1.1em; border-top: 2px solid #eaeaea;">$${orderData.total.toFixed(2)}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 style="color: #555; margin-bottom: 8px;">Shipping Address</h3>
+            <div style="background: white; border-radius: 8px; padding: 16px; border: 1px solid #eaeaea; margin-bottom: 24px; line-height: 1.5;">
+                <strong>${orderData.shippingAddress.name}</strong><br/>
+                ${orderData.shippingAddress.address}<br/>
+                ${orderData.shippingAddress.city}, ${orderData.shippingAddress.state} ${orderData.shippingAddress.zip}<br/>
+                ${orderData.shippingAddress.country}
+            </div>
+
+            <div style="text-align: center; margin: 32px 0;">
+                <a href="${trackingLink}" style="display: inline-block; padding: 12px 28px; background: #6d28d9; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">View Order Status</a>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #eaeaea; margin: 24px 0;" />
+            <p style="color: #888; font-size: 0.85em; text-align: center;">Thank you for shopping with RNG Gamez!</p>
+        </div>
+        `;
+
+        try {
+            await this.sendEmail(customerEmail, subject, html);
+        } catch (error: any) {
+            this.logger.error(`Failed to send order update email to ${customerEmail}: ${error.message}`);
+        }
+    }
+
+    /**
      * Send order shipped notification to customer
      */
     async sendShippingNotification(customerEmail: string, trackingCode: string, trackingUrl?: string) {

@@ -611,7 +611,7 @@ export class OrdersService {
     }
 
     async updateOrderItems(storeId: string, orderId: string, dto: UpdateOrderItemsDto) {
-        return this.prisma.$transaction(async (tx) => {
+        const updatedOrder = await this.prisma.$transaction(async (tx) => {
             const order = await tx.order.findFirst({
                 where: { id: orderId, storeId },
                 include: { items: true, customer: true }
@@ -717,7 +717,7 @@ export class OrdersService {
                 where: { orderId }
             });
 
-            const updatedOrder = await tx.order.update({
+            const resOrder = await tx.order.update({
                 where: { id: orderId },
                 data: {
                     total: newTotal,
@@ -729,7 +729,33 @@ export class OrdersService {
             });
 
             this.logger.info(`Order ${orderId} items updated via QC. New total: $${newTotal}`);
-            return updatedOrder;
+            return resOrder;
         });
+
+        // Trigger email notification to customer
+        if (updatedOrder.customer?.email) {
+            await this.notificationService.sendOrderUpdateEmail(
+                updatedOrder.customer.email,
+                {
+                    orderId: updatedOrder.id,
+                    total: Number(updatedOrder.total),
+                    items: updatedOrder.items.map(item => ({
+                        productName: item.productName,
+                        quantity: item.quantity,
+                        price: item.price,
+                    })),
+                    shippingAddress: {
+                        name: updatedOrder.shippingName || ((updatedOrder.customer.firstName || '') + ' ' + (updatedOrder.customer.lastName || '')).trim() || 'Valued Customer',
+                        address: updatedOrder.shippingAddress || '',
+                        city: updatedOrder.shippingCity || '',
+                        state: updatedOrder.shippingState || '',
+                        zip: updatedOrder.shippingZip || '',
+                        country: updatedOrder.shippingCountry || '',
+                    }
+                }
+            ).catch(err => this.logger.error(`Failed to send order update email: ${err.message}`));
+        }
+
+        return updatedOrder;
     }
 }
