@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import Cookies from "js-cookie"
@@ -33,6 +34,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 export default function Header() {
     const router = useRouter();
     const pathname = usePathname();
+    const [open, setOpen] = useState(false);
 
     const handleLogout = () => {
         // Clear the token cookie
@@ -44,7 +46,7 @@ export default function Header() {
 
     return (
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-            <Sheet>
+            <Sheet open={open} onOpenChange={setOpen}>
                 <SheetTrigger asChild>
                     <Button
                         variant="outline"
@@ -59,6 +61,7 @@ export default function Header() {
                     <nav className="grid gap-2 text-lg font-medium">
                         <Link
                             href="/"
+                            onClick={() => setOpen(false)}
                             className="flex items-center gap-2 text-lg font-semibold"
                         >
                             <Package2 className="h-6 w-6" />
@@ -80,6 +83,7 @@ export default function Header() {
                                 <Link
                                     key={item.name}
                                     href={item.href}
+                                    onClick={() => setOpen(false)}
                                     className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 transition-all ${
                                         isActive
                                             ? "bg-muted text-foreground"
