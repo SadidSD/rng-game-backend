@@ -376,7 +376,7 @@ export default function OrdersPage() {
                                             </tbody>
                                         </table>
                                     </div>
-                                    <div className="flex justify-between items-center text-xs text-neutral-450 print:text-black pt-4">
+                                    <div className="flex justify-between items-center text-xs text-neutral-450 print:text-black pt-4 px-4">
                                         <span>Items pulled match sorting box structure Game → Set → Card Name → Condition → Foil.</span>
                                         <span className="font-bold text-white print:text-black">
                                             Total Cards: {pullListItems.reduce((acc, item) => acc + item.quantity, 0)}

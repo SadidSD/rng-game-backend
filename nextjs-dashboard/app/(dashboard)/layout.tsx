@@ -8,15 +8,15 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+        <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] print:block print:w-full print:min-h-0">
             <div className="print:hidden">
                 <Sidebar />
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col print:block print:w-full">
                 <div className="print:hidden">
                     <Header />
                 </div>
-                <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 print:p-0">
+                <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 print:p-0 print:m-0 print:w-full">
                     {children}
                 </main>
             </div>
