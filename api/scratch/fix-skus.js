@@ -62,7 +62,14 @@ async function main() {
                 where: { id: variant.id },
                 data: { sku: newSku }
             });
-            console.log(`✓ Updated SKU: ${variant.sku || 'N/A'} → ${newSku} (${product.name})`);
+            
+            // Also update any matching historical order items to clean up existing orders
+            const updateRes = await prisma.orderItem.updateMany({
+                where: { variantId: variant.id },
+                data: { variantSku: newSku }
+            });
+
+            console.log(`✓ Updated SKU: ${variant.sku || 'N/A'} → ${newSku} (${product.name}). Synced ${updateRes.count} order items.`);
             fixedCount++;
         } catch (e) {
             console.error(`✗ Failed updating variant ${variant.id} (${product.name}): ${e.message}`);

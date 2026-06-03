@@ -571,7 +571,7 @@ export class OrdersService {
             const condition = variant?.condition || 'N/A';
             const isFoil = variant?.isFoil || false;
             const language = variant?.language || 'English';
-            const sku = item.variantSku || 'N/A';
+            const sku = variant?.sku || item.variantSku || 'N/A';
             const location = variant?.inventory?.location || 'N/A';
 
             if (aggregated[vId]) {
