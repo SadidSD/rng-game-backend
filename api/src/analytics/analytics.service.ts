@@ -487,8 +487,8 @@ export class AnalyticsService {
         for (const b of completedBuylists) {
             totalBuylistCash += Number(b.totalCash);
             totalBuylistCredit += Number(b.totalCredit);
-            totalIntakeValue += b.items.reduce((sum, i) => sum + (Number(i.imageUrl || i.offerPrice) * i.quantity), 0); 
-            // note: if imageUrl was stored, else let's use offerPrice directly to compute intake cost price
+            totalIntakeValue += b.items.reduce((sum, i) => sum + (Number(i.offerPrice) * i.quantity), 0); 
+            // note: let's use offerPrice directly to compute intake cost price
             // let's compute intake cost price as totalCash + totalCredit (since that's what we paid)
         }
 
