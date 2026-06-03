@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/tabs"
 import { ProductsTable, ProductsTableSkeleton } from "./products-table"
 import { ProductSearchInput } from "./ProductSearchInput"
+import { CategoryFilter } from "./CategoryFilter"
 import { cookies } from "next/headers"
 
 async function getCategories() {
@@ -59,9 +60,11 @@ export default async function ProductsPage({
 }: {
     searchParams?: {
         search?: string;
+        category?: string;
     };
 }) {
     const search = searchParams?.search || "";
+    const category = searchParams?.category || "all";
     const categories = await getCategories();
 
     return (
@@ -84,13 +87,10 @@ export default async function ProductsPage({
             <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
                 <Tabs defaultValue="all">
                     <div className="flex items-center">
-                        <TabsList className="flex-wrap h-auto gap-1">
+                        <TabsList>
                             <TabsTrigger value="all">All</TabsTrigger>
                             <TabsTrigger value="singles">Singles</TabsTrigger>
                             <TabsTrigger value="sealed">Sealed</TabsTrigger>
-                            {categories.map((cat: any) => (
-                                <TabsTrigger key={cat.id} value={cat.slug}>{cat.name}</TabsTrigger>
-                            ))}
                         </TabsList>
                         <div className="ml-auto flex items-center gap-2">
                             <ProductSearchInput />
@@ -131,28 +131,29 @@ export default async function ProductsPage({
                             </Link>
                         </div>
                     </div>
+                    <div className="mt-3 bg-card p-2 px-3 rounded-lg border shadow-sm flex items-center gap-4">
+                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/75 border-r pr-3 py-1 whitespace-nowrap">
+                            Categories
+                        </span>
+                        <div className="flex-1 min-w-0">
+                            <CategoryFilter categories={categories} />
+                        </div>
+                    </div>
                     <TabsContent value="all">
                         <Suspense fallback={<ProductsTableSkeleton />}>
-                            <ProductsTable tab="all" search={search} />
+                            <ProductsTable tab="all" search={search} category={category} />
                         </Suspense>
                     </TabsContent>
                     <TabsContent value="singles">
                         <Suspense fallback={<ProductsTableSkeleton />}>
-                            <ProductsTable tab="singles" search={search} />
+                            <ProductsTable tab="singles" search={search} category={category} />
                         </Suspense>
                     </TabsContent>
                     <TabsContent value="sealed">
                         <Suspense fallback={<ProductsTableSkeleton />}>
-                            <ProductsTable tab="sealed" search={search} />
+                            <ProductsTable tab="sealed" search={search} category={category} />
                         </Suspense>
                     </TabsContent>
-                    {categories.map((cat: any) => (
-                        <TabsContent key={cat.id} value={cat.slug}>
-                            <Suspense fallback={<ProductsTableSkeleton />}>
-                                <ProductsTable tab={cat.slug} search={search} />
-                            </Suspense>
-                        </TabsContent>
-                    ))}
                 </Tabs>
             </main>
         </div>

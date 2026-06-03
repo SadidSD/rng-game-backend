@@ -45,20 +45,24 @@ async function getProducts() {
 
 export async function ProductsTable({ 
     tab = 'all',
-    search = ''
+    search = '',
+    category = 'all'
 }: { 
     tab?: string;
     search?: string;
+    category?: string;
 }) {
     const allProducts = await getProducts();
 
     let products = allProducts.filter((product: any) => {
-        if (tab === 'all') return true;
         const isSealed = product.variants?.some((v: any) => v.condition === 'SEALED');
-        if (tab === 'sealed') return isSealed;
-        if (tab === 'singles') return !isSealed;
+        if (tab === 'sealed' && !isSealed) return false;
+        if (tab === 'singles' && isSealed) return false;
         
-        return product.category?.slug?.toLowerCase() === tab.toLowerCase();
+        if (category && category !== 'all') {
+            return product.category?.slug?.toLowerCase() === category.toLowerCase();
+        }
+        return true;
     });
 
     if (search) {
