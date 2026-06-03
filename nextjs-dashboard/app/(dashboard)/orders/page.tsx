@@ -186,7 +186,7 @@ export default function OrdersPage() {
                 }} className="w-full">
                     <div className="flex flex-col gap-3">
                         <div className="overflow-x-auto">
-                            <TabsList className="flex flex-wrap h-auto">
+                            <TabsList className="flex flex-wrap h-auto w-full justify-start">
                                 <TabsTrigger value="all">All Orders</TabsTrigger>
                                 <TabsTrigger value="pending">Pending</TabsTrigger>
                                 <TabsTrigger value="processing">Processing</TabsTrigger>
