@@ -139,155 +139,157 @@ export default function OrdersPage() {
     };
 
     return (
-        <div className="flex flex-col gap-4 print:hidden">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
-                    <p className="text-muted-foreground">
-                        Manage and track your store orders
-                    </p>
-                </div>
-                <Button>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export
-                </Button>
-            </div>
-
-            {/* Batch Action Bar */}
-            {selectedIds.length > 0 && (
-                <div className="bg-purple-950/20 border border-purple-500/30 rounded-xl p-4 flex items-center justify-between backdrop-blur-md animate-in fade-in slide-in-from-top-4 duration-200">
-                    <div className="flex items-center gap-3">
-                        <CheckSquare className="text-purple-400 h-5 w-5" />
-                        <span className="text-sm font-semibold text-purple-200">{selectedIds.length} orders selected</span>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button
-                            onClick={generatePullList}
-                            className="bg-purple-600 hover:bg-purple-500 text-white font-bold flex items-center gap-1.5 shadow-lg shadow-purple-500/20"
-                        >
-                            <Printer className="h-4 w-4" />
-                            <span>Generate Pull List</span>
-                        </Button>
-                        <Button
-                            variant="outline"
-                            onClick={() => setSelectedIds([])}
-                            className="border-neutral-800 hover:bg-neutral-800 text-neutral-400 hover:text-white"
-                        >
-                            Cancel
-                        </Button>
-                    </div>
-                </div>
-            )}
-
-            <Tabs value={activeTab} onValueChange={(val) => {
-                setActiveTab(val);
-                setSelectedIds([]);
-            }} className="w-full">
+        <>
+            <div className="flex flex-col gap-4 print:hidden">
                 <div className="flex items-center justify-between">
-                    <TabsList>
-                        <TabsTrigger value="all">All Orders</TabsTrigger>
-                        <TabsTrigger value="pending">Pending</TabsTrigger>
-                        <TabsTrigger value="processing">Processing</TabsTrigger>
-                        <TabsTrigger value="shipped">Shipped</TabsTrigger>
-                        <TabsTrigger value="completed">Completed</TabsTrigger>
-                    </TabsList>
-                    <div className="flex items-center gap-2">
-                        <div className="relative">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                type="search"
-                                placeholder="Search orders..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-8 w-[300px]"
-                            />
-                        </div>
-                        <Button variant="outline" size="icon">
-                            <Filter className="h-4 w-4" />
-                        </Button>
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
+                        <p className="text-muted-foreground">
+                            Manage and track your store orders
+                        </p>
                     </div>
+                    <Button>
+                        <Download className="mr-2 h-4 w-4" />
+                        Export
+                    </Button>
                 </div>
 
-                {['all', 'pending', 'processing', 'shipped', 'completed'].map((tab) => (
-                    <TabsContent key={tab} value={tab} className="mt-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>{tab.charAt(0).toUpperCase() + tab.slice(1)} Orders</CardTitle>
-                                <CardDescription>
-                                    View and manage {tab} customer orders
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead className="w-[50px]">
-                                                <Checkbox
-                                                    checked={currentTabOrders.length > 0 && selectedIds.length === currentTabOrders.length}
-                                                    onCheckedChange={(checked) => handleSelectAll(!!checked)}
-                                                />
-                                            </TableHead>
-                                            <TableHead>Order ID</TableHead>
-                                            <TableHead>Customer</TableHead>
-                                            <TableHead>Items</TableHead>
-                                            <TableHead>Total</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Date</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {loading ? (
+                {/* Batch Action Bar */}
+                {selectedIds.length > 0 && (
+                    <div className="bg-purple-950/20 border border-purple-500/30 rounded-xl p-4 flex items-center justify-between backdrop-blur-md animate-in fade-in slide-in-from-top-4 duration-200">
+                        <div className="flex items-center gap-3">
+                            <CheckSquare className="text-purple-400 h-5 w-5" />
+                            <span className="text-sm font-semibold text-purple-200">{selectedIds.length} orders selected</span>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                                onClick={generatePullList}
+                                className="bg-purple-600 hover:bg-purple-500 text-white font-bold flex items-center gap-1.5 shadow-lg shadow-purple-500/20"
+                            >
+                                <Printer className="h-4 w-4" />
+                                <span>Generate Pull List</span>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => setSelectedIds([])}
+                                className="border-neutral-800 hover:bg-neutral-800 text-neutral-400 hover:text-white"
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                <Tabs value={activeTab} onValueChange={(val) => {
+                    setActiveTab(val);
+                    setSelectedIds([]);
+                }} className="w-full">
+                    <div className="flex items-center justify-between">
+                        <TabsList>
+                            <TabsTrigger value="all">All Orders</TabsTrigger>
+                            <TabsTrigger value="pending">Pending</TabsTrigger>
+                            <TabsTrigger value="processing">Processing</TabsTrigger>
+                            <TabsTrigger value="shipped">Shipped</TabsTrigger>
+                            <TabsTrigger value="completed">Completed</TabsTrigger>
+                        </TabsList>
+                        <div className="flex items-center gap-2">
+                            <div className="relative">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    type="search"
+                                    placeholder="Search orders..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-8 w-[300px]"
+                                />
+                            </div>
+                            <Button variant="outline" size="icon">
+                                <Filter className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+
+                    {['all', 'pending', 'processing', 'shipped', 'completed'].map((tab) => (
+                        <TabsContent key={tab} value={tab} className="mt-4">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>{tab.charAt(0).toUpperCase() + tab.slice(1)} Orders</CardTitle>
+                                    <CardDescription>
+                                        View and manage {tab} customer orders
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
                                             <TableRow>
-                                                <TableCell colSpan={8} className="text-center h-24">Loading...</TableCell>
+                                                <TableHead className="w-[50px]">
+                                                    <Checkbox
+                                                        checked={currentTabOrders.length > 0 && selectedIds.length === currentTabOrders.length}
+                                                        onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                                                    />
+                                                </TableHead>
+                                                <TableHead>Order ID</TableHead>
+                                                <TableHead>Customer</TableHead>
+                                                <TableHead>Items</TableHead>
+                                                <TableHead>Total</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead>Date</TableHead>
+                                                <TableHead className="text-right">Actions</TableHead>
                                             </TableRow>
-                                        ) : currentTabOrders.length === 0 ? (
-                                            <TableRow>
-                                                <TableCell colSpan={8} className="text-center h-24">No orders found.</TableCell>
-                                            </TableRow>
-                                        ) : (
-                                            currentTabOrders.map((order) => (
-                                                <TableRow key={order.id}>
-                                                    <TableCell>
-                                                        <Checkbox
-                                                            checked={selectedIds.includes(order.id)}
-                                                            onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="font-mono font-medium">
-                                                        <Link href={`/orders/${order.id}`} className="hover:underline text-purple-400">
-                                                            {order.id.slice(0, 8).toUpperCase()}
-                                                        </Link>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {order.customer?.firstName} {order.customer?.lastName}
-                                                        <div className="text-xs text-muted-foreground">{order.customer?.email}</div>
-                                                    </TableCell>
-                                                    <TableCell className="max-w-[200px] truncate" title={order.items?.map(i => `${i.productName} (${i.quantity})`).join(', ')}>
-                                                        {order.items?.map(i => `${i.productName} (x${i.quantity})`).join(', ') || 'No Items'}
-                                                    </TableCell>
-                                                    <TableCell>${Number(order.total).toFixed(2)}</TableCell>
-                                                    <TableCell>
-                                                        <Badge variant={getStatusColor(order.status)}>
-                                                            {order.status}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell>{format(new Date(order.createdAt), 'MMM dd, yyyy')}</TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button variant="ghost" size="sm" asChild>
-                                                            <Link href={`/orders/${order.id}`}>View</Link>
-                                                        </Button>
-                                                    </TableCell>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {loading ? (
+                                                <TableRow>
+                                                    <TableCell colSpan={8} className="text-center h-24">Loading...</TableCell>
                                                 </TableRow>
-                                            ))
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                ))}
-            </Tabs>
+                                            ) : currentTabOrders.length === 0 ? (
+                                                <TableRow>
+                                                    <TableCell colSpan={8} className="text-center h-24">No orders found.</TableCell>
+                                                </TableRow>
+                                            ) : (
+                                                currentTabOrders.map((order) => (
+                                                    <TableRow key={order.id}>
+                                                        <TableCell>
+                                                            <Checkbox
+                                                                checked={selectedIds.includes(order.id)}
+                                                                onCheckedChange={(checked) => handleSelectRow(order.id, !!checked)}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell className="font-mono font-medium">
+                                                            <Link href={`/orders/${order.id}`} className="hover:underline text-purple-400">
+                                                                {order.id.slice(0, 8).toUpperCase()}
+                                                            </Link>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {order.customer?.firstName} {order.customer?.lastName}
+                                                            <div className="text-xs text-muted-foreground">{order.customer?.email}</div>
+                                                        </TableCell>
+                                                        <TableCell className="max-w-[200px] truncate" title={order.items?.map(i => `${i.productName} (${i.quantity})`).join(', ')}>
+                                                            {order.items?.map(i => `${i.productName} (x${i.quantity})`).join(', ') || 'No Items'}
+                                                        </TableCell>
+                                                        <TableCell>${Number(order.total).toFixed(2)}</TableCell>
+                                                        <TableCell>
+                                                            <Badge variant={getStatusColor(order.status)}>
+                                                                {order.status}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell>{format(new Date(order.createdAt), 'MMM dd, yyyy')}</TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button variant="ghost" size="sm" asChild>
+                                                                <Link href={`/orders/${order.id}`}>View</Link>
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    ))}
+                </Tabs>
+            </div>
 
             {/* Pull List Overlay (Printable Modal) */}
             {pullListOpen && (
@@ -386,6 +388,6 @@ export default function OrdersPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }
