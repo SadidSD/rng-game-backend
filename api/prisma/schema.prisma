@@ -222,7 +222,12 @@ model Order {
   id          String   @id @default(uuid())
   orderNumber Int      @default(autoincrement()) // Per store would be ideal, but global is simpler for v1
   status      OrderStatus @default(PENDING)
-  total       Decimal  @db.Decimal(10, 2)
+
+  // Cost breakdown
+  subtotal    Decimal  @default(0) @db.Decimal(10, 2) // cards only, before tax/shipping
+  taxAmount   Decimal  @default(0) @db.Decimal(10, 2) // NJ 6.625% sales tax
+  shippingCost Decimal @default(0) @db.Decimal(10, 2) // flat rate or free
+  total       Decimal  @db.Decimal(10, 2)              // subtotal + tax + shipping
   
   customerId  String?
   customer    Customer? @relation(fields: [customerId], references: [id])

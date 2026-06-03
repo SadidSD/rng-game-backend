@@ -28,13 +28,26 @@ export class OrdersService {
      * Create an order and initiate Stripe payment
      * Returns Stripe Checkout Session URL
      */
+    // --- Pricing Constants ---
+    private readonly TAX_RATE = 0.06625;           // NJ 6.625% sales tax
+    private readonly SHIPPING_FLAT = 4.99;          // Standard flat rate
+    private readonly SHIPPING_FREE_THRESHOLD = 75;  // Free shipping over $75
+
+    private calculateShipping(subtotal: number): number {
+        return subtotal >= this.SHIPPING_FREE_THRESHOLD ? 0 : this.SHIPPING_FLAT;
+    }
+
+    private calculateTax(subtotal: number): number {
+        return Math.round(subtotal * this.TAX_RATE * 100) / 100;
+    }
+
     async create(storeId: string, dto: CreateOrderDto) {
         const isStoreCredit = dto.paymentMethod === 'store_credit';
 
         // 1. Transactional Part: Gather data and create order record
         // We move external API calls (Stripe) outside this block to avoid timeouts.
         const { order, stripeLineItems, success } = await this.prisma.$transaction(async (tx) => {
-            let total = 0;
+            let subtotal = 0;
             const orderItemsData: any[] = [];
             const stripeLineItems: any[] = [];
 
@@ -55,7 +68,7 @@ export class OrdersService {
 
                 // Snapshot Price
                 const price = Number(variant.price);
-                total += price * itemDto.quantity;
+                subtotal += price * itemDto.quantity;
 
                 orderItemsData.push({
                     productName: variant.product.name,
@@ -73,6 +86,11 @@ export class OrdersService {
                     });
                 }
             }
+
+            // --- Calculate tax and shipping ---
+            const taxAmount   = this.calculateTax(subtotal);
+            const shippingCost = this.calculateShipping(subtotal);
+            const total        = Math.round((subtotal + taxAmount + shippingCost) * 100) / 100;
 
             // Enforce guest checkout block at API level
             const registeredUser = await tx.user.findFirst({
@@ -119,12 +137,23 @@ export class OrdersService {
                 }
             }
 
+            // Add shipping + tax as Stripe line items for card payments
+            if (!isStoreCredit) {
+                if (shippingCost > 0) {
+                    stripeLineItems.push({ name: 'Shipping (USPS Ground Advantage)', price: shippingCost, quantity: 1 });
+                }
+                stripeLineItems.push({ name: 'NJ Sales Tax (6.625%)', price: taxAmount, quantity: 1 });
+            }
+
             // 3. Create Order
             const newOrder = await tx.order.create({
                 data: {
                     storeId,
                     customerId: customer.id,
-                    total: total,
+                    subtotal,
+                    taxAmount,
+                    shippingCost,
+                    total,
                     status: isStoreCredit ? 'PAID' : 'PENDING',
                     paymentStatus: isStoreCredit ? 'PAID' : 'PENDING',
                     paidAt: isStoreCredit ? new Date() : null,
@@ -141,7 +170,7 @@ export class OrdersService {
                 include: { items: true }
             });
 
-            return { order: newOrder, stripeLineItems, success: isStoreCredit };
+            return { order: newOrder, stripeLineItems, success: isStoreCredit, subtotal, taxAmount, shippingCost };
         }, {
             timeout: 15000 // Increase timeout to 15s to handle database latency
         });
@@ -385,10 +414,19 @@ export class OrdersService {
         // Trigger shipping notification if marked SHIPPED and has tracking number
         if (dto.status === 'SHIPPED' && dto.trackingNumber && order.status !== 'SHIPPED') {
             if (updatedOrder.customer?.email) {
+                const clean = dto.trackingNumber.trim().replace(/\s+/g, '').toUpperCase();
+                let trackingUrl = `https://tools.usps.com/go/TrackConfirmAction?tLabels=${clean}`;
+                
+                if (clean.startsWith('1Z')) {
+                    trackingUrl = `https://www.ups.com/track?tracknum=${clean}`;
+                } else if (/^\d{12}$|^\d{15}$/.test(clean)) {
+                    trackingUrl = `https://www.fedex.com/fedextrack/?trknbr=${clean}`;
+                }
+
                 await this.notificationService.sendShippingNotification(
                     updatedOrder.customer.email,
                     dto.trackingNumber,
-                    `https://tools.usps.com/go/TrackConfirmAction?tLabels=${dto.trackingNumber}`
+                    trackingUrl
                 ).catch(err => this.logger.error(`Failed to send shipping notification: ${err.message}`));
             }
         }
