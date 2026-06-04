@@ -479,15 +479,25 @@ export class BuylistService {
     // Helper: Issue Store Credit
     async finalizeOfferCredit(storeId: string, offer: any) {
         // 1. Find Customer by Email
-        const customer = await this.prisma.customer.findFirst({
+        let customer = await this.prisma.customer.findFirst({
             where: { storeId, email: offer.customerEmail }
         });
 
         if (!customer) {
-            // Option: Create Ghost Customer? Or Throw?
-            // For now, log warning.
-            console.warn(`[Buylist] Could not issue credit. Customer ${offer.customerEmail} not found.`);
-            return;
+            console.log(`[Buylist] Customer record not found for email ${offer.customerEmail}. Auto-creating customer profile.`);
+            const nameParts = (offer.customerName || '').trim().split(/\s+/);
+            const firstName = nameParts[0] || 'Guest';
+            const lastName = nameParts.slice(1).join(' ') || 'Customer';
+
+            customer = await this.prisma.customer.create({
+                data: {
+                    storeId,
+                    email: offer.customerEmail,
+                    firstName,
+                    lastName,
+                    creditBalance: 0
+                }
+            });
         }
 
         // 2. Add Credit
