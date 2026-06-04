@@ -94,11 +94,4 @@ export class BuylistController {
         return this.buylistService.searchBuylistBulk(req.store.id, cards);
     }
 
-    @Get('temp-backfill')
-    async tempBackfill(@Query('secret') secret: string) {
-        if (secret !== 'itsyourSD@123_temp_backfill_secret_xyz') {
-            throw new BadRequestException('Invalid secret');
-        }
-        return this.buylistService.runRetroactiveBackfill();
-    }
 }
