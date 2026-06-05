@@ -17,6 +17,24 @@ export class ProductsController {
         return this.productsService.create(req.user.storeId, createProductDto);
     }
 
+    @Post('import/lookup')
+    @Roles(Role.ADMIN, Role.STAFF)
+    importLookup(
+        @Request() req,
+        @Body() body: { name: string; set?: string; collectorNumber?: string; game?: string }
+    ) {
+        return this.productsService.importLookup(req.user.storeId, body);
+    }
+
+    @Post('import/batch')
+    @Roles(Role.ADMIN, Role.STAFF)
+    importBatch(
+        @Request() req,
+        @Body() body: { items: any[] }
+    ) {
+        return this.productsService.importBatch(req.user.storeId, body.items);
+    }
+
     @Get()
     findAll(@Request() req, @Query() query: { game?: string; search?: string }) {
         return this.productsService.findAll(req.user.storeId, query);

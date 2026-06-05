@@ -2,10 +2,16 @@ import { Injectable, NotFoundException, BadRequestException, ConflictException }
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 import { Condition } from '@prisma/client';
+import { ScryfallService } from '../integrations/scryfall.service';
+import { PokemonTcgService } from '../integrations/pokemon-tcg/pokemon-tcg.service';
 
 @Injectable()
 export class ProductsService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private scryfallService: ScryfallService,
+        private pokemonTcgService: PokemonTcgService
+    ) { }
 
     // Helper: Generate SKU
     // Format: GAME-SET-COLLECTOR-SLUG-COND-LANG-FINISH-STORE
@@ -452,5 +458,170 @@ export class ProductsService {
         }, { timeout: 30000 });
 
 
+    }
+
+    async importLookup(storeId: string, query: { name: string; set?: string; collectorNumber?: string; game?: string }) {
+        const game = (query.game || '').toUpperCase();
+        
+        // 1. Check local db first by name, and optionally set & collector number
+        const existingProduct = await this.prisma.product.findFirst({
+            where: {
+                storeId,
+                name: { equals: query.name, mode: 'insensitive' },
+                ...(query.set ? { set: { equals: query.set, mode: 'insensitive' } } : {}),
+                ...(query.collectorNumber ? { collectorNumber: query.collectorNumber } : {})
+            },
+            include: {
+                card: true,
+                variants: {
+                    include: { inventory: true }
+                }
+            }
+        });
+
+        if (existingProduct) {
+            return {
+                source: 'database',
+                name: existingProduct.name,
+                set: existingProduct.set || null,
+                collectorNumber: existingProduct.collectorNumber || null,
+                oracleId: existingProduct.card?.oracleId || null,
+                image: existingProduct.images?.[0] || null,
+                price: Number(existingProduct.price || 0),
+                game: existingProduct.game || 'MTG',
+                exists: true,
+                productId: existingProduct.id
+            };
+        }
+
+        // 2. Lookup via APIs based on game type
+        if (game === 'POKEMON' || game === 'POKÉMON') {
+            try {
+                const extCard = await this.pokemonTcgService.getCardByDetails(query.name, query.set, query.collectorNumber);
+                if (extCard) {
+                    return {
+                        source: 'pokemon-api',
+                        name: extCard.name,
+                        set: extCard.set,
+                        collectorNumber: extCard.number,
+                        oracleId: extCard.id, // Set ID as oracleId for Pokémon
+                        image: extCard.image,
+                        price: extCard.price,
+                        game: 'Pokemon',
+                        exists: false
+                    };
+                }
+            } catch (err: any) {
+                console.error('[ProductsService] Pokemon API Lookup error:', err.message);
+            }
+        } else {
+            // Default to MTG/Scryfall
+            try {
+                const extCard = await this.scryfallService.getCardByDetails(query.name, query.set, query.collectorNumber);
+                if (extCard) {
+                    return {
+                        source: 'scryfall-api',
+                        name: extCard.name,
+                        set: extCard.set,
+                        collectorNumber: extCard.collectorNumber,
+                        oracleId: extCard.oracleId,
+                        image: extCard.image,
+                        price: extCard.price,
+                        game: 'MTG',
+                        exists: false
+                    };
+                }
+            } catch (err: any) {
+                console.error('[ProductsService] Scryfall API Lookup error:', err.message);
+            }
+        }
+
+        // 3. Fallback unmatched
+        return {
+            source: 'unmatched',
+            name: query.name,
+            set: query.set || null,
+            collectorNumber: query.collectorNumber || null,
+            oracleId: null,
+            image: null,
+            price: 0,
+            game: game === 'POKEMON' ? 'Pokemon' : 'MTG',
+            exists: false
+        };
+    }
+
+    async importBatch(storeId: string, items: any[]) {
+        const results: any[] = [];
+        const errors: any[] = [];
+
+        // Pre-fetch Category IDs for MTG and Pokemon to speed up mapping
+        const categories = await this.prisma.category.findMany({
+            where: { storeId }
+        });
+        const mtgCategory = categories.find(c => c.slug === 'magic-the-gathering');
+        const pokemonCategory = categories.find(c => c.slug === 'pokemon');
+
+        for (const item of items) {
+            try {
+                // Map default category ID based on the game
+                let categoryId = item.categoryId;
+                if (!categoryId) {
+                    const gameUpper = (item.game || '').toUpperCase();
+                    if (gameUpper === 'POKEMON' || gameUpper === 'POKÉMON') {
+                        categoryId = pokemonCategory?.id;
+                    } else if (gameUpper === 'MTG' || gameUpper === 'MAGIC' || gameUpper.includes('GATHERING')) {
+                        categoryId = mtgCategory?.id;
+                    }
+                }
+
+                // Construct CreateProductDto structure
+                const dto: CreateProductDto = {
+                    name: item.name,
+                    description: item.description || `Card printing from set ${item.set}`,
+                    game: item.game || 'MTG',
+                    categoryId,
+                    set: item.set,
+                    rarity: item.rarity,
+                    collectorNumber: item.collectorNumber,
+                    oracleId: item.oracleId,
+                    oracleText: item.oracleText,
+                    legalities: item.legalities,
+                    manaCost: item.manaCost,
+                    manaValue: item.manaValue,
+                    colors: item.colors,
+                    colorIdentity: item.colorIdentity,
+                    typeLine: item.typeLine,
+                    supertypes: item.supertypes,
+                    subtypes: item.subtypes,
+                    power: item.power,
+                    toughness: item.toughness,
+                    loyalty: item.loyalty,
+                    price: Number(item.price || 0),
+                    images: item.image ? [item.image] : [],
+                    variants: item.variants || [
+                        {
+                            condition: item.condition || 'NM',
+                            isFoil: item.isFoil || false,
+                            language: item.language || 'English',
+                            price: Number(item.price || 0),
+                            quantity: Number(item.quantity || 1)
+                        }
+                    ]
+                };
+
+                const created = await this.create(storeId, dto);
+                results.push({ name: item.name, success: true, productId: created.id });
+            } catch (err: any) {
+                console.error(`[ProductsService] Batch import row failed for ${item.name}:`, err);
+                errors.push({ name: item.name, success: false, error: err.message });
+            }
+        }
+
+        return {
+            importedCount: results.length,
+            failedCount: errors.length,
+            results,
+            errors
+        };
     }
 }

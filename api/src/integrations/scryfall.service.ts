@@ -105,4 +105,50 @@ export class ScryfallService {
             return [];
         }
     }
+
+    async getCardByDetails(name: string, set?: string, collectorNumber?: string) {
+        let queryParts: string[] = [];
+        
+        if (name) {
+            // Remove quotes to avoid malformed query syntax
+            queryParts.push(`name:"${name.replace(/"/g, '')}"`);
+        }
+        
+        if (set) {
+            const cleanSet = set.replace(/"/g, '').trim();
+            // If set code is 3-5 chars, treat as code, otherwise search as exact set name
+            if (cleanSet.length >= 3 && cleanSet.length <= 5) {
+                queryParts.push(`set:${cleanSet}`);
+            } else {
+                queryParts.push(`e:"${cleanSet}"`);
+            }
+        }
+        
+        if (collectorNumber) {
+            queryParts.push(`cn:${collectorNumber.trim()}`);
+        }
+
+        const q = queryParts.join(' ');
+        const url = `${this.baseUrl}/cards/search?q=${encodeURIComponent(q)}&unique=prints`;
+
+        try {
+            console.log(`[Scryfall] Detailed search query: ${q}`);
+            const response = await axios.get(url, {
+                httpsAgent: this.httpsAgent,
+                timeout: 10000
+            });
+            const cards = response.data.data || [];
+            if (cards.length > 0) {
+                return this.normalizeCard(cards[0]);
+            }
+            return null;
+        } catch (error: any) {
+            console.warn(`[Scryfall] Error fetching card by details query "${q}":`, error.message);
+            // Fallback: search fuzzy by name
+            if (name) {
+                return this.searchCardByName(name);
+            }
+            return null;
+        }
+    }
 }
