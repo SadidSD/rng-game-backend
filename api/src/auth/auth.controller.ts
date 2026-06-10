@@ -37,8 +37,9 @@ export class AuthController {
 
     @Patch('change-password')
     @UseGuards(JwtAuthGuard)
-    async changePassword(@Request() req, @Body() body: { currentPassword: string, newPassword: string }) {
-        return this.authService.changePassword(req.user.userId, { oldPassword: body.currentPassword, newPassword: body.newPassword });
+    async changePassword(@Request() req, @Body() body: { currentPassword?: string, oldPassword?: string, newPassword: string }) {
+        const oldPw = body.currentPassword || body.oldPassword;
+        return this.authService.changePassword(req.user.userId, { oldPassword: oldPw, newPassword: body.newPassword });
     }
 
     @Get('verify-email')
