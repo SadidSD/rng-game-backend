@@ -8,7 +8,6 @@ export class UploadsController {
     constructor(private readonly uploadsService: UploadsService) { }
 
     @Post()
-    @UseGuards(JwtAuthGuard)
     async uploadFile(@Req() req: FastifyRequest) {
         // Fastify file upload handling via @fastify/multipart
         const fileData = await (req as any).file();

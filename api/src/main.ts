@@ -46,6 +46,12 @@ async function bootstrap() {
     decorateReply: false,
   });
 
+  await app.register(require('@fastify/static'), {
+    root: path.join(process.cwd(), 'uploads'),
+    prefix: '/api/uploads/',
+    decorateReply: false,
+  });
+
   // 1. Global Validation
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
