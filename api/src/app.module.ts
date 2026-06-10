@@ -28,6 +28,7 @@ import { HttpsRedirectMiddleware } from './middleware/https-redirect.middleware'
 import { HealthModule } from './health/health.module';
 import { NotificationModule } from './notifications/notification.module';
 import { TrackingModule } from './tracking/tracking.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -44,7 +45,7 @@ import { TrackingModule } from './tracking/tracking.module';
     LoggerModule,
     NotificationModule,
     HealthModule,
-    AuthModule, UsersModule, StoreModule, PublicModule, ProductsModule, InventoryModule, BuylistModule, OrdersModule, CustomersModule, EventsModule, AnalyticsModule, IntegrationsModule, CategoriesModule, PrismaModule, PokemonTcgModule, PaymentsModule, TrackingModule],
+    AuthModule, UsersModule, StoreModule, PublicModule, ProductsModule, InventoryModule, BuylistModule, OrdersModule, CustomersModule, EventsModule, AnalyticsModule, IntegrationsModule, CategoriesModule, PrismaModule, PokemonTcgModule, PaymentsModule, TrackingModule, UploadsModule],
   controllers: [AppController],
   providers: [
     AppService,

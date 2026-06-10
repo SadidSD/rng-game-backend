@@ -31,6 +31,21 @@ async function bootstrap() {
     contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
   });
 
+  // Fastify Multipart for file uploads
+  await app.register(require('@fastify/multipart'), {
+    limits: {
+      fileSize: 2 * 1024 * 1024, // 2MB file limit
+    },
+  });
+
+  // Fastify Static for serving uploaded files
+  const path = require('path');
+  await app.register(require('@fastify/static'), {
+    root: path.join(process.cwd(), 'uploads'),
+    prefix: '/uploads/',
+    decorateReply: false,
+  });
+
   // 1. Global Validation
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
