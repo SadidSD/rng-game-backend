@@ -40,6 +40,36 @@ export class EventsController {
         return this.eventsService.findAll(req.user.storeId);
     }
 
+    @Get('admin/:id')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    findOneAdmin(@Request() req, @Param('id') id: string) {
+        return this.eventsService.findOne(req.user.storeId, id);
+    }
+
+    @Patch(':eventId/players/:playerId')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    updatePlayer(
+        @Request() req,
+        @Param('eventId') eventId: string,
+        @Param('playerId') playerId: string,
+        @Body() body: { paid?: boolean; checkedIn?: boolean }
+    ) {
+        return this.eventsService.updatePlayer(req.user.storeId, eventId, playerId, body);
+    }
+
+    @Delete(':eventId/players/:playerId')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    removePlayer(
+        @Request() req,
+        @Param('eventId') eventId: string,
+        @Param('playerId') playerId: string
+    ) {
+        return this.eventsService.removePlayer(req.user.storeId, eventId, playerId);
+    }
+
     // --- Public (Storefront) ---
     @Get()
     @UseGuards(ApiKeyGuard)

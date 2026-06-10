@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventDto, RegisterPlayerDto } from './dto/events.dto';
 
@@ -39,7 +39,8 @@ export class EventsService {
         return this.prisma.event.findMany({
             where: {
                 storeId,
-                status: { not: 'CANCELLED' }
+                status: { not: 'CANCELLED' },
+                date: { gte: new Date() }
             },
             orderBy: { date: 'asc' },
             include: {
@@ -78,7 +79,7 @@ export class EventsService {
         const event = await this.findOne(storeId, eventId);
 
         if (event.maxPlayers && event.players.length >= event.maxPlayers) {
-            throw new Error('Event is full');
+            throw new BadRequestException('Event is full');
         }
 
         // Prevent duplicate registration for same email or customerId
@@ -88,7 +89,7 @@ export class EventsService {
         );
 
         if (existing) {
-            throw new Error('Player already registered');
+            throw new ConflictException('Player already registered');
         }
 
         return this.prisma.eventPlayer.create({
@@ -100,5 +101,26 @@ export class EventsService {
                 deckList: dto.deckList
             }
         });
+    }
+
+    async updatePlayer(storeId: string, eventId: string, playerId: string, data: { paid?: boolean; checkedIn?: boolean }) {
+        await this.findOne(storeId, eventId); // verify event exists and belongs to store
+        const player = await this.prisma.eventPlayer.findFirst({
+            where: { id: playerId, eventId }
+        });
+        if (!player) throw new NotFoundException('Player not found');
+        return this.prisma.eventPlayer.update({
+            where: { id: playerId },
+            data
+        });
+    }
+
+    async removePlayer(storeId: string, eventId: string, playerId: string) {
+        await this.findOne(storeId, eventId);
+        const player = await this.prisma.eventPlayer.findFirst({
+            where: { id: playerId, eventId }
+        });
+        if (!player) throw new NotFoundException('Player not found');
+        return this.prisma.eventPlayer.delete({ where: { id: playerId } });
     }
 }
