@@ -1,38 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationService } from '../notifications/notification.service';
 import * as QRCode from 'qrcode';
-import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class TicketsService {
     private readonly logger = new Logger(TicketsService.name);
-    private transporter: nodemailer.Transporter | null = null;
 
     constructor(
         private prisma: PrismaService,
-        private configService: ConfigService,
-    ) {
-        const smtpHost = this.configService.get<string>('SMTP_HOST');
-        const smtpUser = this.configService.get<string>('SMTP_USER');
-        const smtpPass = this.configService.get<string>('SMTP_PASS');
-
-        if (smtpHost && smtpUser && smtpPass) {
-            this.transporter = nodemailer.createTransport({
-                host: smtpHost,
-                port: Number(this.configService.get<string>('SMTP_PORT') || '587'),
-                secure: this.configService.get<string>('SMTP_SECURE') === 'true',
-                auth: { user: smtpUser, pass: smtpPass },
-            });
-            this.logger.log('[TicketsService] Email transporter initialized');
-        } else {
-            this.logger.warn('[TicketsService] SMTP not configured — emails will be logged only');
-        }
-    }
+        private notificationService: NotificationService,
+    ) { }
 
     /**
      * Generate a QR code ticket for a registered player and store it in the DB.
-     * This is called after payment is confirmed (or immediately for free events).
+     * Called after payment is confirmed (or immediately for free events).
      */
     async generateTicket(playerId: string) {
         // Avoid duplicate tickets
@@ -49,8 +31,10 @@ export class TicketsService {
 
         if (!player) throw new Error(`Player ${playerId} not found`);
 
+        const ticketId = `TKT-${player.id.slice(0, 8).toUpperCase()}`;
+
         const ticketPayload = JSON.stringify({
-            ticketId: `TKT-${player.id.slice(0, 8).toUpperCase()}`,
+            ticketId,
             eventId: player.eventId,
             playerId: player.id,
             eventName: player.event.name,
@@ -73,29 +57,39 @@ export class TicketsService {
             },
         });
 
-        this.logger.log(`Ticket generated for player ${player.playerName} (event: ${player.event.name})`);
+        this.logger.log(`Ticket ${ticketId} generated for ${player.playerName} (event: ${player.event.name})`);
 
-        // Send email if player has one
+        // Send email via the existing NotificationService
         if (player.playerEmail) {
-            const emailPlayer = {
+            await this.sendTicketEmail({
                 playerName: player.playerName,
-                playerEmail: player.playerEmail, // guaranteed non-null here
-                event: player.event,
-            };
-            await this.sendTicketEmail(emailPlayer, ticket.qrCode);
+                playerEmail: player.playerEmail,
+                eventName: player.event.name,
+                eventDate: player.event.date,
+                eventLocation: player.event.location,
+                qrCode: qrDataUrl,
+                ticketId,
+            });
         }
 
         return ticket;
     }
 
     /**
-     * Send the ticket QR code via email.
+     * Send the ticket QR code via email using the shared NotificationService.
      */
-    async sendTicketEmail(
-        player: { playerName: string; playerEmail: string; event: { name: string; date: Date; location?: string | null } },
-        qrCode: string,
-    ) {
-        const eventDate = new Date(player.event.date).toLocaleString('en-US', {
+    async sendTicketEmail(params: {
+        playerName: string;
+        playerEmail: string;
+        eventName: string;
+        eventDate: Date;
+        eventLocation?: string | null;
+        qrCode: string;
+        ticketId: string;
+    }) {
+        const { playerName, playerEmail, eventName, eventDate, eventLocation, qrCode, ticketId } = params;
+
+        const formattedDate = new Date(eventDate).toLocaleString('en-US', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
@@ -104,93 +98,96 @@ export class TicketsService {
             minute: '2-digit',
         });
 
-        const htmlBody = `
+        const html = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
-  <style>
-    body { font-family: sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
-    .container { max-width: 520px; margin: 40px auto; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-    .header { background: #111; color: #fff; padding: 32px 24px; text-align: center; }
-    .header h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: 0.1em; }
-    .header p { margin: 0; color: #aaa; font-size: 13px; }
-    .body { padding: 28px 24px; text-align: center; }
-    .body p { color: #444; font-size: 15px; line-height: 1.6; }
-    .event-info { background: #f9f9f9; border-radius: 10px; padding: 16px; text-align: left; margin: 20px 0; }
-    .event-info dt { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px; }
-    .event-info dd { font-size: 15px; color: #111; margin: 0 0 12px; font-weight: 600; }
-    .qr-wrapper { margin: 24px auto; display: inline-block; padding: 12px; background: #fff; border: 2px solid #eee; border-radius: 12px; }
-    .qr-wrapper img { display: block; width: 200px; height: 200px; }
-    .footer { background: #f4f4f4; padding: 16px 24px; text-align: center; }
-    .footer p { color: #888; font-size: 12px; margin: 0; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>🎴 RNG Gamez</h1>
-      <p>Your Event Ticket</p>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+  <div style="max-width:520px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+    
+    <!-- Header -->
+    <div style="background:#111;color:#fff;padding:32px 24px;text-align:center;">
+      <h1 style="margin:0 0 4px;font-size:22px;letter-spacing:0.1em;">🎴 RNG Gamez</h1>
+      <p style="margin:0;color:#aaa;font-size:13px;">Your Event Ticket</p>
     </div>
-    <div class="body">
-      <p>Hey <strong>${player.playerName}</strong>! 🎉<br>
-      You're registered for the event below. Show this QR code at the door.</p>
 
-      <div class="event-info">
-        <dl>
-          <dt>Event</dt>
-          <dd>${player.event.name}</dd>
-          <dt>Date &amp; Time</dt>
-          <dd>${eventDate}</dd>
-          <dt>Location</dt>
-          <dd>${player.event.location || 'In-Store — 2325 Plainfield Ave, South Plainfield, NJ'}</dd>
-        </dl>
+    <!-- Body -->
+    <div style="padding:28px 24px;text-align:center;">
+      <p style="color:#444;font-size:15px;line-height:1.6;margin:0 0 20px;">
+        Hey <strong>${playerName}</strong>! 🎉<br/>
+        You're all set for the event below. Show this QR code at the door for check-in.
+      </p>
+
+      <!-- Event Details -->
+      <div style="background:#f9f9f9;border-radius:10px;padding:16px 20px;text-align:left;margin-bottom:24px;">
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.08em;padding:4px 0 2px;">Event</td>
+          </tr>
+          <tr>
+            <td style="font-size:16px;color:#111;font-weight:600;padding-bottom:12px;">${eventName}</td>
+          </tr>
+          <tr>
+            <td style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.08em;padding:4px 0 2px;">Date &amp; Time</td>
+          </tr>
+          <tr>
+            <td style="font-size:15px;color:#111;font-weight:600;padding-bottom:12px;">${formattedDate}</td>
+          </tr>
+          <tr>
+            <td style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.08em;padding:4px 0 2px;">Location</td>
+          </tr>
+          <tr>
+            <td style="font-size:15px;color:#111;font-weight:600;padding-bottom:4px;">${eventLocation || '2325 Plainfield Ave, South Plainfield, NJ'}</td>
+          </tr>
+        </table>
       </div>
 
-      <div class="qr-wrapper">
-        <img src="${qrCode}" alt="Your Event Ticket QR Code" />
+      <!-- Ticket ID -->
+      <p style="font-size:12px;color:#999;margin:0 0 12px;">Ticket ID: <strong style="color:#555;font-family:monospace;">${ticketId}</strong></p>
+
+      <!-- QR Code -->
+      <div style="display:inline-block;padding:12px;background:#fff;border:2px solid #eee;border-radius:12px;margin-bottom:16px;">
+        <img src="${qrCode}" alt="Event Ticket QR Code" style="display:block;width:200px;height:200px;" />
       </div>
 
-      <p style="font-size: 13px; color: #888;">Screenshot or print this QR code and present it at check-in.</p>
+      <p style="font-size:13px;color:#888;margin:0;">Screenshot or print this QR code and present it at check-in.</p>
     </div>
-    <div class="footer">
-      <p>RNG Gamez · 2325 Plainfield Ave, South Plainfield, NJ<br>Questions? Visit us in-store or check rng-gamez.com</p>
+
+    <!-- Footer -->
+    <div style="background:#f4f4f4;padding:16px 24px;text-align:center;">
+      <p style="color:#888;font-size:12px;margin:0;">
+        RNG Gamez · 2325 Plainfield Ave, South Plainfield, NJ<br/>
+        Questions? Visit us in-store or check <a href="https://rng-gamez.com" style="color:#6d28d9;">rng-gamez.com</a>
+      </p>
     </div>
+
   </div>
 </body>
 </html>`;
 
-        if (!this.transporter) {
-            this.logger.log(
-                `[EMAIL MOCK] Would send ticket to ${player.playerEmail} for ${player.event.name}`,
-            );
-            return;
-        }
+        // Delegate to the existing NotificationService which handles Resend / Gmail / fallback
+        await (this.notificationService as any).sendEmail(
+            playerEmail,
+            `🎴 Your Ticket for ${eventName}`,
+            html,
+        );
 
-        const fromAddress = this.configService.get<string>('SMTP_FROM') || '"RNG Gamez" <noreply@rng-gamez.com>';
-
-        try {
-            await this.transporter.sendMail({
-                from: fromAddress,
-                to: player.playerEmail,
-                subject: `🎴 Your Ticket for ${player.event.name}`,
-                html: htmlBody,
-            });
-            this.logger.log(`Ticket email sent to ${player.playerEmail}`);
-        } catch (err) {
-            this.logger.error(`Failed to send ticket email to ${player.playerEmail}`, err);
-        }
+        this.logger.log(`Ticket email sent to ${playerEmail} for event "${eventName}"`);
     }
 
     /**
-     * Send a waitlist promotion email.
+     * Send waitlist promotion email via NotificationService.
      */
-    async sendWaitlistPromotionEmail(
-        playerName: string,
-        playerEmail: string,
-        eventName: string,
-        eventDate: Date,
-    ) {
+    async sendWaitlistPromotionEmail(params: {
+        playerName: string;
+        playerEmail: string;
+        eventName: string;
+        eventDate: Date;
+    }) {
+        const { playerName, playerEmail, eventName, eventDate } = params;
         const formattedDate = new Date(eventDate).toLocaleString('en-US', {
             weekday: 'long',
             month: 'long',
@@ -200,30 +197,17 @@ export class TicketsService {
         });
 
         const html = `
-<div style="font-family:sans-serif;max-width:480px;margin:auto;padding:24px">
-  <h2>🎉 Great news, ${playerName}!</h2>
-  <p>A spot just opened up for <strong>${eventName}</strong> on <strong>${formattedDate}</strong>.</p>
-  <p>You've been automatically moved off the waitlist and registered. 
-     If there's an entry fee, please pay at the door or contact the store.</p>
-  <p>See you there!<br><em>— RNG Gamez</em></p>
+<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:24px;background:#f9f9f9;border-radius:12px;">
+  <h2 style="color:#111;">🎉 Great news, ${playerName}!</h2>
+  <p style="color:#555;">A spot just opened up for <strong>${eventName}</strong> on <strong>${formattedDate}</strong>.</p>
+  <p style="color:#555;">You've been automatically moved off the waitlist and registered. If there's an entry fee, please pay at the door or contact the store.</p>
+  <p style="color:#555;">See you there!<br/><em>— RNG Gamez</em></p>
 </div>`;
 
-        if (!this.transporter) {
-            this.logger.log(`[EMAIL MOCK] Waitlist promotion email to ${playerEmail}`);
-            return;
-        }
-
-        const fromAddress = this.configService.get<string>('SMTP_FROM') || '"RNG Gamez" <noreply@rng-gamez.com>';
-
-        try {
-            await this.transporter.sendMail({
-                from: fromAddress,
-                to: playerEmail,
-                subject: `✅ Spot opened! You're registered for ${eventName}`,
-                html,
-            });
-        } catch (err) {
-            this.logger.error(`Failed to send waitlist promotion email to ${playerEmail}`, err);
-        }
+        await (this.notificationService as any).sendEmail(
+            playerEmail,
+            `✅ Spot opened — you're in for ${eventName}!`,
+            html,
+        );
     }
 }
