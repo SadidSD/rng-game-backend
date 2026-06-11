@@ -3,6 +3,8 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { StripeService } from './stripe.service';
 import { OrdersService } from '../orders/orders.service';
 import { LoggerService } from '../logger/logger.service';
+import { TicketsService } from '../events/tickets.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { FastifyRequest } from 'fastify';
 
 @ApiTags('payments')
@@ -12,6 +14,8 @@ export class PaymentsController {
         private stripeService: StripeService,
         private ordersService: OrdersService,
         private logger: LoggerService,
+        private ticketsService: TicketsService,
+        private prisma: PrismaService,
     ) {
         this.logger.setContext('PaymentsController');
     }
@@ -38,9 +42,28 @@ export class PaymentsController {
                 const orderId = session.metadata?.orderId;
 
                 if (orderId) {
-                    this.logger.info(`Payment successful for order: ${orderId}`);
-                    // Complete the order - deduct inventory
-                    await this.ordersService.completePayment(orderId);
+                    // Event ticket payment: orderId format is 'event-{eventId}-player-{playerId}'
+                    const eventMatch = orderId.match(/^event-([^-]+(?:-[^-]+)*)-player-(.+)$/);
+                    if (eventMatch) {
+                        const playerId = orderId.split('-player-')[1];
+                        this.logger.info(`Event ticket payment successful for player: ${playerId}`);
+                        try {
+                            // Mark player as paid
+                            await this.prisma.eventPlayer.update({
+                                where: { id: playerId },
+                                data: { paid: true },
+                            });
+                            // Generate QR ticket and send email
+                            await this.ticketsService.generateTicket(playerId);
+                            this.logger.info(`QR ticket generated for player ${playerId}`);
+                        } catch (err) {
+                            this.logger.error(`Failed to process event ticket for player ${playerId}`, err);
+                        }
+                    } else {
+                        // Regular order payment
+                        this.logger.info(`Payment successful for order: ${orderId}`);
+                        await this.ordersService.completePayment(orderId);
+                    }
                 } else {
                     this.logger.warn('No orderId in session metadata');
                 }

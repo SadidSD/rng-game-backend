@@ -402,6 +402,8 @@ model Event {
   status      EventStatus @default(UPCOMING)
 
   players     EventPlayer[]
+  waitlist    EventWaitlist[]
+  tickets     EventTicket[]
   
   storeId     String
   store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
@@ -432,6 +434,30 @@ model EventPlayer {
   paid        Boolean  @default(false)
   checkedIn   Boolean  @default(false)
   deckList    String?  // URL or text
+  stripeSessionId String?
   
+  ticket      EventTicket?
+  
+  createdAt   DateTime @default(now())
+}
+
+model EventTicket {
+  id          String   @id @default(uuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  playerId    String   @unique
+  player      EventPlayer @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  qrCode      String   @db.Text // base64 data URL of QR image
+  issuedAt    DateTime @default(now())
+}
+
+model EventWaitlist {
+  id          String   @id @default(uuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  playerName  String
+  playerEmail String
+  position    Int
+  notified    Boolean  @default(false)
   createdAt   DateTime @default(now())
 }

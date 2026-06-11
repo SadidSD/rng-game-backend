@@ -30,7 +30,7 @@ export class EventsService {
             where: { storeId },
             orderBy: { date: 'asc' },
             include: {
-                _count: { select: { players: true } }
+                _count: { select: { players: true, waitlist: true } }
             }
         });
     }
@@ -52,7 +52,7 @@ export class EventsService {
     async findOne(storeId: string, id: string) {
         const event = await this.prisma.event.findFirst({
             where: { id, storeId },
-            include: { players: true }
+            include: { players: { include: { ticket: true } }, waitlist: { orderBy: { position: 'asc' } } }
         });
         if (!event) throw new NotFoundException('Event not found');
         return event;
@@ -75,24 +75,56 @@ export class EventsService {
         return this.prisma.event.delete({ where: { id } });
     }
 
+    /**
+     * Register a player for an event.
+     * - If event is full → adds to waitlist and returns { waitlisted: true, position }
+     * - If player already registered → throws ConflictException
+     * - Otherwise → creates EventPlayer and returns { waitlisted: false, player }
+     */
     async registerPlayer(storeId: string, eventId: string, dto: RegisterPlayerDto) {
         const event = await this.findOne(storeId, eventId);
 
-        if (event.maxPlayers && event.players.length >= event.maxPlayers) {
-            throw new BadRequestException('Event is full');
-        }
-
-        // Prevent duplicate registration for same email or customerId
+        // Prevent duplicate registration
         const existing = event.players.find(p =>
             (dto.customerId && p.customerId === dto.customerId) ||
             (dto.playerEmail && p.playerEmail === dto.playerEmail)
         );
-
         if (existing) {
             throw new ConflictException('Player already registered');
         }
 
-        return this.prisma.eventPlayer.create({
+        // Check if already on waitlist
+        if (dto.playerEmail) {
+            const onWaitlist = await this.prisma.eventWaitlist.findFirst({
+                where: { eventId, playerEmail: dto.playerEmail }
+            });
+            if (onWaitlist) {
+                throw new ConflictException('You are already on the waitlist for this event');
+            }
+        }
+
+        // If event is full, add to waitlist
+        if (event.maxPlayers && event.players.length >= event.maxPlayers) {
+            const lastInQueue = await this.prisma.eventWaitlist.findFirst({
+                where: { eventId },
+                orderBy: { position: 'desc' }
+            });
+            const position = (lastInQueue?.position ?? 0) + 1;
+
+            const waitlistEntry = await this.prisma.eventWaitlist.create({
+                data: {
+                    eventId,
+                    playerName: dto.playerName,
+                    playerEmail: dto.playerEmail || '',
+                    position,
+                }
+            });
+
+            return { waitlisted: true, position, waitlistId: waitlistEntry.id };
+        }
+
+        // Normal registration
+        const player = await this.prisma.eventPlayer.create({
             data: {
                 eventId,
                 playerName: dto.playerName,
@@ -101,6 +133,41 @@ export class EventsService {
                 deckList: dto.deckList
             }
         });
+
+        return { waitlisted: false, player };
+    }
+
+    /**
+     * Create a pending player registration (paid: false) for Stripe checkout flow.
+     * Returns the playerId so the Stripe session metadata can reference it.
+     */
+    async createPendingPlayer(storeId: string, eventId: string, dto: RegisterPlayerDto) {
+        const event = await this.findOne(storeId, eventId);
+
+        // Prevent duplicate
+        const existing = event.players.find(p =>
+            (dto.playerEmail && p.playerEmail === dto.playerEmail)
+        );
+        if (existing) {
+            throw new ConflictException('Player already registered');
+        }
+
+        // If event is full, return waitlist indicator
+        if (event.maxPlayers && event.players.length >= event.maxPlayers) {
+            return { full: true };
+        }
+
+        const player = await this.prisma.eventPlayer.create({
+            data: {
+                eventId,
+                playerName: dto.playerName,
+                playerEmail: dto.playerEmail,
+                customerId: dto.customerId,
+                paid: false,
+            }
+        });
+
+        return { full: false, player };
     }
 
     async updatePlayer(storeId: string, eventId: string, playerId: string, data: { paid?: boolean; checkedIn?: boolean }) {
@@ -121,6 +188,47 @@ export class EventsService {
             where: { id: playerId, eventId }
         });
         if (!player) throw new NotFoundException('Player not found');
-        return this.prisma.eventPlayer.delete({ where: { id: playerId } });
+        await this.prisma.eventPlayer.delete({ where: { id: playerId } });
+
+        // Promote the next person from the waitlist
+        const next = await this.prisma.eventWaitlist.findFirst({
+            where: { eventId },
+            orderBy: { position: 'asc' }
+        });
+
+        if (next) {
+            // Create a new player from the waitlist entry
+            const promoted = await this.prisma.eventPlayer.create({
+                data: {
+                    eventId,
+                    playerName: next.playerName,
+                    playerEmail: next.playerEmail,
+                    paid: false,
+                }
+            });
+
+            // Mark as notified and remove from waitlist
+            await this.prisma.eventWaitlist.delete({ where: { id: next.id } });
+
+            return { removed: true, promoted: { id: promoted.id, playerName: promoted.playerName, playerEmail: promoted.playerEmail } };
+        }
+
+        return { removed: true, promoted: null };
+    }
+
+    // --- Waitlist Admin ---
+    async getWaitlist(storeId: string, eventId: string) {
+        await this.findOne(storeId, eventId);
+        return this.prisma.eventWaitlist.findMany({
+            where: { eventId },
+            orderBy: { position: 'asc' }
+        });
+    }
+
+    async removeFromWaitlist(storeId: string, eventId: string, waitlistId: string) {
+        await this.findOne(storeId, eventId);
+        const entry = await this.prisma.eventWaitlist.findFirst({ where: { id: waitlistId, eventId } });
+        if (!entry) throw new NotFoundException('Waitlist entry not found');
+        return this.prisma.eventWaitlist.delete({ where: { id: waitlistId } });
     }
 }
