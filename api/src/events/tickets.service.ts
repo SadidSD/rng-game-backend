@@ -210,4 +210,106 @@ export class TicketsService {
             html,
         );
     }
+
+    /**
+     * Send event reminder email via NotificationService.
+     */
+    async sendReminderEmail(params: {
+        playerName: string;
+        playerEmail: string;
+        eventName: string;
+        eventDate: Date;
+        eventLocation?: string | null;
+        ticketId: string;
+        qrCode: string;
+    }) {
+        const { playerName, playerEmail, eventName, eventDate, eventLocation, qrCode, ticketId } = params;
+
+        const formattedDate = new Date(eventDate).toLocaleString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+
+        const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+  <div style="max-width:520px;margin:40px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+    
+    <!-- Header -->
+    <div style="background:#6d28d9;color:#fff;padding:32px 24px;text-align:center;">
+      <h1 style="margin:0 0 4px;font-size:22px;letter-spacing:0.1em;">⏰ Event Reminder</h1>
+      <p style="margin:0;color:#ddd;font-size:13px;">RNG Gamez — See You Tomorrow!</p>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:28px 24px;text-align:center;">
+      <p style="color:#444;font-size:15px;line-height:1.6;margin:0 0 20px;">
+        Hey <strong>${playerName}</strong>! 🌟<br/>
+        This is a friendly reminder that the event you registered for is happening <strong>tomorrow</strong>! Below is your entry ticket.
+      </p>
+
+      <!-- Event Details -->
+      <div style="background:#f9f9f9;border-radius:10px;padding:16px 20px;text-align:left;margin-bottom:24px;">
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.08em;padding:4px 0 2px;">Event</td>
+          </tr>
+          <tr>
+            <td style="font-size:16px;color:#111;font-weight:600;padding-bottom:12px;">${eventName}</td>
+          </tr>
+          <tr>
+            <td style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.08em;padding:4px 0 2px;">Date &amp; Time</td>
+          </tr>
+          <tr>
+            <td style="font-size:15px;color:#111;font-weight:600;padding-bottom:12px;">${formattedDate}</td>
+          </tr>
+          <tr>
+            <td style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.08em;padding:4px 0 2px;">Location</td>
+          </tr>
+          <tr>
+            <td style="font-size:15px;color:#111;font-weight:600;padding-bottom:4px;">${eventLocation || '2325 Plainfield Ave, South Plainfield, NJ'}</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Ticket ID -->
+      <p style="font-size:12px;color:#999;margin:0 0 12px;">Ticket ID: <strong style="color:#555;font-family:monospace;">${ticketId}</strong></p>
+
+      <!-- QR Code -->
+      <div style="display:inline-block;padding:12px;background:#fff;border:2px solid #eee;border-radius:12px;margin-bottom:16px;">
+        <img src="${qrCode}" alt="Event Ticket QR Code" style="display:block;width:200px;height:200px;" />
+      </div>
+
+      <p style="font-size:13px;color:#888;margin:0;">Have this QR code ready on your phone when you arrive at the store.</p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background:#f4f4f4;padding:16px 24px;text-align:center;">
+      <p style="color:#888;font-size:12px;margin:0;">
+        RNG Gamez · 2325 Plainfield Ave, South Plainfield, NJ<br/>
+        Need to cancel or change details? Contact the store or visit <a href="https://rng-gamez.com" style="color:#6d28d9;">rng-gamez.com</a>
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>`;
+
+        await (this.notificationService as any).sendEmail(
+            playerEmail,
+            `⏰ Reminder: ${eventName} is Tomorrow!`,
+            html,
+        );
+
+        this.logger.log(`Reminder email sent to ${playerEmail} for event "${eventName}"`);
+    }
 }

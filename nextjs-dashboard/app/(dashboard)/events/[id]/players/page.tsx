@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Trash2, Mail, User, Clock, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Trash2, Mail, User, Clock, CheckCircle2, Camera, Plus, X, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { getCookie } from "cookies-next";
 
@@ -25,6 +25,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 
 interface Player {
     id: string;
@@ -67,6 +68,65 @@ export default function ManagePlayersPage() {
     const [players, setPlayers] = useState<Player[]>([]);
     const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const [showWalkInModal, setShowWalkInModal] = useState(false);
+    const [walkInName, setWalkInName] = useState("");
+    const [walkInEmail, setWalkInEmail] = useState("");
+    const [walkInPaid, setWalkInPaid] = useState(true);
+    const [submittingWalkIn, setSubmittingWalkIn] = useState(false);
+
+    const handleWalkInSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!walkInName.trim()) return;
+        setSubmittingWalkIn(true);
+        try {
+            const token = getCookie("tcg-auth-token");
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+            const res = await fetch(`${apiUrl}/events/${eventId}/players`, {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json", 
+                    Authorization: `Bearer ${token}` 
+                },
+                body: JSON.stringify({
+                    playerName: walkInName,
+                    playerEmail: walkInEmail || undefined,
+                    paid: walkInPaid
+                })
+            });
+
+            if (res.ok) {
+                const result = await res.json();
+                if (result.waitlisted) {
+                    alert(`Player added to waitlist at position #${result.position}`);
+                } else {
+                    alert(`Successfully registered ${walkInName}!`);
+                }
+                
+                setWalkInName("");
+                setWalkInEmail("");
+                setWalkInPaid(true);
+                setShowWalkInModal(false);
+                
+                router.refresh();
+                const refreshed = await fetch(`${apiUrl}/events/admin/${eventId}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (refreshed.ok) {
+                    const data = await refreshed.json();
+                    setPlayers(data.players || []);
+                    setWaitlist(data.waitlist || []);
+                }
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                alert(`Registration failed: ${errData.message || res.statusText}`);
+            }
+        } catch (error) {
+            alert("Error registering player.");
+        } finally {
+            setSubmittingWalkIn(false);
+        }
+    };
 
     useEffect(() => {
         const fetchEventAndPlayers = async () => {
@@ -198,17 +258,31 @@ export default function ManagePlayersPage() {
     return (
         <div className="grid gap-6 max-w-4xl mx-auto py-6">
             {/* Header */}
-            <div className="flex items-center gap-4">
-                <Link href="/events">
-                    <Button variant="outline" size="icon" type="button">
-                        <ArrowLeft className="h-4 w-4" />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <Link href="/events">
+                        <Button variant="outline" size="icon" type="button">
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                    </Link>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">{event.name}</h1>
+                        <p className="text-sm text-muted-foreground">
+                            {event.game} • {event.format || "Standard"} • {new Date(event.date).toLocaleDateString()}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Link href={`/events/${eventId}/check-in`}>
+                        <Button variant="outline" className="gap-1.5" size="sm" type="button">
+                            <Camera className="h-4 w-4" />
+                            Check-in Mode
+                        </Button>
+                    </Link>
+                    <Button onClick={() => setShowWalkInModal(true)} className="gap-1.5" size="sm" type="button">
+                        <Plus className="h-4 w-4" />
+                        Register Walk-in
                     </Button>
-                </Link>
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">{event.name}</h1>
-                    <p className="text-sm text-muted-foreground">
-                        {event.game} • {event.format || "Standard"} • {new Date(event.date).toLocaleDateString()}
-                    </p>
                 </div>
             </div>
 
@@ -439,6 +513,95 @@ export default function ManagePlayersPage() {
                     </Card>
                 </TabsContent>
             </Tabs>
+            {/* Walk-in Registration Modal */}
+            {showWalkInModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div 
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => !submittingWalkIn && setShowWalkInModal(false)}
+                    />
+
+                    {/* Dialog Container */}
+                    <div className="relative bg-white dark:bg-zinc-900 border rounded-2xl p-6 max-w-sm w-full shadow-2xl z-10 text-foreground animate-in zoom-in-95 duration-200">
+                        <button 
+                            onClick={() => setShowWalkInModal(false)}
+                            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
+                            type="button"
+                            disabled={submittingWalkIn}
+                        >
+                            <X size={18} />
+                        </button>
+
+                        <div className="space-y-4">
+                            <div>
+                                <h3 className="text-lg font-bold">Register Walk-in Player</h3>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    Sell ticket at the counter. For paid events, this immediately generates a QR ticket.
+                                </p>
+                            </div>
+
+                            <form onSubmit={handleWalkInSubmit} className="space-y-4">
+                                <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Player Name *</label>
+                                    <Input
+                                        required
+                                        placeholder="Jane Doe"
+                                        value={walkInName}
+                                        onChange={(e) => setWalkInName(e.target.value)}
+                                        disabled={submittingWalkIn}
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Email Address (Optional)</label>
+                                    <Input
+                                        type="email"
+                                        placeholder="jane@example.com"
+                                        value={walkInEmail}
+                                        onChange={(e) => setWalkInEmail(e.target.value)}
+                                        disabled={submittingWalkIn}
+                                    />
+                                </div>
+                                
+                                {Number(event.entryFee) > 0 && (
+                                    <div className="flex items-center justify-between p-2 border rounded-lg bg-muted/40">
+                                        <div className="space-y-0.5">
+                                            <p className="text-xs font-semibold">Mark as Paid</p>
+                                            <p className="text-[10px] text-muted-foreground">Accepted cash/card at register</p>
+                                        </div>
+                                        <Switch
+                                            checked={walkInPaid}
+                                            onCheckedChange={setWalkInPaid}
+                                            disabled={submittingWalkIn}
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="pt-2 flex justify-end gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setShowWalkInModal(false)}
+                                        disabled={submittingWalkIn}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button type="submit" disabled={submittingWalkIn}>
+                                        {submittingWalkIn ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Registering...
+                                            </>
+                                        ) : (
+                                            "Confirm Sale"
+                                        )}
+                                    </Button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

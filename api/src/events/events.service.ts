@@ -84,9 +84,20 @@ export class EventsService {
     async registerPlayer(storeId: string, eventId: string, dto: RegisterPlayerDto) {
         const event = await this.findOne(storeId, eventId);
 
+        // Resolve customerId if not explicitly provided but exists under playerEmail
+        let customerId = dto.customerId;
+        if (!customerId && dto.playerEmail) {
+            const customer = await this.prisma.customer.findFirst({
+                where: { storeId, email: dto.playerEmail }
+            });
+            if (customer) {
+                customerId = customer.id;
+            }
+        }
+
         // Prevent duplicate registration
         const existing = event.players.find(p =>
-            (dto.customerId && p.customerId === dto.customerId) ||
+            (customerId && p.customerId === customerId) ||
             (dto.playerEmail && p.playerEmail === dto.playerEmail)
         );
         if (existing) {
@@ -129,7 +140,7 @@ export class EventsService {
                 eventId,
                 playerName: dto.playerName,
                 playerEmail: dto.playerEmail,
-                customerId: dto.customerId,
+                customerId: customerId,
                 deckList: dto.deckList
             }
         });
@@ -144,9 +155,21 @@ export class EventsService {
     async createPendingPlayer(storeId: string, eventId: string, dto: RegisterPlayerDto) {
         const event = await this.findOne(storeId, eventId);
 
+        // Resolve customerId if not explicitly provided but exists under playerEmail
+        let customerId = dto.customerId;
+        if (!customerId && dto.playerEmail) {
+            const customer = await this.prisma.customer.findFirst({
+                where: { storeId, email: dto.playerEmail }
+            });
+            if (customer) {
+                customerId = customer.id;
+            }
+        }
+
         // Prevent duplicate
         const existing = event.players.find(p =>
-            (dto.playerEmail && p.playerEmail === dto.playerEmail)
+            (dto.playerEmail && p.playerEmail === dto.playerEmail) ||
+            (customerId && p.customerId === customerId)
         );
         if (existing) {
             throw new ConflictException('Player already registered');
@@ -162,12 +185,31 @@ export class EventsService {
                 eventId,
                 playerName: dto.playerName,
                 playerEmail: dto.playerEmail,
-                customerId: dto.customerId,
+                customerId,
                 paid: false,
             }
         });
 
         return { full: false, player };
+    }
+
+    /**
+     * Get all registered events for the currently logged in customer.
+     */
+    async getMyRegistrations(storeId: string, email: string) {
+        return this.prisma.eventPlayer.findMany({
+            where: {
+                playerEmail: email,
+                event: { storeId }
+            },
+            include: {
+                event: true,
+                ticket: true
+            },
+            orderBy: {
+                event: { date: 'asc' }
+            }
+        });
     }
 
     async updatePlayer(storeId: string, eventId: string, playerId: string, data: { paid?: boolean; checkedIn?: boolean }) {

@@ -59,13 +59,48 @@ export class EventsController {
     @Patch(':eventId/players/:playerId')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(Role.ADMIN, Role.STAFF)
-    updatePlayer(
+    async updatePlayer(
         @Request() req,
         @Param('eventId') eventId: string,
         @Param('playerId') playerId: string,
         @Body() body: { paid?: boolean; checkedIn?: boolean }
     ) {
-        return this.eventsService.updatePlayer(req.user.storeId, eventId, playerId, body);
+        const result = await this.eventsService.updatePlayer(req.user.storeId, eventId, playerId, body);
+        
+        if (body.paid === true) {
+            try {
+                await this.ticketsService.generateTicket(playerId);
+            } catch (err) {
+                this.logger.error('Failed to generate ticket for player marked as paid', err);
+            }
+        }
+        
+        return result;
+    }
+
+    @Post(':eventId/players')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(Role.ADMIN, Role.STAFF)
+    async adminAddPlayer(
+        @Request() req,
+        @Param('eventId') eventId: string,
+        @Body() dto: RegisterPlayerDto & { paid?: boolean }
+    ) {
+        const result = await this.eventsService.registerPlayer(req.user.storeId, eventId, dto);
+        
+        if (!result.waitlisted && result.player) {
+            const isPaid = dto.paid === true;
+            if (isPaid) {
+                await this.eventsService.updatePlayer(req.user.storeId, eventId, result.player.id, { paid: true });
+                try {
+                    await this.ticketsService.generateTicket(result.player.id);
+                } catch (err) {
+                    this.logger.error('Failed to generate ticket for walk-in player', err);
+                }
+            }
+        }
+        
+        return result;
     }
 
     @Delete(':eventId/players/:playerId')
@@ -116,6 +151,12 @@ export class EventsController {
     @UseGuards(ApiKeyGuard)
     findAll(@Request() req) {
         return this.eventsService.findPublic(req.store.id);
+    }
+
+    @Get('my-registrations')
+    @UseGuards(JwtAuthGuard)
+    getMyRegistrations(@Request() req) {
+        return this.eventsService.getMyRegistrations(req.user.storeId, req.user.email);
     }
 
     @Get(':id')
