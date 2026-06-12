@@ -150,7 +150,7 @@ export class TicketsService {
 
       <!-- QR Code -->
       <div style="display:inline-block;padding:12px;background:#fff;border:2px solid #eee;border-radius:12px;margin-bottom:16px;">
-        <img src="${qrCode}" alt="Event Ticket QR Code" style="display:block;width:200px;height:200px;" />
+        <img src="cid:ticket-qr" alt="Event Ticket QR Code" style="display:block;width:200px;height:200px;" />
       </div>
 
       <p style="font-size:13px;color:#888;margin:0;">Screenshot or print this QR code and present it at check-in.</p>
@@ -168,11 +168,22 @@ export class TicketsService {
 </body>
 </html>`;
 
+        const qrBase64 = qrCode.split(',')[1] || qrCode;
+        const attachments = [
+            {
+                filename: 'ticket-qr.png',
+                content: Buffer.from(qrBase64, 'base64'),
+                contentType: 'image/png',
+                cid: 'ticket-qr'
+            }
+        ];
+
         // Delegate to the existing NotificationService which handles Resend / Gmail / fallback
         await (this.notificationService as any).sendEmail(
             playerEmail,
             `🎴 Your Ticket for ${eventName}`,
             html,
+            attachments
         );
 
         this.logger.log(`Ticket email sent to ${playerEmail} for event "${eventName}"`);
@@ -286,7 +297,7 @@ export class TicketsService {
 
       <!-- QR Code -->
       <div style="display:inline-block;padding:12px;background:#fff;border:2px solid #eee;border-radius:12px;margin-bottom:16px;">
-        <img src="${qrCode}" alt="Event Ticket QR Code" style="display:block;width:200px;height:200px;" />
+        <img src="cid:ticket-qr" alt="Event Ticket QR Code" style="display:block;width:200px;height:200px;" />
       </div>
 
       <p style="font-size:13px;color:#888;margin:0;">Have this QR code ready on your phone when you arrive at the store.</p>
@@ -304,10 +315,21 @@ export class TicketsService {
 </body>
 </html>`;
 
+        const qrBase64 = qrCode.split(',')[1] || qrCode;
+        const attachments = [
+            {
+                filename: 'ticket-qr.png',
+                content: Buffer.from(qrBase64, 'base64'),
+                contentType: 'image/png',
+                cid: 'ticket-qr'
+            }
+        ];
+
         await (this.notificationService as any).sendEmail(
             playerEmail,
             `⏰ Reminder: ${eventName} is Tomorrow!`,
             html,
+            attachments
         );
 
         this.logger.log(`Reminder email sent to ${playerEmail} for event "${eventName}"`);

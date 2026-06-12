@@ -52,9 +52,26 @@ export class NotificationService {
     /**
      * Core send method — tries Resend first, then Gmail, then logs.
      */
-    private async sendEmail(to: string, subject: string, html: string): Promise<void> {
+    public async sendEmail(
+        to: string, 
+        subject: string, 
+        html: string,
+        attachments?: { filename: string; content: Buffer | string; contentType?: string; cid?: string }[]
+    ): Promise<void> {
         if (this.resend) {
-            const { data, error } = await this.resend.emails.send({ from: this.fromEmail, to, subject, html });
+            const resendAttachments = attachments?.map(att => ({
+                filename: att.filename,
+                content: typeof att.content === 'string' ? att.content : att.content.toString('base64'),
+                contentType: att.contentType,
+                cid: att.cid
+            }));
+            const { data, error } = await this.resend.emails.send({ 
+                from: this.fromEmail, 
+                to, 
+                subject, 
+                html,
+                attachments: resendAttachments
+            });
             if (error) {
                 this.logger.error(`Resend API failed to send email to ${to}: ${error.message}`);
                 throw new Error(`Resend API error: ${error.message}`);
@@ -69,6 +86,7 @@ export class NotificationService {
                 to,
                 subject,
                 html,
+                attachments
             });
             this.logger.info(`Email sent via Gmail to ${to}: ${subject}`);
             return;
