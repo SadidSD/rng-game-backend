@@ -40,7 +40,8 @@ export default function CreateEventForm() {
         game: "MTG",
         format: "Standard",
         status: "UPCOMING",
-        prizes: ""
+        prizes: "",
+        location: "In-Store"
     });
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,6 +202,16 @@ export default function CreateEventForm() {
                                     onChange={e => setFormData({ ...formData, maxPlayers: Number(e.target.value) })}
                                 />
                             </div>
+                        </div>
+
+                        <div className="grid gap-3">
+                            <Label htmlFor="location">Location</Label>
+                            <Input
+                                id="location"
+                                placeholder="e.g. In-Store, Online"
+                                value={formData.location}
+                                onChange={e => setFormData({ ...formData, location: e.target.value })}
+                            />
                         </div>
 
                         <div className="grid gap-3">
