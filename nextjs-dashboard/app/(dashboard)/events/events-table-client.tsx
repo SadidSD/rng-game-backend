@@ -170,9 +170,9 @@ export function EventsTableClient({ events }: EventsTableClientProps) {
                                         <TableCell className="hidden sm:table-cell">
                                             <Badge variant="secondary">{event.game}</Badge>
                                         </TableCell>
-                                        <TableCell className="hidden sm:table-cell">
+                                        <TableCell className="hidden sm:table-cell" suppressHydrationWarning>
                                             {new Date(event.date).toLocaleDateString()}
-                                            <div className="text-xs text-muted-foreground">
+                                            <div className="text-xs text-muted-foreground" suppressHydrationWarning>
                                                 {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </div>
                                         </TableCell>

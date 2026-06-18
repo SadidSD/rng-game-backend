@@ -29,6 +29,8 @@ async function bootstrap() {
   // Global security headers via Helmet
   await app.register(require('@fastify/helmet'), {
     contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
   });
 
   // Fastify Multipart for file uploads
