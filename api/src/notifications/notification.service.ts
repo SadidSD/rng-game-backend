@@ -61,9 +61,9 @@ export class NotificationService {
         if (this.resend) {
             const resendAttachments = attachments?.map(att => ({
                 filename: att.filename,
-                content: typeof att.content === 'string' ? att.content : att.content.toString('base64'),
-                contentType: att.contentType,
-                cid: att.cid
+                content: att.content,
+                content_type: att.contentType,
+                content_id: att.cid,
             }));
             const { data, error } = await this.resend.emails.send({ 
                 from: this.fromEmail, 
