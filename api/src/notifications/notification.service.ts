@@ -20,7 +20,7 @@ export class NotificationService {
         const resendApiKey = this.configService.get<string>('RESEND_API_KEY');
         if (resendApiKey) {
             this.resend = new Resend(resendApiKey);
-            this.fromEmail = this.configService.get<string>('RESEND_FROM_EMAIL') || 'noreply@yourdomain.com';
+            this.fromEmail = this.configService.get<string>('RESEND_FROM_EMAIL') || 'support@yourdomain.com';
             this.logger.info('Email provider: Resend');
             return;
         }
