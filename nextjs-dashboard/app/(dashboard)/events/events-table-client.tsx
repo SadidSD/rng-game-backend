@@ -33,6 +33,38 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+const getEventImageUrl = (image: string | null | undefined) => {
+    if (!image) return "";
+    if (image.startsWith('http://') || image.startsWith('https://')) {
+        if (image.includes('/uploads/')) {
+            try {
+                const url = new URL(image);
+                let cleanPath = url.pathname;
+                if (cleanPath.startsWith('/api/uploads/')) {
+                    cleanPath = cleanPath.substring(4);
+                }
+                const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+                const apiBaseWithoutApi = apiBase.replace(/\/api$/, '');
+                return `${apiBaseWithoutApi}${cleanPath}`;
+            } catch (e) {
+                return image;
+            }
+        }
+        return image;
+    }
+    // relative path
+    let cleanPath = image;
+    if (cleanPath.startsWith('/api/uploads/')) {
+        cleanPath = cleanPath.substring(4);
+    }
+    if (!cleanPath.startsWith('/')) {
+        cleanPath = '/' + cleanPath;
+    }
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    const apiBaseWithoutApi = apiBase.replace(/\/api$/, '');
+    return `${apiBaseWithoutApi}${cleanPath}`;
+};
+
 interface Event {
     id: string;
     name: string;
@@ -131,11 +163,10 @@ export function EventsTableClient({ events }: EventsTableClientProps) {
                                         <TableCell className="hidden sm:table-cell">
                                             <div className="relative aspect-video w-full max-w-[80px] overflow-hidden rounded-md bg-muted">
                                                 {event.image ? (
-                                                    <Image
-                                                        src={event.image}
+                                                    <img
+                                                        src={getEventImageUrl(event.image)}
                                                         alt={event.name}
-                                                        fill
-                                                        className="object-cover"
+                                                        className="object-cover w-full h-full"
                                                     />
                                                 ) : (
                                                     <div className="flex h-full w-full items-center justify-center bg-gray-100 text-xs text-gray-500">

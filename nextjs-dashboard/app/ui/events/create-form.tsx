@@ -5,6 +5,38 @@ import { useRouter } from "next/navigation"
 import { Upload, X, Trophy, Calendar, MapPin, Users, Gamepad2, Sparkles, FileText } from "lucide-react"
 import Image from "next/image"
 
+const getEventImageUrl = (image: string | null | undefined) => {
+    if (!image) return "";
+    if (image.startsWith('http://') || image.startsWith('https://')) {
+        if (image.includes('/uploads/')) {
+            try {
+                const url = new URL(image);
+                let cleanPath = url.pathname;
+                if (cleanPath.startsWith('/api/uploads/')) {
+                    cleanPath = cleanPath.substring(4);
+                }
+                const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+                const apiBaseWithoutApi = apiBase.replace(/\/api$/, '');
+                return `${apiBaseWithoutApi}${cleanPath}`;
+            } catch (e) {
+                return image;
+            }
+        }
+        return image;
+    }
+    // relative path
+    let cleanPath = image;
+    if (cleanPath.startsWith('/api/uploads/')) {
+        cleanPath = cleanPath.substring(4);
+    }
+    if (!cleanPath.startsWith('/')) {
+        cleanPath = '/' + cleanPath;
+    }
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    const apiBaseWithoutApi = apiBase.replace(/\/api$/, '');
+    return `${apiBaseWithoutApi}${cleanPath}`;
+};
+
 import { Button } from "@/components/ui/button"
 import {
     Card,
@@ -266,11 +298,10 @@ export default function CreateEventForm() {
                         <CardContent className="p-6 space-y-4">
                             {imageUrl ? (
                                 <div className="relative aspect-[16/10] w-full rounded-xl object-cover bg-slate-50 border overflow-hidden shadow-inner group">
-                                    <Image
+                                    <img
                                         alt="Event banner image"
-                                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                        fill
-                                        src={imageUrl}
+                                        className="object-cover transition-transform duration-300 group-hover:scale-105 w-full h-full"
+                                        src={getEventImageUrl(imageUrl)}
                                     />
                                     <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center backdrop-blur-[2px]">
                                         <button
