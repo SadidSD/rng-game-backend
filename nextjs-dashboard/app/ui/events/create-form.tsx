@@ -7,24 +7,11 @@ import Image from "next/image"
 
 const getEventImageUrl = (image: string | null | undefined) => {
     if (!image) return "";
+    // Supabase CDN URLs are always full https:// URLs — use directly
     if (image.startsWith('http://') || image.startsWith('https://')) {
-        if (image.includes('/uploads/')) {
-            try {
-                const url = new URL(image);
-                let cleanPath = url.pathname;
-                if (cleanPath.startsWith('/api/uploads/')) {
-                    cleanPath = cleanPath.substring(4);
-                }
-                const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-                const apiBaseWithoutApi = apiBase.replace(/\/api$/, '');
-                return `${apiBaseWithoutApi}${cleanPath}`;
-            } catch (e) {
-                return image;
-            }
-        }
         return image;
     }
-    // relative path
+    // Backward compat: legacy relative path from local filesystem
     let cleanPath = image;
     if (cleanPath.startsWith('/api/uploads/')) {
         cleanPath = cleanPath.substring(4);
