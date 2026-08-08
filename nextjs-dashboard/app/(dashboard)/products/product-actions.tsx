@@ -42,9 +42,10 @@ export function ProductActions({ product }: { product: any }) {
             });
 
             if (res.ok) {
+                setDialogOpen(false);
+                setIsDeleting(false);
                 startTransition(() => {
                     router.refresh();
-                    setDialogOpen(false);
                 });
             } else {
                 alert('Failed to delete product. Please try again.');
