@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal, Loader2, Trash2 } from "lucide-react";
 import Cookies from 'js-cookie';
@@ -24,11 +24,14 @@ import {
 
 export function ProductActions({ product }: { product: any }) {
     const router = useRouter();
-    const [loading, setLoading] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isPending, startTransition] = useTransition();
     const [dialogOpen, setDialogOpen] = useState(false);
 
+    const isLoading = isDeleting || isPending;
+
     const handleDelete = async () => {
-        setLoading(true);
+        setIsDeleting(true);
         try {
             const token = Cookies.get('tcg-auth-token');
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/${product.id}`, {
@@ -39,16 +42,18 @@ export function ProductActions({ product }: { product: any }) {
             });
 
             if (res.ok) {
-                setDialogOpen(false);
-                router.refresh();
+                startTransition(() => {
+                    router.refresh();
+                    setDialogOpen(false);
+                });
             } else {
                 alert('Failed to delete product. Please try again.');
+                setIsDeleting(false);
             }
         } catch (e) {
             console.error(e);
             alert('Error deleting product');
-        } finally {
-            setLoading(false);
+            setIsDeleting(false);
         }
     };
 
@@ -79,7 +84,7 @@ export function ProductActions({ product }: { product: any }) {
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            <Dialog open={dialogOpen} onOpenChange={(open) => !loading && setDialogOpen(open)}>
+            <Dialog open={dialogOpen} onOpenChange={(open) => !isLoading && setDialogOpen(open)}>
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-red-600">
@@ -95,17 +100,17 @@ export function ProductActions({ product }: { product: any }) {
                         <Button 
                             variant="outline" 
                             onClick={() => setDialogOpen(false)} 
-                            disabled={loading}
+                            disabled={isLoading}
                         >
                             Cancel
                         </Button>
                         <Button 
                             variant="destructive" 
                             onClick={handleDelete} 
-                            disabled={loading}
-                            className="min-w-[100px]"
+                            disabled={isLoading}
+                            className="min-w-[110px]"
                         >
-                            {loading ? (
+                            {isLoading ? (
                                 <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     Deleting...
