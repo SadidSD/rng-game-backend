@@ -207,11 +207,22 @@ export default function CsvImport({ categories, selectedCategoryId }: CsvImportP
       
       try {
         let query = card.name;
-        if (card.set) query += `+set:${card.set}`;
+        if (card.set) {
+          query += ` set:"${card.set}"`;
+        }
         
-        const res = await axios.get(`/api/proxy/mtg?query=${encodeURIComponent(query)}`);
-        if (res.data?.data && res.data.data.length > 0) {
-          const scryfallData = res.data.data[0]; // Take first match
+        let res = await axios.get(`/api/proxy/mtg?query=${encodeURIComponent(query)}`);
+        let scryfallData = res.data?.data && res.data.data.length > 0 ? res.data.data[0] : null;
+
+        // Fallback: If searching with set failed, try searching by card name alone
+        if (!scryfallData && card.set) {
+          res = await axios.get(`/api/proxy/mtg?query=${encodeURIComponent(card.name)}`);
+          if (res.data?.data && res.data.data.length > 0) {
+            scryfallData = res.data.data[0];
+          }
+        }
+
+        if (scryfallData) {
           enrichmentCache.set(cacheKey, scryfallData);
         }
       } catch (err) {
@@ -227,8 +238,13 @@ export default function CsvImport({ categories, selectedCategoryId }: CsvImportP
     
     const finalItems = mappedItems.map(item => {
       const cacheKey = `${item.name}|${item.set || ''}`.toLowerCase();
-      const enriched = enrichmentCache.get(cacheKey) || {};
+      const enriched: any = enrichmentCache.get(cacheKey) || {};
       
+      let imageUrl = enriched.image_uris?.large || enriched.image_uris?.normal || enriched.image_uris?.small;
+      if (!imageUrl && enriched.card_faces && enriched.card_faces[0]?.image_uris) {
+        imageUrl = enriched.card_faces[0].image_uris.large || enriched.card_faces[0].image_uris.normal;
+      }
+
       return {
         name: item.name,
         game: 'MTG',
@@ -237,7 +253,7 @@ export default function CsvImport({ categories, selectedCategoryId }: CsvImportP
         rarity: item.rarity || 'Common',
         collectorNumber: item.collectorNumber || '',
         price: parseNumber(item.price, 0),
-        images: enriched.image_uris?.large ? [enriched.image_uris.large] : [],
+        images: imageUrl ? [imageUrl] : [],
         condition: item.condition || 'NM',
         isFoil: isFoil(item.foil),
         language: item.language || 'English',
