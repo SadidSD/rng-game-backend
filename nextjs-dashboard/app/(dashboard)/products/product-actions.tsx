@@ -1,25 +1,33 @@
 'use client';
 
-import { MoreHorizontal } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { MoreHorizontal, Loader2, Trash2 } from "lucide-react";
+import Cookies from 'js-cookie';
+
+import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
-import Cookies from 'js-cookie';
+} from "@/components/ui/dropdown-menu";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 export function ProductActions({ product }: { product: any }) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [dialogOpen, setDialogOpen] = useState(false);
 
     const handleDelete = async () => {
-        if (!confirm('Are you sure you want to delete this product?')) return;
-
         setLoading(true);
         try {
             const token = Cookies.get('tcg-auth-token');
@@ -31,9 +39,10 @@ export function ProductActions({ product }: { product: any }) {
             });
 
             if (res.ok) {
+                setDialogOpen(false);
                 router.refresh();
             } else {
-                alert('Failed to delete product');
+                alert('Failed to delete product. Please try again.');
             }
         } catch (e) {
             console.error(e);
@@ -44,26 +53,70 @@ export function ProductActions({ product }: { product: any }) {
     };
 
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    aria-haspopup="true"
-                    size="icon"
-                    variant="ghost"
-                >
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="sr-only">Toggle menu</span>
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => router.push(`/products/${product.id}`)}>
-                    Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleDelete} className="text-red-500 font-medium">
-                    {loading ? 'Deleting...' : 'Delete'}
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
+        <>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button
+                        aria-haspopup="true"
+                        size="icon"
+                        variant="ghost"
+                    >
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Toggle menu</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => router.push(`/products/${product.id}`)}>
+                        Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                        onClick={() => setDialogOpen(true)} 
+                        className="text-red-500 font-medium focus:text-red-500 focus:bg-red-50 dark:focus:bg-red-950/30 cursor-pointer"
+                    >
+                        Delete
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Dialog open={dialogOpen} onOpenChange={(open) => !loading && setDialogOpen(open)}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-red-600">
+                            <Trash2 className="h-5 w-5" />
+                            Delete Product
+                        </DialogTitle>
+                        <DialogDescription className="pt-2 text-sm text-muted-foreground">
+                            Are you sure you want to delete <span className="font-semibold text-foreground">"{product.name}"</span>? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <DialogFooter className="mt-4 flex gap-2 justify-end">
+                        <Button 
+                            variant="outline" 
+                            onClick={() => setDialogOpen(false)} 
+                            disabled={loading}
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            variant="destructive" 
+                            onClick={handleDelete} 
+                            disabled={loading}
+                            className="min-w-[100px]"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Deleting...
+                                </>
+                            ) : (
+                                'Delete'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
