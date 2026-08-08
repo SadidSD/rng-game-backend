@@ -653,5 +653,143 @@ export class AnalyticsService {
             }
         };
     }
+
+    async trackPayload(data: {
+        type: 'pageview' | 'event';
+        path: string;
+        sessionId: string;
+        referrer?: string;
+        device?: string;
+        userAgent?: string;
+        eventName?: string;
+        target?: string;
+        storeId?: string;
+    }) {
+        const storeId = data.storeId || process.env.SINGLE_TENANT_STORE_ID || 'cd7bfaac-8632-418e-a329-0f71653f07b0';
+        
+        if (data.type === 'pageview') {
+            return this.prisma.pageView.create({
+                data: {
+                    storeId,
+                    sessionId: data.sessionId || 'anonymous',
+                    path: data.path || '/',
+                    referrer: data.referrer || 'direct',
+                    device: data.device || 'Desktop',
+                    userAgent: data.userAgent || null,
+                }
+            });
+        } else if (data.type === 'event') {
+            return this.prisma.pageEvent.create({
+                data: {
+                    storeId,
+                    sessionId: data.sessionId || 'anonymous',
+                    eventName: data.eventName || 'click',
+                    target: data.target || null,
+                    path: data.path || '/',
+                }
+            });
+        }
+    }
+
+    async getTrafficStats(storeId: string, days = 7) {
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days);
+
+        const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
+
+        // 1. Live visitors (sessions active in last 15m)
+        const liveSessions = await this.prisma.pageView.groupBy({
+            by: ['sessionId'],
+            where: { storeId, createdAt: { gte: fifteenMinsAgo } }
+        });
+        const liveVisitors = liveSessions.length;
+
+        // 2. Total PageViews & Unique Visitors
+        const totalPageViews = await this.prisma.pageView.count({
+            where: { storeId, createdAt: { gte: startDate } }
+        });
+
+        const uniqueSessions = await this.prisma.pageView.groupBy({
+            by: ['sessionId'],
+            where: { storeId, createdAt: { gte: startDate } }
+        });
+        const uniqueVisitors = uniqueSessions.length;
+
+        // 3. Top Visited Pages
+        const topPagesGroup = await this.prisma.pageView.groupBy({
+            by: ['path'],
+            where: { storeId, createdAt: { gte: startDate } },
+            _count: { path: true },
+            orderBy: { _count: { path: 'desc' } },
+            take: 10
+        });
+        const topPages = topPagesGroup.map(p => ({
+            path: p.path,
+            views: p._count.path
+        }));
+
+        // 4. Device Breakdown
+        const deviceGroup = await this.prisma.pageView.groupBy({
+            by: ['device'],
+            where: { storeId, createdAt: { gte: startDate } },
+            _count: { device: true }
+        });
+        const deviceBreakdown = deviceGroup.map(d => ({
+            name: d.device || 'Desktop',
+            value: d._count.device
+        }));
+
+        // 5. Top Click Events
+        const eventGroup = await this.prisma.pageEvent.groupBy({
+            by: ['eventName'],
+            where: { storeId, createdAt: { gte: startDate } },
+            _count: { eventName: true },
+            orderBy: { _count: { eventName: 'desc' } },
+            take: 10
+        });
+        const topEvents = eventGroup.map(e => ({
+            eventName: e.eventName,
+            count: e._count.eventName
+        }));
+
+        // 6. Traffic Trend By Day
+        const pageViewsList = await this.prisma.pageView.findMany({
+            where: { storeId, createdAt: { gte: startDate } },
+            select: { createdAt: true, sessionId: true }
+        });
+
+        const trendMap = new Map<string, { pageviews: number; sessions: Set<string> }>();
+        for (let i = days - 1; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().split('T')[0];
+            trendMap.set(dateStr, { pageviews: 0, sessions: new Set() });
+        }
+
+        pageViewsList.forEach(pv => {
+            const dateStr = pv.createdAt.toISOString().split('T')[0];
+            if (trendMap.has(dateStr)) {
+                const item = trendMap.get(dateStr)!;
+                item.pageviews += 1;
+                item.sessions.add(pv.sessionId);
+            }
+        });
+
+        const trafficTrend = Array.from(trendMap.entries()).map(([date, data]) => ({
+            date,
+            pageviews: data.pageviews,
+            visitors: data.sessions.size
+        }));
+
+        return {
+            liveVisitors,
+            totalPageViews,
+            uniqueVisitors,
+            topPages,
+            deviceBreakdown,
+            topEvents,
+            trafficTrend
+        };
+    }
 }
 

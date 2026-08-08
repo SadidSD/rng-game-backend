@@ -35,6 +35,8 @@ model Store {
   buylistOffers BuylistOffer[]
   buylistFeaturedCards BuylistFeaturedCard[]
   events      Event[]
+  pageViews   PageView[]
+  pageEvents  PageEvent[]
 }
 
 model ApiKey {
@@ -461,3 +463,42 @@ model EventWaitlist {
   notified    Boolean  @default(false)
   createdAt   DateTime @default(now())
 }
+
+// -----------------------------------------------------------------------------
+// Traffic & Analytics Tracking
+// -----------------------------------------------------------------------------
+
+model PageView {
+  id          String   @id @default(uuid())
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  sessionId   String   // Anonymous session hash
+  path        String   // e.g. /shop, /product/123
+  referrer    String?  // e.g. google.com, direct
+  device      String?  // Desktop, Mobile, Tablet
+  userAgent   String?
+  
+  createdAt   DateTime @default(now())
+
+  @@index([storeId, createdAt])
+  @@index([storeId, path])
+  @@index([storeId, sessionId])
+}
+
+model PageEvent {
+  id          String   @id @default(uuid())
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  
+  sessionId   String   // Anonymous session hash
+  eventName   String   // e.g. add_to_cart, buy_now, search_buylist
+  target      String?  // e.g. product ID, button ID
+  path        String   // Page where event occurred
+  
+  createdAt   DateTime @default(now())
+
+  @@index([storeId, createdAt])
+  @@index([storeId, eventName])
+}
+

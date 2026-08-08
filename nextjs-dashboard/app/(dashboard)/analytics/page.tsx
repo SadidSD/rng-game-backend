@@ -22,6 +22,7 @@ import {
 import axios from "axios";
 import Cookies from "js-cookie";
 import { format, subDays } from "date-fns";
+import { TrafficMonitor } from "./traffic-monitor";
 
 interface TopProduct {
     name: string;
@@ -298,14 +299,20 @@ export default function AnalyticsPage() {
             {stats && (
                 <Tabs defaultValue="overview" className="space-y-6">
                     {/* Navigation Tabs */}
-                    <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-2 bg-muted p-1 rounded-xl h-auto">
+                    <TabsList className="grid grid-cols-3 md:grid-cols-7 gap-2 bg-muted p-1 rounded-xl h-auto">
                         <TabsTrigger value="overview" className="rounded-lg py-2 font-bold text-xs md:text-sm">Overview</TabsTrigger>
+                        <TabsTrigger value="traffic" className="rounded-lg py-2 font-bold text-xs md:text-sm">Web Traffic</TabsTrigger>
                         <TabsTrigger value="financials" className="rounded-lg py-2 font-bold text-xs md:text-sm">Financials</TabsTrigger>
                         <TabsTrigger value="inventory" className="rounded-lg py-2 font-bold text-xs md:text-sm">Inventory</TabsTrigger>
                         <TabsTrigger value="customers" className="rounded-lg py-2 font-bold text-xs md:text-sm">Customers</TabsTrigger>
                         <TabsTrigger value="buylists" className="rounded-lg py-2 font-bold text-xs md:text-sm">Buylists</TabsTrigger>
                         <TabsTrigger value="events" className="rounded-lg py-2 font-bold text-xs md:text-sm">Events</TabsTrigger>
                     </TabsList>
+
+                    {/* TAB: WEB TRAFFIC */}
+                    <TabsContent value="traffic" className="space-y-6">
+                        <TrafficMonitor />
+                    </TabsContent>
 
                     {/* TAB 1: BUSINESS OVERVIEW */}
                     <TabsContent value="overview" className="space-y-6">
