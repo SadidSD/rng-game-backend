@@ -153,8 +153,13 @@ export default function CsvImport({ categories, selectedCategoryId }: CsvImportP
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
   const startImport = async () => {
-    if (!selectedCategoryId) {
-      setErrorMsg('Please select a category in the sidebar first.');
+    let targetCategoryId = selectedCategoryId;
+    if (!targetCategoryId && categories.length > 0) {
+      targetCategoryId = categories[0].id;
+    }
+
+    if (!targetCategoryId) {
+      setErrorMsg('No product category found. Please ensure at least one category exists.');
       return;
     }
 
@@ -227,7 +232,7 @@ export default function CsvImport({ categories, selectedCategoryId }: CsvImportP
       return {
         name: item.name,
         game: 'MTG',
-        categoryId: selectedCategoryId,
+        categoryId: targetCategoryId,
         set: item.set || '',
         rarity: item.rarity || 'Common',
         collectorNumber: item.collectorNumber || '',
@@ -274,10 +279,11 @@ export default function CsvImport({ categories, selectedCategoryId }: CsvImportP
           { headers: { Authorization: `Bearer ${token}` } }
         );
         
-        successCount += res.data?.successCount || 0;
+        const count = res.data?.importedCount ?? res.data?.successCount ?? 0;
+        successCount += count;
         updatedCount += res.data?.updatedCount || 0;
         
-        if (res.data?.errors) {
+        if (res.data?.errors && Array.isArray(res.data.errors)) {
           errorsList.push(...res.data.errors);
         }
       } catch (err: any) {

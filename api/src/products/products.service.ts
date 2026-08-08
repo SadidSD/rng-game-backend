@@ -597,7 +597,7 @@ export class ProductsService {
                     toughness: item.toughness,
                     loyalty: item.loyalty,
                     price: Number(item.price || 0),
-                    images: item.image ? [item.image] : [],
+                    images: item.images || (item.image ? [item.image] : []),
                     variants: item.variants || [
                         {
                             condition: item.condition || 'NM',
@@ -619,6 +619,7 @@ export class ProductsService {
 
         return {
             importedCount: results.length,
+            successCount: results.length,
             failedCount: errors.length,
             results,
             errors
