@@ -11,9 +11,11 @@ import {
     CardTitle,
     CardDescription
 } from "@/components/ui/card";
-import { Search, Loader2, DownloadCloud } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, Loader2, DownloadCloud, FileSpreadsheet } from "lucide-react";
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import CsvImport from './csv-import';
 
 interface CardData {
     id: string;
@@ -352,10 +354,26 @@ export default function ImportPage() {
         <div className="flex flex-col gap-6 p-6">
             <div className="text-center space-y-2">
                 <h1 className="text-3xl font-bold tracking-tight">Import Products</h1>
-                <p className="text-muted-foreground">Search and import cards from Scryfall (MTG).</p>
+                <p className="text-muted-foreground">Search individual cards or bulk import from CSV.</p>
             </div>
 
-            {/* Game switcher disabled since site only sells MTG for singles */}
+            <Tabs defaultValue="search" className="w-full">
+                <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
+                    <TabsTrigger value="search" className="flex items-center gap-2">
+                        <Search className="h-4 w-4" />
+                        Search Import
+                    </TabsTrigger>
+                    <TabsTrigger value="csv" className="flex items-center gap-2">
+                        <FileSpreadsheet className="h-4 w-4" />
+                        CSV Bulk Import
+                    </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="csv" className="mt-6">
+                    <CsvImport categories={categories} selectedCategoryId={selectedCategoryId} />
+                </TabsContent>
+
+                <TabsContent value="search" className="mt-6 flex flex-col gap-6">
 
             {/* Search */}
             <div className="w-full max-w-4xl mx-auto">
@@ -539,6 +557,8 @@ export default function ImportPage() {
                     <div className="text-center text-muted-foreground py-12">No results found.</div>
                 )
             }
+                </TabsContent>
+            </Tabs>
         </div >
     );
 }
